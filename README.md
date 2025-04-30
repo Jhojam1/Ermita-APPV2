@@ -1,65 +1,54 @@
-# Sistema Ermita - React + Vite
+# React + TypeScript + Vite
 
-Este proyecto es una reimplementación del Sistema Ermita utilizando React con Vite y optimizaciones avanzadas de rendimiento. El sistema está diseñado para la gestión de inventario y mantenimientos.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Características
+Currently, two official plugins are available:
 
-- **Diseño Moderno**: Interfaz de usuario moderna con animaciones fluidas y diseño responsive
-- **Alto Rendimiento**: Optimizado con Vite para tiempos de carga y compilación rápidos
-- **Autenticación**: Sistema de login y recuperación de contraseña con fondo animado compartido
-- **Módulos Principales**:
-  - Dashboard con información general
-  - Gestión de Inventario
-  - Control de Mantenimientos
-  - Generación de Reportes
-  - Historial de actividades
-  - Configuración del sistema
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Tecnologías Utilizadas
+## Expanding the ESLint configuration
 
-- **React 19**: Framework de UI moderno y reactivo
-- **Vite**: Herramienta de compilación ultrarrápida con optimizaciones avanzadas
-- **TailwindCSS 4**: Framework de CSS utilitario para estilos consistentes
-- **Framer Motion**: Biblioteca para animaciones fluidas
-- **React Router Dom**: Para la navegación entre páginas
-- **Chart.js**: Para visualizaciones y gráficos estadísticos
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-## Estructura del Proyecto
-
-El proyecto está organizado en una estructura clara y modular:
-
-```
-src/
-├── components/      # Componentes reutilizables
-├── layouts/         # Layouts compartidos (AuthLayout, RootLayout)
-├── pages/           # Páginas organizadas por secciones
-│   ├── auth/        # Páginas de autenticación
-│   ├── configuracion/
-│   ├── historial/
-│   ├── inventario/
-│   ├── mantenimientos/
-│   └── reportes/
-└── assets/          # Recursos estáticos
+```js
+export default tseslint.config({
+  extends: [
+    // Remove ...tseslint.configs.recommended and replace with this
+    ...tseslint.configs.recommendedTypeChecked,
+    // Alternatively, use this for stricter rules
+    ...tseslint.configs.strictTypeChecked,
+    // Optionally, add this for stylistic rules
+    ...tseslint.configs.stylisticTypeChecked,
+  ],
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
 ```
 
-## Características Específicas
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-### Optimización de Experiencia de Usuario
-El sistema implementa un layout compartido para las páginas de autenticación (login y recuperación de contraseña) que mantiene el mismo fondo animado con burbujas para evitar que se recargue al navegar entre estas páginas, mejorando la experiencia del usuario.
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-### Optimizaciones de Rendimiento
-- Configuración avanzada de Vite para optimizar la compilación
-- División de código (code splitting) para carga más rápida
-- Lazy loading de componentes para mejorar el tiempo de carga inicial
-
-## Comandos Disponibles
-
-- `npm run dev`: Inicia el servidor de desarrollo con optimizaciones
-- `npm run build`: Compila el proyecto para producción
-- `npm run preview`: Previsualiza la compilación de producción
-- `npm run lint`: Ejecuta el linter para verificar el código
-
-## Requisitos
-
-- Node.js 20.0 o superior
-- npm 10.0 o superior
+export default tseslint.config({
+  plugins: {
+    // Add the react-x and react-dom plugins
+    'react-x': reactX,
+    'react-dom': reactDom,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended typescript rules
+    ...reactX.configs['recommended-typescript'].rules,
+    ...reactDom.configs.recommended.rules,
+  },
+})
+```

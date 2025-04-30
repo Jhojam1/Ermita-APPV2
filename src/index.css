@@ -2,29 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: #1f2937;
+  background-color: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer components {
+  .btn {
+    @apply px-4 py-2 font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-300;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
   }
 }
 
-body {
-  background-color: #f8fafc;
-  color: #1e293b;
-  min-height: 100vh;
-  margin: 0;
+/* Animaciones personalizadas */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
-html, body, #root {
-  height: 100%;
-  width: 100%;
+@keyframes gradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(0.95); }
+}
+
+@keyframes moveAround1 {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(10%, 15%) rotate(5deg); }
+  50% { transform: translate(-5%, 10%) rotate(-5deg); }
+  75% { transform: translate(5%, -10%) rotate(3deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes moveAround2 {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-10%, 5%) rotate(-3deg); }
+  40% { transform: translate(15%, 15%) rotate(6deg); }
+  60% { transform: translate(-5%, -10%) rotate(-6deg); }
+  80% { transform: translate(5%, 5%) rotate(3deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes moveAround3 {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(-5%, 15%) rotate(-4deg); }
+  66% { transform: translate(10%, -10%) rotate(6deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+.animate-gradient {
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse 4s ease-in-out infinite;
+}
+
+.animate-move-1 {
+  animation: moveAround1 15s linear infinite;
+}
+
+.animate-move-2 {
+  animation: moveAround2 18s linear infinite;
+}
+
+.animate-move-3 {
+  animation: moveAround3 12s linear infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
 }
