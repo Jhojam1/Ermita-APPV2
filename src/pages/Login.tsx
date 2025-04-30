@@ -1,26 +1,28 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import AnimatedBackground from '../components/ui/AnimatedBackground';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, loading: authLoading, error: authError, clearError, user } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  const [mounted, setMounted] = useState(false);
-  const [bubbles, setBubbles] = useState<Array<{
-    id: number;
-    size: number;
-    color: string;
-    animation: string;
-    top: string;
-    left: string;
-    delay: string;
-  }>>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [buttonLoading, setButtonLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  // Verificar si viene de un restablecimiento exitoso
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('reset') === 'success') {
+      setResetSuccess(true);
+      setTimeout(() => setResetSuccess(false), 5000);
+    }
+  }, [location]);
 
   // Redirigir si ya está autenticado
   useEffect(() => {
@@ -33,32 +35,6 @@ const Login = () => {
   useEffect(() => {
     clearError();
   }, [clearError]);
-
-  // Manejar el overflow al montar/desmontar el componente y controlar la animación inicial
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    // Asegurarse de que los elementos estén posicionados correctamente desde el inicio
-    setMounted(true);
-    
-    // Generar las burbujas solo del lado del cliente para evitar errores de hidratación
-    setBubbles(Array.from({ length: 25 }, (_, i) => ({
-      id: i,
-      size: 150 + Math.random() * 250,
-      color: i % 3 === 0 
-        ? '96, 165, 250' 
-        : i % 3 === 1 
-          ? '59, 130, 246' 
-          : '37, 99, 235',
-      animation: i % 3 === 0 ? 'animate-move-1' : i % 3 === 1 ? 'animate-move-2' : 'animate-move-3',
-      top: `${Math.random() * 90}%`,
-      left: `${Math.random() * 90}%`,
-      delay: `${Math.random() * 8}s`
-    })));
-    
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, []);
 
   // Mostrar error de autenticación si existe
   useEffect(() => {
@@ -107,60 +83,23 @@ const Login = () => {
     }));
   };
 
-  const handleForgotPassword = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate('/reset-password');
-  };
-
   return (
-    <main className="fixed inset-0 flex items-center justify-center min-h-screen w-full">
-      {/* Fondo animado */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-blue-100 to-blue-50 animate-gradient">
-          {/* Burbujas que se mueven por toda la pantalla - Solo renderizadas del lado del cliente */}
-          {mounted && (
-            <div className="absolute inset-0 overflow-hidden">
-              {bubbles.map(bubble => (
-                <div
-                  key={`bubble-${bubble.id}`}
-                  className={`absolute rounded-full mix-blend-multiply filter blur-xl ${bubble.animation}`}
-                  style={{
-                    backgroundColor: `rgba(${bubble.color}, 0.25)`,
-                    width: `${bubble.size}px`,
-                    height: `${bubble.size}px`,
-                    top: bubble.top,
-                    left: bubble.left,
-                    animationDelay: bubble.delay
-                  }}
-                />
-              ))}
+    <div className="h-screen overflow-hidden">
+      <AnimatedBackground>
+        <div className="bg-white/80 backdrop-blur-md p-5 sm:p-8 rounded-2xl shadow-xl border border-white/50 w-full max-w-md mx-auto">
+          {resetSuccess && (
+            <div className="mb-4 p-3 bg-green-50 text-green-800 rounded-xl text-sm">
+              ¡Contraseña restablecida exitosamente! Ya puedes iniciar sesión con tu nueva contraseña.
             </div>
           )}
           
-          {/* Círculos pulsantes estáticos - Renderizados con valores fijos para evitar errores de hidratación */}
-          <div className="absolute inset-0">
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={`pulse-${i}`}
-                className="absolute rounded-full animate-pulse-slow"
-                style={{
-                  background: `radial-gradient(circle at center, rgba(${i % 2 ? '96, 165, 250' : '59, 130, 246'}, 0.2) 0%, transparent 70%)`,
-                  width: `${300 + (i * 30)}px`,
-                  height: `${300 + (i * 30)}px`,
-                  top: `${15 + (i * 15)}%`,
-                  left: `${10 + (i * 20)}%`,
-                  animationDelay: `${i * 0.8}s`
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Contenido */}
-      <div className={`relative w-full max-w-md mx-4 transition-all duration-700 ease-out transform ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-2xl p-6 sm:p-8 transition-all duration-300 hover:shadow-blue-200/50">
-          <div className="text-center mb-6 sm:mb-8">
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-50 text-red-800 rounded-xl text-sm">
+              {errorMessage}
+            </div>
+          )}
+          
+          <div className="text-center mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent animate-pulse">
               Sistema Ermita
             </h1>
@@ -168,27 +107,21 @@ const Login = () => {
               Ingresa tus credenciales para acceder al sistema
             </p>
           </div>
-
-          {errorMessage && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 relative" role="alert">
-              <span className="block sm:inline">{errorMessage}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-            <div>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-6">
               <div className="relative">
                 <input
+                  type="email"
                   id="email"
                   name="email"
-                  type="email"
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="peer w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl border border-gray-300 placeholder-transparent
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                           transition-all duration-200 bg-white/50 focus:bg-white cursor-text"
-                  placeholder="nombre@empresa.com"
+                  className="peer w-full px-4 py-3 rounded-xl border border-gray-300 placeholder-transparent
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                           transition-all duration-200 bg-white/50"
+                  placeholder="ejemplo@correo.com"
                 />
                 <label
                   htmlFor="email"
@@ -200,20 +133,18 @@ const Login = () => {
                   Correo electrónico
                 </label>
               </div>
-            </div>
 
-            <div>
               <div className="relative">
                 <input
+                  type="password"
                   id="password"
                   name="password"
-                  type="password"
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="peer w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl border border-gray-300 placeholder-transparent
-                           focus:ring-2 focus:ring-blue-500 focus:border-transparent
-                           transition-all duration-200 bg-white/50 focus:bg-white cursor-text"
+                  className="peer w-full px-4 py-3 rounded-xl border border-gray-300 placeholder-transparent
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                           transition-all duration-200 bg-white/50"
                   placeholder="••••••••"
                 />
                 <label
@@ -242,12 +173,12 @@ const Login = () => {
               </div>
 
               <div className="text-sm">
-                <button
-                  onClick={handleForgotPassword}
+                <Link
+                  to="/reset-password"
                   className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200 cursor-pointer"
                 >
                   ¿Olvidaste tu contraseña?
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -276,21 +207,21 @@ const Login = () => {
               </span>
             </button>
           </form>
-        </div>
 
-        <p className="mt-4 text-center text-xs sm:text-sm text-gray-600">
-          ¿Necesitas ayuda?{' '}
-          <a 
-            href="https://wa.me/573106992881" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200 cursor-pointer"
-          >
-            Contacta a soporte
-          </a>
-        </p>
-      </div>
-    </main>
+          <p className="mt-4 text-center text-xs sm:text-sm text-gray-600">
+            ¿Necesitas ayuda?{' '}
+            <a 
+              href="https://wa.me/573106992881" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200 cursor-pointer"
+            >
+              Contacta a soporte
+            </a>
+          </p>
+        </div>
+      </AnimatedBackground>
+    </div>
   );
 };
 

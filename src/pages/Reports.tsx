@@ -30,7 +30,7 @@ export default function Reports() {
   const [periodo, setPeriodo] = useState('ultimo_mes');
 
   return (
-    <div className="space-y-4 md:space-y-6 p-6">
+    <div className="space-y-4 md:space-y-6">
       <AnimatedContainer>
         <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">Reportes y Estadísticas</h1>
       </AnimatedContainer>

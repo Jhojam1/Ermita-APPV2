@@ -40,7 +40,7 @@ export default function History() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto p-6">
+    <div className="max-w-[1400px] mx-auto">
       {/* Header y Búsqueda */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
         <h1 className="text-2xl font-light tracking-tight text-gray-900">

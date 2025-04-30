@@ -116,7 +116,7 @@ const ModalDetalles = ({ equipo, onClose }: { equipo: any; onClose: () => void }
   </div>
 );
 
-const Inventory = () => {
+export default function Inventory() {
   const [showFilters, setShowFilters] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: '', direction: '' });
   const [searchTerm, setSearchTerm] = useState('');
@@ -179,24 +179,24 @@ const Inventory = () => {
 
           {showFilters && (
             <div className="border-t border-gray-100 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <select className="w-full px-3 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-900
+              <select className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg
                               focus:ring-2 focus:ring-blue-500">
                 <option value="">Todas las empresas</option>
                 <option value="techcorp">TechCorp</option>
               </select>
-              <select className="w-full px-3 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-900
+              <select className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg
                               focus:ring-2 focus:ring-blue-500">
                 <option value="">Todas las sedes</option>
                 <option value="principal">Sede Principal</option>
                 <option value="norte">Sede Norte</option>
               </select>
-              <select className="w-full px-3 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-900
+              <select className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg
                               focus:ring-2 focus:ring-blue-500">
                 <option value="">Todos los tipos</option>
                 <option value="laptop">Laptop</option>
                 <option value="desktop">Desktop</option>
               </select>
-              <select className="w-full px-3 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-900
+              <select className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg
                               focus:ring-2 focus:ring-blue-500">
                 <option value="">Todos los estados</option>
                 <option value="activo">Activo</option>
@@ -329,6 +329,4 @@ const Inventory = () => {
       </div>
     </div>
   );
-};
-
-export default Inventory;
+}

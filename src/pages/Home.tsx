@@ -104,7 +104,7 @@ const Home = () => {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header con filtros */}
       <AnimatedContainer>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
