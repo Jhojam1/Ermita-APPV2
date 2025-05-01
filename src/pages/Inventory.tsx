@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import inventoryService, { InventoryItem } from '../services/inventoryService';
 import AddInventoryItemModal from '../components/inventory/AddInventoryItemModal';
+import ModalDetalles from '../components/inventory/ModalDetalles';
 
 // Mapeo de propiedades del backend al frontend
 const mapInventoryItemToUI = (item: InventoryItem) => {
@@ -18,7 +19,7 @@ const mapInventoryItemToUI = (item: InventoryItem) => {
     empresa: item.companyName || 'Desconocida',
     sede: item.sedeName || 'Desconocida',
     serial: item.serial,
-    codigoInterno: item.internalCode ? `PC-${item.internalCode}` : 'N/A',
+    codigoInterno: item.internalCode ?? 'N/A',
     marca: item.brand.name,
     modelo: item.model,
     procesador: item.processor,
