@@ -16,7 +16,9 @@ const mantenimientosData = [
     tecnico: 'Juan Pérez',
     tipo: 'Preventivo',
     prioridad: 'Alta',
-    descripcion: 'Mantenimiento preventivo programado incluyendo limpieza de hardware y actualización de software.'
+    descripcion: 'Mantenimiento preventivo programado incluyendo limpieza de hardware y actualización de software.',
+    area: 'Informática',
+    responsable: 'Carlos Gómez'
   },
   {
     id: '0002',
@@ -26,7 +28,9 @@ const mantenimientosData = [
     tecnico: 'María López',
     tipo: 'Correctivo',
     prioridad: 'Media',
-    descripcion: 'Reparación de sistema de alimentación de papel'
+    descripcion: 'Reparación de sistema de alimentación de papel',
+    area: 'Impresión',
+    responsable: 'Ana Rodríguez'
   },
   {
     id: '0003',
@@ -36,7 +40,9 @@ const mantenimientosData = [
     tecnico: 'Carlos Ruiz',
     tipo: 'Preventivo',
     prioridad: 'Alta',
-    descripcion: 'Actualización de sistema operativo y respaldo de datos'
+    descripcion: 'Actualización de sistema operativo y respaldo de datos',
+    area: 'Servidores',
+    responsable: 'Pedro García'
   }
 ];
 
@@ -67,7 +73,13 @@ export default function Maintenance() {
       setIsLoading(true);
       setError(null);
       const data = await maintenanceService.getAllMaintenances();
-      const mappedData = data.map(item => maintenanceService.mapToUI(item));
+      
+      // Filtrar solo los mantenimientos pendientes y en proceso
+      const filteredData = data.filter(item => 
+        item.status === 'PROGRAMADO' || item.status === 'EN_PROCESO'
+      );
+      
+      const mappedData = filteredData.map(item => maintenanceService.mapToUI(item));
       setMantenimientosData(mappedData);
     } catch (err) {
       console.error('Error al cargar mantenimientos:', err);
@@ -84,6 +96,9 @@ export default function Maintenance() {
     try {
       setIsLoading(true);
       
+      // Obtener usuario actual para obtener companyId y headquarterId
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      
       // Mapear estado del formulario al formato esperado por el backend
       const estadoBackend = formData.estado === 'completado' 
         ? 'COMPLETADO' 
@@ -98,7 +113,9 @@ export default function Maintenance() {
         observations: formData.observaciones,
         type: formData.tipoMantenimiento === 'preventivo' 
           ? 'PREVENTIVO' 
-          : 'CORRECTIVO'
+          : 'CORRECTIVO',
+        companyId: currentUser.idcompany,
+        headquarterId: currentUser.idheadquarter
       };
       
       // Si el estado es completado, añadir fecha de completado
@@ -135,9 +152,10 @@ export default function Maintenance() {
       item.tecnico.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Filtro por estado
+    // Filtro por estado - Mapear los valores del filtro a los valores que se muestran en la UI
     const matchesStatus = filterStatus === '' || 
-      item.estado.toLowerCase() === filterStatus.toLowerCase();
+      (filterStatus === 'programado' && item.estado === 'Pendiente') ||
+      (filterStatus === 'en proceso' && item.estado === 'En Proceso');
     
     // Filtro por tipo
     const matchesType = filterType === '' || 
@@ -173,14 +191,7 @@ export default function Maintenance() {
           >
             <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-500" />
           </button>
-          <button 
-            onClick={() => {
-              // Aquí iría la lógica para abrir el modal de nuevo mantenimiento
-              console.log('Nuevo mantenimiento');
-            }}
-            className="px-4 py-2 bg-blue-500 text-white text-sm rounded-full hover:bg-blue-600 transition-colors duration-200">
-            Nuevo Mantenimiento
-          </button>
+          {/* Se ha eliminado el botón de "Nuevo Mantenimiento" */}
         </div>
       </div>
 
@@ -201,10 +212,8 @@ export default function Maintenance() {
             className="px-4 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-600
                          focus:ring-2 focus:ring-blue-500">
             <option value="">Todos los estados</option>
-            <option value="completado">Completado</option>
-            <option value="pendiente">Pendiente</option>
+            <option value="programado">Programado</option>
             <option value="en proceso">En Proceso</option>
-            <option value="cancelado">Cancelado</option>
           </select>
           <select 
             value={filterType}
@@ -250,6 +259,12 @@ export default function Maintenance() {
                     Fecha Programada
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Área
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Responsable
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Técnico
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -280,6 +295,12 @@ export default function Maintenance() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {mantenimiento.fechaProgramada}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {mantenimiento.area}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {mantenimiento.responsable}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {mantenimiento.tecnico}
@@ -380,7 +401,7 @@ export default function Maintenance() {
                 
                 <div>
                   <h4 className="text-sm font-medium text-gray-500 mb-2">Responsable</h4>
-                  <p className="font-medium">{selectedMantenimiento.tecnico}</p>
+                  <p className="font-medium">{selectedMantenimiento.responsable}</p>
                 </div>
                 
                 <div>

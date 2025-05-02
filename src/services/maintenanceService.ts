@@ -31,6 +31,8 @@ export interface MaintenanceItem {
   inventoryItemName?: string;
   companyId?: number;
   headquarterId?: number;
+  serviceArea?: string;
+  responsible?: string;
   description: string;
   scheduledDate: string;
   completionDate?: string;
@@ -60,6 +62,9 @@ export interface MaintenanceItemUI {
   observaciones?: string;
   inventoryItemId: number;
   technicianId?: number;
+  area?: string;
+  responsable?: string;
+  isAutoScheduled?: boolean;
 }
 
 const maintenanceService = {
@@ -160,10 +165,13 @@ const maintenanceService = {
       fechaCompletado: maintenanceItem.completionDate ? formatDate(maintenanceItem.completionDate) : undefined,
       tecnico: maintenanceItem.technicianName || 'Sin asignar',
       tipo: mapType(maintenanceItem.type),
-      descripcion: maintenanceItem.description,
+      descripcion: maintenanceItem.description || (maintenanceItem.isAutoScheduled ? 'Mantenimiento preventivo programado automáticamente' : 'Sin descripción'),
       observaciones: maintenanceItem.observations,
       inventoryItemId: maintenanceItem.inventoryItemId,
-      technicianId: maintenanceItem.technicianId
+      technicianId: maintenanceItem.technicianId,
+      area: maintenanceItem.serviceArea || 'No especificada',
+      responsable: maintenanceItem.responsible || 'No asignado',
+      isAutoScheduled: maintenanceItem.isAutoScheduled
     };
   },
 
@@ -179,7 +187,9 @@ const maintenanceService = {
       status: mapStatusToBackend(maintenanceItemUI.estado),
       technicianId: maintenanceItemUI.technicianId,
       technicianName: maintenanceItemUI.tecnico,
-      observations: maintenanceItemUI.observaciones
+      observations: maintenanceItemUI.observaciones,
+      serviceArea: maintenanceItemUI.area,
+      responsible: maintenanceItemUI.responsable
     };
   }
 };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   MagnifyingGlassIcon,
   CalendarIcon,
@@ -6,28 +6,41 @@ import {
   AdjustmentsHorizontalIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-
-interface Mantenimiento {
-  id: number;
-  equipo: string;
-  fecha: string;
-  tipo: string;
-  estado: string;
-  tecnico: string;
-  descripcion: string;
-}
+import maintenanceService, { MaintenanceItemUI } from '../services/maintenanceService';
 
 export default function History() {
+  const [mantenimientosData, setMantenimientosData] = useState<MaintenanceItemUI[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedMantenimiento, setSelectedMantenimiento] = useState<Mantenimiento | null>(null);
+  const [selectedMantenimiento, setSelectedMantenimiento] = useState<MaintenanceItemUI | null>(null);
   const [showDetallesModal, setShowDetallesModal] = useState(false);
 
-  const handleVerDetalles = (mantenimiento: Mantenimiento) => {
+  useEffect(() => {
+    fetchCompletedMaintenances();
+  }, []);
+
+  const fetchCompletedMaintenances = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await maintenanceService.getMaintenancesByStatus('COMPLETADO');
+      const mappedData = data.map(item => maintenanceService.mapToUI(item));
+      setMantenimientosData(mappedData);
+    } catch (err) {
+      console.error('Error al cargar mantenimientos completados:', err);
+      setError('Error al cargar el historial de mantenimientos. Por favor, intente nuevamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerDetalles = (mantenimiento: MaintenanceItemUI) => {
     setSelectedMantenimiento(mantenimiento);
     setShowDetallesModal(true);
   };
 
-  const handleDescargarReporte = (id: number) => {
+  const handleDescargarReporte = (id: string) => {
     // Aquí se implementará la descarga del reporte
     console.log('Descargando reporte:', id);
     // Por ahora simularemos una descarga
@@ -67,6 +80,13 @@ export default function History() {
         </div>
       </div>
 
+      {/* Mensaje de error */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          {error}
+        </div>
+      )}
+
       {/* Filtros Flotantes */}
       {showFilters && (
         <div className="mb-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-100
@@ -94,118 +114,102 @@ export default function History() {
       )}
 
       {/* Lista de Mantenimientos */}
-      <div className="grid gap-4">
-        {[1, 2, 3, 4, 5].map((item) => (
-          <div
-            key={item}
-            className="group bg-white rounded-2xl border border-gray-100 overflow-hidden
-                     hover:shadow-lg transition-all duration-300 ease-in-out"
-          >
-            <div className="relative">
-              <div className="p-6">
-                {/* Encabezado */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-2 h-2 rounded-full ${
-                      item % 3 === 0 ? 'bg-yellow-400' :
-                      item % 2 === 0 ? 'bg-green-400' :
-                      'bg-blue-400'
-                    }`} />
-                    <h3 className="text-lg font-medium text-gray-900">
-                      Mantenimiento #{item.toString().padStart(3, '0')}
-                    </h3>
+      {isLoading ? (
+        <div className="p-8 text-center text-gray-500">Cargando historial de mantenimientos...</div>
+      ) : mantenimientosData.length === 0 ? (
+        <div className="p-8 text-center text-gray-500">No se encontraron mantenimientos completados</div>
+      ) : (
+        <div className="grid gap-4">
+          {mantenimientosData.map((item) => (
+            <div
+              key={item.id}
+              className="group bg-white rounded-2xl border border-gray-100 overflow-hidden
+                       hover:shadow-lg transition-all duration-300 ease-in-out"
+            >
+              <div className="relative">
+                <div className="p-6">
+                  {/* Encabezado */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-2 h-2 rounded-full bg-green-400" />
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Mantenimiento #{item.id.padStart(3, '0')}
+                      </h3>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                      Completado
+                    </span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    item % 3 === 0 ? 'bg-yellow-50 text-yellow-700' :
-                    item % 2 === 0 ? 'bg-green-50 text-green-700' :
-                    'bg-blue-50 text-blue-700'
-                  }`}>
-                    {item % 3 === 0 ? 'En Proceso' :
-                     item % 2 === 0 ? 'Completado' :
-                     'Pendiente'}
-                  </span>
-                </div>
 
-                {/* Detalles */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-4">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Equipo</p>
-                    <p className="text-sm text-gray-900">Computadora #{item}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Fecha</p>
-                    <div className="flex items-center text-sm text-gray-900">
-                      <CalendarIcon className="h-4 w-4 mr-1 text-gray-400" />
-                      2024-04-{item.toString().padStart(2, '0')}
+                  {/* Detalles */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-4">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Equipo</p>
+                      <p className="text-sm text-gray-900">{item.equipo}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Fecha Completado</p>
+                      <div className="flex items-center text-sm text-gray-900">
+                        <CalendarIcon className="h-4 w-4 mr-1 text-gray-400" />
+                        {item.fechaCompletado || 'No disponible'}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Tipo</p>
+                      <p className="text-sm text-gray-900">{item.tipo}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Técnico</p>
+                      <p className="text-sm text-gray-900">{item.tecnico}</p>
                     </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Tipo</p>
-                    <p className="text-sm text-gray-900">
-                      {item % 2 === 0 ? 'Preventivo' : 'Correctivo'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Técnico</p>
-                    <p className="text-sm text-gray-900">Juan Pérez</p>
-                  </div>
-                </div>
 
-                {/* Descripción */}
-                <p className="text-sm text-gray-600 mb-4">
-                  {item % 2 === 0 
-                    ? 'Mantenimiento preventivo que incluye limpieza de hardware y actualización de software.'
-                    : 'Mantenimiento correctivo para solucionar problemas de rendimiento y estabilidad.'}
-                </p>
+                  {/* Descripción */}
+                  <p className="text-sm text-gray-600 mb-4">
+                    {item.descripcion || (item.isAutoScheduled ? "Mantenimiento preventivo programado automáticamente" : "Sin descripción")}
+                  </p>
 
-                {/* Acciones */}
-                <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
-                  <button 
-                    onClick={() => handleVerDetalles({
-                      id: item,
-                      equipo: `Computadora #${item}`,
-                      fecha: `2024-04-${item.toString().padStart(2, '0')}`,
-                      tipo: item % 2 === 0 ? 'Preventivo' : 'Correctivo',
-                      estado: item % 3 === 0 ? 'En Proceso' : item % 2 === 0 ? 'Completado' : 'Pendiente',
-                      tecnico: 'Juan Pérez',
-                      descripcion: item % 2 === 0 
-                        ? 'Mantenimiento preventivo que incluye limpieza de hardware y actualización de software.'
-                        : 'Mantenimiento correctivo para solucionar problemas de rendimiento y estabilidad.'
-                    })}
-                    className="flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-white hover:bg-blue-600 rounded-lg border border-blue-200 hover:border-transparent transition-all duration-200"
-                  >
-                    Ver detalles
-                  </button>
-                  <button 
-                    onClick={() => handleDescargarReporte(item)}
-                    className="flex items-center px-4 py-2 text-sm font-medium text-purple-600 hover:text-white hover:bg-purple-600 rounded-lg border border-purple-200 hover:border-transparent transition-all duration-200"
-                  >
-                    Descargar reporte
-                  </button>
+                  {/* Acciones */}
+                  <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
+                    <button 
+                      onClick={() => handleVerDetalles(item)}
+                      className="flex items-center px-4 py-2 text-sm font-medium text-blue-600 hover:text-white hover:bg-blue-600 rounded-lg border border-blue-200 hover:border-transparent transition-all duration-200"
+                    >
+                      Ver detalles
+                    </button>
+                    <button 
+                      onClick={() => handleDescargarReporte(item.id)}
+                      className="flex items-center px-4 py-2 text-sm font-medium text-purple-600 hover:text-white hover:bg-purple-600 rounded-lg border border-purple-200 hover:border-transparent transition-all duration-200"
+                    >
+                      Descargar reporte
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Paginación Minimalista */}
-      <div className="mt-8 flex items-center justify-between">
-        <p className="text-sm text-gray-500">5 de 25 registros</p>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200">
-            Anterior
-          </button>
-          <div className="flex items-center gap-1">
-            <button className="px-3 py-1 text-sm text-white bg-blue-500 rounded">1</button>
-            <button className="px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 rounded">2</button>
-            <button className="px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 rounded">3</button>
+      {mantenimientosData.length > 0 && (
+        <div className="mt-8 flex items-center justify-between">
+          <p className="text-sm text-gray-500">{mantenimientosData.length} registros</p>
+          <div className="flex gap-2">
+            <button className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200">
+              Anterior
+            </button>
+            <div className="flex items-center gap-1">
+              <button className="px-3 py-1 text-sm text-white bg-blue-500 rounded">1</button>
+              <button className="px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 rounded">2</button>
+              <button className="px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 rounded">3</button>
+            </div>
+            <button className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200">
+              Siguiente
+            </button>
           </div>
-          <button className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200">
-            Siguiente
-          </button>
         </div>
-      </div>
+      )}
 
       {/* Modal de Detalles */}
       {showDetallesModal && selectedMantenimiento && (
@@ -229,13 +233,7 @@ export default function History() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500 mb-1">Estado</p>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    selectedMantenimiento.estado === 'Pendiente'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : selectedMantenimiento.estado === 'En Proceso'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-green-100 text-green-800'
-                  }`}>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                     {selectedMantenimiento.estado}
                   </span>
                 </div>
@@ -244,8 +242,8 @@ export default function History() {
                   <p className="text-sm text-gray-900">{selectedMantenimiento.equipo}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Fecha</p>
-                  <p className="text-sm text-gray-900">{selectedMantenimiento.fecha}</p>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Fecha Completado</p>
+                  <p className="text-sm text-gray-900">{selectedMantenimiento.fechaCompletado || 'No disponible'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500 mb-1">Tipo</p>
@@ -255,17 +253,42 @@ export default function History() {
                   <p className="text-sm font-medium text-gray-500 mb-1">Técnico</p>
                   <p className="text-sm text-gray-900">{selectedMantenimiento.tecnico}</p>
                 </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Área</p>
+                  <p className="text-sm text-gray-900">{selectedMantenimiento.area || 'No especificada'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500 mb-1">Responsable</p>
+                  <p className="text-sm text-gray-900">{selectedMantenimiento.responsable || 'No asignado'}</p>
+                </div>
               </div>
               
               <div>
                 <p className="text-sm font-medium text-gray-500 mb-2">Descripción</p>
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-700">{selectedMantenimiento.descripcion}</p>
+                  <p className="text-sm text-gray-700">
+                    {selectedMantenimiento.descripcion || (selectedMantenimiento.isAutoScheduled ? "Mantenimiento preventivo programado automáticamente" : "Sin descripción")}
+                  </p>
                 </div>
               </div>
+
+              {selectedMantenimiento.observaciones && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-gray-500 mb-2">Observaciones</p>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-700">{selectedMantenimiento.observaciones}</p>
+                  </div>
+                </div>
+              )}
             </div>
             
-            <div className="p-6 border-t border-gray-100 flex justify-end">
+            <div className="p-6 border-t border-gray-100 flex justify-end gap-3">
+              <button
+                onClick={() => handleDescargarReporte(selectedMantenimiento.id)}
+                className="px-4 py-2 text-sm font-medium text-purple-600 border border-purple-200 rounded-lg hover:bg-purple-600 hover:text-white transition-colors duration-200"
+              >
+                Descargar Reporte
+              </button>
               <button
                 onClick={() => setShowDetallesModal(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
