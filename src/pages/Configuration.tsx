@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { UserGroupIcon, BuildingOfficeIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import { UserGroupIcon, BuildingOfficeIcon, MapPinIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 import AnimatedContainer from '../components/ui/AnimatedContainer';
 
 export default function Configuration() {
@@ -21,6 +21,12 @@ export default function Configuration() {
       description: 'Configura las sedes de las empresas',
       href: '/configuracion/sedes',
       icon: MapPinIcon,
+    },
+    {
+      name: 'Mantenimientos Automáticos',
+      description: 'Configura los intervalos de mantenimiento automático por tipo de equipo',
+      href: '/mantenimientos/configuracion',
+      icon: WrenchScrewdriverIcon,
     },
   ];
 

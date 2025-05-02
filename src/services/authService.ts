@@ -46,8 +46,10 @@ export const authLogin = async (credentials: LoginCredentials): Promise<User> =>
     
     // Guardar el token en localStorage
     if (response.data.token) {
+      console.log('Datos de usuario recibidos del servidor:', response.data);
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data));
+      console.log('Datos guardados en localStorage:', JSON.stringify(response.data));
     }
     
     return response.data;

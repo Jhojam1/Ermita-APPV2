@@ -61,6 +61,7 @@ const Sidebar = () => {
     { name: 'Usuarios', href: '/configuracion/usuarios', icon: UserGroupIcon },
     { name: 'Empresas', href: '/configuracion/empresas', icon: BuildingOfficeIcon },
     { name: 'Sedes', href: '/configuracion/sedes', icon: MapPinIcon },
+    { name: 'Mantenimientos Automáticos', href: '/mantenimientos/configuracion', icon: WrenchScrewdriverIcon },
   ];
 
   const handleLogout = () => {

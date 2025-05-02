@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Home from './pages/Home';
 import Inventory from './pages/Inventory';
 import Maintenance from './pages/Maintenance';
+import MaintenanceConfig from './pages/MaintenanceConfig';
 import Reports from './pages/Reports';
 import History from './pages/History';
 import Configuration from './pages/Configuration';
@@ -34,6 +35,11 @@ function App() {
           <Route path="/mantenimientos" element={
             <Layout>
               <Maintenance />
+            </Layout>
+          } />
+          <Route path="/mantenimientos/configuracion" element={
+            <Layout>
+              <MaintenanceConfig />
             </Layout>
           } />
           <Route path="/reportes" element={
