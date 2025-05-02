@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import inventoryService, { InventoryItem } from '../services/inventoryService';
 import AddInventoryItemModal from '../components/inventory/AddInventoryItemModal';
+import EditInventoryItemModal from '../components/inventory/EditInventoryItemModal';
 import ModalDetalles from '../components/inventory/ModalDetalles';
 
 // Mapeo de propiedades del backend al frontend
@@ -37,15 +38,73 @@ export default function Inventory() {
   const [inventarioData, setInventarioData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [sortConfig, setSortConfig] = useState({ key: '', direction: '' });
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedEquipo, setSelectedEquipo] = useState<any>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [selectedEquipo, setSelectedEquipo] = useState<any | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingEquipo, setEditingEquipo] = useState<any | null>(null);
+  const [originalItems, setOriginalItems] = useState<InventoryItem[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Filtros
+  const [filters, setFilters] = useState({
+    empresa: '',
+    sede: '',
+    tipo: '',
+    estado: ''
+  });
+  
+  // Listas para los filtros
+  const [empresas, setEmpresas] = useState<{id: number, name: string}[]>([]);
+  const [sedes, setSedes] = useState<{id: number, name: string, companyId: number}[]>([]);
+  const [tipos, setTipos] = useState<{id: number, name: string}[]>([]);
 
   useEffect(() => {
     fetchInventoryItems();
   }, []);
+  
+  // Cargar datos para los filtros
+  useEffect(() => {
+    const fetchFilterData = async () => {
+      try {
+        // Obtener tipos de equipos
+        const typesData = await inventoryService.getAllTypes();
+        setTipos(typesData);
+        
+        // Extraer empresas y sedes únicas de los datos de inventario
+        const uniqueCompanies = new Map();
+        const uniqueHeadquarters = new Map();
+        
+        inventarioData.forEach(item => {
+          // Añadir empresa si no existe
+          if (item.empresa && !uniqueCompanies.has(item.companyId)) {
+            uniqueCompanies.set(item.companyId, {
+              id: item.companyId,
+              name: item.empresa
+            });
+          }
+          
+          // Añadir sede si no existe
+          if (item.sede && !uniqueHeadquarters.has(item.sedeId)) {
+            uniqueHeadquarters.set(item.sedeId, {
+              id: item.sedeId,
+              name: item.sede,
+              companyId: item.companyId
+            });
+          }
+        });
+        
+        setEmpresas(Array.from(uniqueCompanies.values()));
+        setSedes(Array.from(uniqueHeadquarters.values()));
+      } catch (error) {
+        console.error('Error al cargar datos para filtros:', error);
+      }
+    };
+    
+    if (inventarioData.length > 0) {
+      fetchFilterData();
+    }
+  }, [inventarioData]);
 
   const fetchInventoryItems = async () => {
     setIsLoading(true);
@@ -54,6 +113,7 @@ export default function Inventory() {
     try {
       // Intentar obtener datos del API
       const items = await inventoryService.getAllItems();
+      setOriginalItems(items); // Guardar los items originales
       const mappedItems = items.map(mapInventoryItemToUI);
       setInventarioData(mappedItems);
     } catch (error) {
@@ -104,7 +164,7 @@ export default function Inventory() {
 
   const handleSort = (key: string) => {
     let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+    if (sortConfig?.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
@@ -123,6 +183,52 @@ export default function Inventory() {
     }
   };
 
+  const handleEditItem = (equipo: any) => {
+    // Encontrar el item original correspondiente
+    const originalItem = originalItems.find(item => item.id === equipo.id);
+    if (originalItem) {
+      setEditingEquipo({ uiItem: equipo, originalItem });
+    } else {
+      console.error('No se encontró el item original para editar');
+    }
+  };
+
+  const handleSaveEdit = (updatedItem: any) => {
+    // Actualizar el item en la lista
+    setInventarioData(prev => 
+      prev.map(item => item.id === updatedItem.id ? updatedItem : item)
+    );
+  };
+
+  // Manejar cambios en los filtros
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Si se selecciona una empresa, filtrar las sedes disponibles
+    if (name === 'empresa' && value) {
+      const companyId = parseInt(value);
+      // Obtener todas las sedes y filtrar por la empresa seleccionada
+      const filteredSedes = Array.from(new Set(
+        inventarioData
+          .filter(item => item.companyId === companyId)
+          .map(item => JSON.stringify({ id: item.sedeId, name: item.sede, companyId }))
+      )).map(item => JSON.parse(item));
+      
+      setSedes(filteredSedes);
+    } else if (name === 'empresa' && !value) {
+      // Si se deselecciona la empresa, mostrar todas las sedes
+      const allSedes = Array.from(new Set(
+        inventarioData.map(item => JSON.stringify({ id: item.sedeId, name: item.sede, companyId: item.companyId }))
+      )).map(item => JSON.parse(item));
+      
+      setSedes(allSedes);
+    }
+  };
+
   const renderSortableHeader = (key: string, label: string) => (
     <th
       className="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer 
@@ -136,20 +242,29 @@ export default function Inventory() {
     </th>
   );
 
-  // Filtrar y ordenar los datos
+  // Aplicar filtros y búsqueda
   const filteredAndSortedData = inventarioData
-    .filter(item => {
-      if (!searchTerm) return true;
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        item.serial.toLowerCase().includes(searchLower) ||
-        item.codigoInterno.toLowerCase().includes(searchLower) ||
-        item.marca.toLowerCase().includes(searchLower) ||
-        item.modelo.toLowerCase().includes(searchLower)
-      );
+    .filter(equipo => {
+      // Filtrar por término de búsqueda
+      const searchMatch = 
+        equipo.serial.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        equipo.codigoInterno.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        equipo.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        equipo.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        equipo.empresa.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        equipo.sede.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        equipo.tipo.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Filtrar por filtros seleccionados
+      const empresaMatch = !filters.empresa || equipo.companyId === parseInt(filters.empresa);
+      const sedeMatch = !filters.sede || equipo.sedeId === parseInt(filters.sede);
+      const tipoMatch = !filters.tipo || equipo.tipo.toLowerCase() === filters.tipo.toLowerCase();
+      const estadoMatch = !filters.estado || equipo.estado.toLowerCase() === filters.estado.toLowerCase();
+      
+      return searchMatch && empresaMatch && sedeMatch && tipoMatch && estadoMatch;
     })
     .sort((a, b) => {
-      if (!sortConfig.key) return 0;
+      if (!sortConfig?.key) return 0;
       
       const key = sortConfig.key as keyof typeof a;
       if (a[key] < b[key]) {
@@ -167,13 +282,15 @@ export default function Inventory() {
         {/* Header con título y botón de agregar */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <h1 className="text-2xl font-medium text-gray-900">Inventario de Equipos</h1>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-          >
-            <PlusIcon className="h-5 w-5" />
-            Agregar Equipo
-          </button>
+          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              <PlusIcon className="h-5 w-5" />
+              Agregar Equipo
+            </button>
+          </div>
         </div>
 
         {/* Mensaje de error si existe */}
@@ -201,37 +318,64 @@ export default function Inventory() {
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium 
-                        ${showFilters
-                          ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium 
+                        bg-gray-50 text-gray-700 hover:bg-gray-100"
             >
-              {showFilters ? <XMarkIcon className="h-5 w-5" /> : <FunnelIcon className="h-5 w-5" />}
-              {showFilters ? 'Ocultar filtros' : 'Filtros'}
+              <FunnelIcon className="h-5 w-5" />
+              {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
             </button>
           </div>
 
           {showFilters && (
             <div className="border-t border-gray-100 p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <select className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg
-                              focus:ring-2 focus:ring-blue-500">
+              <select
+                name="empresa"
+                value={filters.empresa}
+                onChange={handleFilterChange}
+                className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
                 <option value="">Todas las empresas</option>
-                <option value="techcorp">TechCorp</option>
+                {empresas.map(empresa => (
+                  <option key={empresa.id} value={empresa.id}>
+                    {empresa.name}
+                  </option>
+                ))}
               </select>
-              <select className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg
-                              focus:ring-2 focus:ring-blue-500">
+              
+              <select
+                name="sede"
+                value={filters.sede}
+                onChange={handleFilterChange}
+                className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
                 <option value="">Todas las sedes</option>
-                <option value="principal">Sede Principal</option>
-                <option value="norte">Sede Norte</option>
+                {sedes.map(sede => (
+                  <option key={sede.id} value={sede.id}>
+                    {sede.name}
+                  </option>
+                ))}
               </select>
-              <select className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg
-                              focus:ring-2 focus:ring-blue-500">
+              
+              <select
+                name="tipo"
+                value={filters.tipo}
+                onChange={handleFilterChange}
+                className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
                 <option value="">Todos los tipos</option>
-                <option value="laptop">Laptop</option>
-                <option value="desktop">Desktop</option>
+                {tipos.map(tipo => (
+                  <option key={tipo.id} value={tipo.name}>
+                    {tipo.name}
+                  </option>
+                ))}
               </select>
-              <select className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg
-                              focus:ring-2 focus:ring-blue-500">
+              
+              <select
+                name="estado"
+                value={filters.estado}
+                onChange={handleFilterChange}
+                className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
                 <option value="">Todos los estados</option>
                 <option value="activo">Activo</option>
                 <option value="inactivo">Inactivo</option>
@@ -314,6 +458,7 @@ export default function Inventory() {
                               <EyeIcon className="h-5 w-5" />
                             </button>
                             <button
+                              onClick={() => handleEditItem(equipo)}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                               title="Editar equipo"
                             >
@@ -379,6 +524,16 @@ export default function Inventory() {
           <AddInventoryItemModal
             onClose={() => setShowAddModal(false)}
             onSave={handleAddItem}
+          />
+        )}
+
+        {/* Modal para Editar Equipo */}
+        {editingEquipo && (
+          <EditInventoryItemModal
+            item={editingEquipo.uiItem}
+            originalItem={editingEquipo.originalItem}
+            onClose={() => setEditingEquipo(null)}
+            onSave={handleSaveEdit}
           />
         )}
       </div>

@@ -94,10 +94,15 @@ const inventoryService = {
     }
   },
 
-  // Actualizar un elemento de inventario
-  updateItem: async (id: number, item: InventoryItem): Promise<InventoryItem> => {
+  // Actualizar un elemento del inventario
+  updateItem: async (id: number, itemData: Partial<InventoryItem>): Promise<InventoryItem> => {
     try {
-      const response = await inventoryApi.put(`/api/inventory/items/${id}`, item);
+      const response = await axios.put(`${INVENTORY_URL}/items/${id}`, itemData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
       return response.data;
     } catch (error) {
       console.error(`Error al actualizar el elemento con ID ${id}:`, error);
