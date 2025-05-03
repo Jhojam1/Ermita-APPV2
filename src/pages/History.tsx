@@ -3,7 +3,6 @@ import {
   MagnifyingGlassIcon,
   CalendarIcon,
   DocumentIcon,
-  AdjustmentsHorizontalIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import maintenanceService, { MaintenanceItemUI } from '../services/maintenanceService';
@@ -12,9 +11,9 @@ export default function History() {
   const [mantenimientosData, setMantenimientosData] = useState<MaintenanceItemUI[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedMantenimiento, setSelectedMantenimiento] = useState<MaintenanceItemUI | null>(null);
   const [showDetallesModal, setShowDetallesModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchCompletedMaintenances();
@@ -52,6 +51,25 @@ export default function History() {
     document.body.removeChild(link);
   };
 
+  // Filtrar mantenimientos según el término de búsqueda
+  const filteredMantenimientos = mantenimientosData.filter(item => {
+    if (!searchTerm) return true;
+    
+    const searchTermLower = searchTerm.toLowerCase();
+    
+    // Buscar en todos los campos relevantes
+    return (
+      item.equipo.toLowerCase().includes(searchTermLower) ||
+      item.tecnico.toLowerCase().includes(searchTermLower) ||
+      item.tipo.toLowerCase().includes(searchTermLower) ||
+      (item.fechaCompletado && item.fechaCompletado.toLowerCase().includes(searchTermLower)) ||
+      (item.descripcion && item.descripcion.toLowerCase().includes(searchTermLower)) ||
+      (item.observaciones && item.observaciones.toLowerCase().includes(searchTermLower)) ||
+      (item.area && item.area.toLowerCase().includes(searchTermLower)) ||
+      (item.responsable && item.responsable.toLowerCase().includes(searchTermLower))
+    );
+  });
+
   return (
     <div className="max-w-[1400px] mx-auto">
       {/* Header y Búsqueda */}
@@ -63,7 +81,9 @@ export default function History() {
           <div className="relative flex-1 md:w-80">
             <input
               type="text"
-              placeholder="Buscar mantenimiento..."
+              placeholder="Buscar por equipo, técnico, tipo, fecha..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-4 pr-10 py-2 bg-white/50 backdrop-blur-sm border-0 rounded-full 
                        text-sm text-gray-600 placeholder-gray-400
                        ring-1 ring-gray-200 focus:ring-2 focus:ring-blue-500
@@ -71,12 +91,6 @@ export default function History() {
             />
             <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
           </div>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
-          >
-            <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-500" />
-          </button>
         </div>
       </div>
 
@@ -87,40 +101,14 @@ export default function History() {
         </div>
       )}
 
-      {/* Filtros Flotantes */}
-      {showFilters && (
-        <div className="mb-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-100
-                      grid grid-cols-1 md:grid-cols-3 gap-4">
-          <select className="px-4 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-600
-                         focus:ring-2 focus:ring-blue-500">
-            <option value="">Todos los estados</option>
-            <option value="completado">Completado</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="en_proceso">En Proceso</option>
-          </select>
-          <select className="px-4 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-600
-                         focus:ring-2 focus:ring-blue-500">
-            <option value="">Todos los tipos</option>
-            <option value="preventivo">Preventivo</option>
-            <option value="correctivo">Correctivo</option>
-            <option value="predictivo">Predictivo</option>
-          </select>
-          <input
-            type="month"
-            className="px-4 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-600
-                     focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      )}
-
       {/* Lista de Mantenimientos */}
       {isLoading ? (
         <div className="p-8 text-center text-gray-500">Cargando historial de mantenimientos...</div>
-      ) : mantenimientosData.length === 0 ? (
+      ) : filteredMantenimientos.length === 0 ? (
         <div className="p-8 text-center text-gray-500">No se encontraron mantenimientos completados</div>
       ) : (
         <div className="grid gap-4">
-          {mantenimientosData.map((item) => (
+          {filteredMantenimientos.map((item) => (
             <div
               key={item.id}
               className="group bg-white rounded-2xl border border-gray-100 overflow-hidden
@@ -192,9 +180,9 @@ export default function History() {
       )}
 
       {/* Paginación Minimalista */}
-      {mantenimientosData.length > 0 && (
+      {filteredMantenimientos.length > 0 && (
         <div className="mt-8 flex items-center justify-between">
-          <p className="text-sm text-gray-500">{mantenimientosData.length} registros</p>
+          <p className="text-sm text-gray-500">{filteredMantenimientos.length} registros</p>
           <div className="flex gap-2">
             <button className="px-4 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200">
               Anterior

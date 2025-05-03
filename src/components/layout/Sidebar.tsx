@@ -13,7 +13,6 @@ import {
   Cog6ToothIcon,
   UserGroupIcon,
   BuildingOfficeIcon,
-  MapPinIcon,
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
 
@@ -60,7 +59,6 @@ const Sidebar = () => {
   const configItems = [
     { name: 'Usuarios', href: '/configuracion/usuarios', icon: UserGroupIcon },
     { name: 'Empresas', href: '/configuracion/empresas', icon: BuildingOfficeIcon },
-    { name: 'Sedes', href: '/configuracion/sedes', icon: MapPinIcon },
     { name: 'Mantenimientos Automáticos', href: '/mantenimientos/configuracion', icon: WrenchScrewdriverIcon },
   ];
 
