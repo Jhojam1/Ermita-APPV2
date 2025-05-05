@@ -120,6 +120,33 @@ const inventoryService = {
     }
   },
 
+  // Obtener resumen de estado de equipos (activo/inactivo)
+  getEquipmentStatusSummary: async (): Promise<{active: number, inactive: number}> => {
+    try {
+      const items = await inventoryService.getAllItems();
+      
+      // Contar elementos por estado
+      const statusCount = {
+        active: 0,
+        inactive: 0
+      };
+      
+      items.forEach(item => {
+        if (item.status?.toLowerCase() === 'activo') {
+          statusCount.active++;
+        } else {
+          statusCount.inactive++;
+        }
+      });
+      
+      return statusCount;
+    } catch (error) {
+      console.error('Error al obtener resumen de estados de equipos:', error);
+      // Devolver datos de respaldo si falla
+      return { active: 0, inactive: 0 };
+    }
+  },
+
   // Obtener todas las marcas
   getAllBrands: async (): Promise<Brand[]> => {
     try {

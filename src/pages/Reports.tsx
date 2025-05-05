@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,6 +13,8 @@ import {
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import AnimatedContainer from '../components/ui/AnimatedContainer';
+import reportService, { MaintenanceSummary, MonthlyReport, DashboardData } from '../services/reportService';
+import inventoryService from '../services/inventoryService';
 
 ChartJS.register(
   CategoryScale,
@@ -27,7 +29,115 @@ ChartJS.register(
 );
 
 export default function Reports() {
-  const [periodo, setPeriodo] = useState('ultimo_mes');
+  const [periodo, setPeriodo] = useState('ultimo_año');
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
+    summary: [],
+    monthlyStats: []
+  });
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [equipmentStatus, setEquipmentStatus] = useState<{active: number, inactive: number}>({
+    active: 0,
+    inactive: 0
+  });
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const data = await reportService.getDashboardData(selectedYear);
+        console.log('Dashboard data received:', JSON.stringify(data, null, 2));
+        setDashboardData(data);
+        
+        // Obtener datos de estado de equipos
+        const statusData = await inventoryService.getEquipmentStatusSummary();
+        console.log('Equipment status data:', statusData);
+        setEquipmentStatus(statusData);
+      } catch (error) {
+        console.error('Error al cargar los datos de reportes:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [selectedYear]);
+
+  // Preparar datos para el gráfico de barras
+  const barChartData = {
+    labels: dashboardData.monthlyStats.map(item => item.month.substring(0, 3)), // Primeras 3 letras del mes
+    datasets: [
+      {
+        label: 'Preventivo',
+        data: dashboardData.monthlyStats.map(item => item.preventiveMaintenance),
+        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+        borderColor: 'rgb(59, 130, 246)',
+        borderWidth: 1,
+      },
+      {
+        label: 'Correctivo',
+        data: dashboardData.monthlyStats.map(item => item.correctiveMaintenance),
+        backgroundColor: 'rgba(147, 51, 234, 0.8)',
+        borderColor: 'rgb(147, 51, 234)',
+        borderWidth: 1,
+      }
+    ]
+  };
+
+  // Preparar datos para el gráfico de tipos de mantenimiento
+  const maintenanceTypeData = {
+    labels: dashboardData.summary.map(item => item.type),
+    datasets: [{
+      data: dashboardData.summary.map(item => item.quantity),
+      backgroundColor: [
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(147, 51, 234, 0.8)'
+      ],
+      borderColor: [
+        'rgb(59, 130, 246)',
+        'rgb(147, 51, 234)'
+      ],
+      borderWidth: 1
+    }]
+  };
+
+  // Datos para el estado de equipos
+  const equipmentStatusData = {
+    labels: ['Activo', 'Inactivo'],
+    datasets: [{
+      data: [equipmentStatus.active, equipmentStatus.inactive],
+      backgroundColor: [
+        'rgba(34, 197, 94, 0.8)',
+        'rgba(239, 68, 68, 0.8)'
+      ],
+      borderColor: [
+        'rgb(34, 197, 94)',
+        'rgb(239, 68, 68)'
+      ],
+      borderWidth: 1
+    }]
+  };
+
+  // Datos para el tiempo promedio (simulados por ahora)
+  const averageTimeData = {
+    labels: dashboardData.monthlyStats.map(item => item.month.substring(0, 3)),
+    datasets: [{
+      label: 'Horas',
+      data: dashboardData.monthlyStats.map((_, index) => index < dashboardData.summary.length ? 
+        parseFloat(dashboardData.summary[index % dashboardData.summary.length].averageTime) || 0 : 0),
+      borderColor: 'rgb(59, 130, 246)',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      tension: 0.4,
+      fill: true
+    }]
+  };
+
+  // Generar años para el selector
+  const yearOptions = [];
+  const currentYear = new Date().getFullYear();
+  for (let year = currentYear - 5; year <= currentYear + 1; year++) {
+    yearOptions.push(year);
+  }
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -39,14 +149,15 @@ export default function Reports() {
       <AnimatedContainer delay={0.1}>
         <div className="bg-white p-4 rounded-xl shadow-lg flex flex-wrap gap-4">
           <select 
-            value={periodo}
-            onChange={(e) => setPeriodo(e.target.value)}
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
             className="px-4 py-2 text-sm md:text-base border rounded-lg flex-grow md:flex-grow-0 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="ultimo_mes">Último Mes</option>
-            <option value="ultimos_3_meses">Últimos 3 Meses</option>
-            <option value="ultimos_6_meses">Últimos 6 Meses</option>
-            <option value="ultimo_año">Último Año</option>
+            {yearOptions.map(year => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
           </select>
           <button className="bg-blue-600 text-white px-6 py-2 text-sm md:text-base rounded-lg hover:bg-blue-700 transition-colors flex-grow md:flex-grow-0 font-medium">
             Generar Reporte
@@ -61,22 +172,13 @@ export default function Reports() {
             <h3 className="text-lg font-semibold mb-4">Mantenimientos por Mes</h3>
             <div className="h-72">
               <Bar 
-                data={{
-                  labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-                  datasets: [{
-                    label: 'Mantenimientos',
-                    data: [12, 19, 15, 17, 22, 25],
-                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                    borderColor: 'rgb(59, 130, 246)',
-                    borderWidth: 1,
-                  }]
-                }}
+                data={barChartData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
                   plugins: {
                     legend: {
-                      display: false,
+                      position: 'top',
                     }
                   },
                   scales: {
@@ -103,23 +205,7 @@ export default function Reports() {
             <h3 className="text-lg font-semibold mb-4">Estado de Equipos</h3>
             <div className="h-72">
               <Doughnut 
-                data={{
-                  labels: ['Operativo', 'En Mantenimiento', 'Fuera de Servicio'],
-                  datasets: [{
-                    data: [75, 15, 10],
-                    backgroundColor: [
-                      'rgba(34, 197, 94, 0.8)',
-                      'rgba(234, 179, 8, 0.8)',
-                      'rgba(239, 68, 68, 0.8)'
-                    ],
-                    borderColor: [
-                      'rgb(34, 197, 94)',
-                      'rgb(234, 179, 8)',
-                      'rgb(239, 68, 68)'
-                    ],
-                    borderWidth: 1
-                  }]
-                }}
+                data={equipmentStatusData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
@@ -143,23 +229,7 @@ export default function Reports() {
             <h3 className="text-lg font-semibold mb-4">Tipos de Mantenimiento</h3>
             <div className="h-72">
               <Doughnut 
-                data={{
-                  labels: ['Preventivo', 'Correctivo', 'Emergencia'],
-                  datasets: [{
-                    data: [45, 23, 7],
-                    backgroundColor: [
-                      'rgba(59, 130, 246, 0.8)',
-                      'rgba(147, 51, 234, 0.8)',
-                      'rgba(239, 68, 68, 0.8)'
-                    ],
-                    borderColor: [
-                      'rgb(59, 130, 246)',
-                      'rgb(147, 51, 234)',
-                      'rgb(239, 68, 68)'
-                    ],
-                    borderWidth: 1
-                  }]
-                }}
+                data={maintenanceTypeData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
@@ -183,17 +253,7 @@ export default function Reports() {
             <h3 className="text-lg font-semibold mb-4">Tiempo Promedio de Mantenimiento</h3>
             <div className="h-72">
               <Line 
-                data={{
-                  labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
-                  datasets: [{
-                    label: 'Horas',
-                    data: [2.5, 2.8, 2.3, 2.7, 2.4, 2.6],
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                  }]
-                }}
+                data={averageTimeData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
@@ -236,21 +296,13 @@ export default function Reports() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-4 text-sm">Preventivo</td>
-                  <td className="py-3 px-4 text-sm">45</td>
-                  <td className="py-3 px-4 text-sm">2.5 horas</td>
-                </tr>
-                <tr className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-4 text-sm">Correctivo</td>
-                  <td className="py-3 px-4 text-sm">23</td>
-                  <td className="py-3 px-4 text-sm">4 horas</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="py-3 px-4 text-sm">Emergencia</td>
-                  <td className="py-3 px-4 text-sm">7</td>
-                  <td className="py-3 px-4 text-sm">1.5 horas</td>
-                </tr>
+                {dashboardData.summary.map((item, index) => (
+                  <tr key={index} className={index === dashboardData.summary.length - 1 ? "hover:bg-gray-50" : "border-b hover:bg-gray-50"}>
+                    <td className="py-3 px-4 text-sm">{item.type}</td>
+                    <td className="py-3 px-4 text-sm">{item.quantity}</td>
+                    <td className="py-3 px-4 text-sm">{item.averageTime}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

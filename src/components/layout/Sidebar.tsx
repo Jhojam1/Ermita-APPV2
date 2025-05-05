@@ -50,15 +50,14 @@ const Sidebar = () => {
       onToggle: () => setReportsOpen(!reportsOpen),
       subItems: [
         { name: 'Mantenimientos', href: '/reportes', icon: ChartBarIcon },
-        { name: 'Hosvital', href: '/reportes/hosvital', icon: ChartBarIcon },
       ]
     },
-    { name: 'Historial', href: '/historial', icon: ClipboardDocumentListIcon },
+    { name: 'Historial Mantenimientos', href: '/historial', icon: ClipboardDocumentListIcon },
   ];
 
   const configItems = [
     { name: 'Usuarios', href: '/configuracion/usuarios', icon: UserGroupIcon },
-    { name: 'Empresas', href: '/configuracion/empresas', icon: BuildingOfficeIcon },
+    { name: 'Empresas Y Sedes', href: '/configuracion/empresas', icon: BuildingOfficeIcon },
     { name: 'Mantenimientos Automáticos', href: '/mantenimientos/configuracion', icon: WrenchScrewdriverIcon },
   ];
 
