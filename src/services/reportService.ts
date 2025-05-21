@@ -43,9 +43,21 @@ export interface MonthlyReport {
   totalMaintenance: number;
 }
 
+export interface TechnicianReport {
+  id: number;
+  name: string;
+  maintenanceCount: number;
+}
+
+export interface DateRange {
+  startDate: string; // Formato YYYY-MM-DD
+  endDate: string;   // Formato YYYY-MM-DD
+}
+
 export interface DashboardData {
   summary: MaintenanceSummary[];
   monthlyStats: MonthlyReport[];
+  technicianStats: TechnicianReport[];
 }
 
 // Servicio para manejar las operaciones de reportes
@@ -107,8 +119,8 @@ const reportService = {
     }
   },
 
-  // Obtener todos los datos para el dashboard
-  getDashboardData: async (year?: number): Promise<DashboardData> => {
+    // Obtener todos los datos para el dashboard
+  getDashboardData: async (dateRange: DateRange): Promise<DashboardData> => {
     if (USE_MOCK_DATA) {
       console.log('Usando datos simulados para el dashboard');
       return {
@@ -124,34 +136,66 @@ const reportService = {
             averageTime: '4 horas'
           }
         ],
-        monthlyStats: generateMockMonthlyData()
+        monthlyStats: generateMockMonthlyData(),
+        technicianStats: generateMockTechnicianData()
       };
     }
 
     try {
-      const url = year ? `${REPORTS_URL}/dashboard?year=${year}` : `${REPORTS_URL}/dashboard`;
-      console.log('Intentando obtener datos de:', url);
+      const { startDate, endDate } = dateRange;
+      const url = `${REPORTS_URL}/dashboard?startDate=${startDate}&endDate=${endDate}`;
+      
+      console.log('Solicitando datos del dashboard con rango:', { startDate, endDate });
       const response = await reportApi.get(url);
       return response.data;
     } catch (error) {
       console.error('Error al obtener los datos del dashboard:', error);
-      
-      // Datos de fallback para desarrollo
-      return {
-        summary: [
-          {
-            type: 'Preventivo',
-            quantity: 45,
-            averageTime: '2.5 horas'
-          },
-          {
-            type: 'Correctivo',
-            quantity: 23,
-            averageTime: '4 horas'
-          }
-        ],
-        monthlyStats: generateMockMonthlyData()
-      };
+      throw new Error('Ha ocurrido un error al buscar los datos. Por favor, contacte con el administrador.');
+    }
+  },
+  
+  // Obtener resumen de mantenimientos
+  getMaintenanceSummary: async (dateRange: DateRange): Promise<MaintenanceSummary[]> => {
+    if (USE_MOCK_DATA) {
+      return [
+        {
+          type: 'Preventivo',
+          quantity: 45,
+          averageTime: '2.5 horas'
+        },
+        {
+          type: 'Correctivo',
+          quantity: 23,
+          averageTime: '4 horas'
+        }
+      ];
+    }
+
+    try {
+      const { startDate, endDate } = dateRange;
+      const url = `${REPORTS_URL}/summary?startDate=${startDate}&endDate=${endDate}`;
+      const response = await reportApi.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener el resumen de mantenimientos:', error);
+      throw new Error('Ha ocurrido un error al obtener el resumen de mantenimientos. Por favor, contacte con el administrador.');
+    }
+  },
+  
+  // Obtener reporte mensual
+  getMonthlyReport: async (dateRange: DateRange): Promise<MonthlyReport[]> => {
+    if (USE_MOCK_DATA) {
+      return generateMockMonthlyData();
+    }
+
+    try {
+      const { startDate, endDate } = dateRange;
+      const url = `${REPORTS_URL}/monthly?startDate=${startDate}&endDate=${endDate}`;
+      const response = await reportApi.get(url);
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener el reporte mensual:', error);
+      throw new Error('Ha ocurrido un error al obtener el reporte mensual. Por favor, contacte con el administrador.');
     }
   }
 };
@@ -174,6 +218,23 @@ function generateMockMonthlyData(): MonthlyReport[] {
       totalMaintenance: preventive + corrective
     };
   });
+}
+
+// Función para generar datos de ejemplo de técnicos
+function generateMockTechnicianData(): TechnicianReport[] {
+  const technicianNames = [
+    'Juan Pérez',
+    'María García',
+    'Carlos López',
+    'Ana Martínez',
+    'Luis Rodríguez'
+  ];
+  
+  return technicianNames.map((name, index) => ({
+    id: index + 1,
+    name,
+    maintenanceCount: Math.floor(Math.random() * 20) + 5 // Entre 5 y 24 mantenimientos
+  }));
 }
 
 export default reportService;

@@ -13,13 +13,18 @@ import {
   Cog6ToothIcon,
   UserGroupIcon,
   BuildingOfficeIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  CameraIcon,
+  PrinterIcon,
+  Squares2X2Icon  
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [maintenanceOpen, setMaintenanceOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { logout } = useAuth();
@@ -37,12 +42,40 @@ const Sidebar = () => {
     if (location.pathname?.startsWith('/reportes')) {
       setReportsOpen(true);
     }
+    if (location.pathname?.startsWith('/inventario')) {
+      setInventoryOpen(true);
+    }
+    if (location.pathname?.startsWith('/mantenimientos') || location.pathname?.startsWith('/historial')) {
+      setMaintenanceOpen(true);
+    }
   }, [location.pathname]);
 
   const menuItems = [
     { name: 'Dashboard', href: '/', icon: HomeIcon },
-    { name: 'Inventario', href: '/inventario', icon: ComputerDesktopIcon },
-    { name: 'Mantenimientos', href: '/mantenimientos', icon: WrenchScrewdriverIcon },
+    { 
+      name: 'Inventario',
+      icon: Squares2X2Icon,
+      isOpen: inventoryOpen,
+      onToggle: () => setInventoryOpen(!inventoryOpen),
+      subItems: [
+        { name: 'Equipos', href: '/inventario', icon: ComputerDesktopIcon },
+        { name: 'Camaras', href: '', icon: CameraIcon },
+        { name: 'Impresoras', href: '', icon: PrinterIcon },
+      ]
+    },
+
+    { 
+      name: 'Mantenimientos',
+      icon: WrenchScrewdriverIcon,
+      isOpen: maintenanceOpen,
+      onToggle: () => setMaintenanceOpen(!maintenanceOpen),
+      subItems: [
+        {name: 'Equipos', href: '/mantenimientos', icon: ComputerDesktopIcon},
+        { name: 'Camaras', href: '', icon: CameraIcon },
+        { name: 'Impresoras', href: '', icon: PrinterIcon },
+        { name: 'Historial Mantenimientos', href: '/historial', icon: ClipboardDocumentListIcon }
+      ]
+    },
     { 
       name: 'Reportes',
       icon: ChartBarIcon,
@@ -52,7 +85,7 @@ const Sidebar = () => {
         { name: 'Mantenimientos', href: '/reportes', icon: ChartBarIcon },
       ]
     },
-    { name: 'Historial Mantenimientos', href: '/historial', icon: ClipboardDocumentListIcon },
+    
   ];
 
   const configItems = [
