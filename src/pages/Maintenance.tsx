@@ -96,7 +96,7 @@ export default function Maintenance() {
     try {
       setIsLoading(true);
       
-      // Obtener usuario actual para obtener companyId y headquarterId
+      // Obtener usuario actual para obtener companyId, headquarterId y datos del técnico
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       
       // Mapear estado del formulario al formato esperado por el backend
@@ -104,12 +104,15 @@ export default function Maintenance() {
         ? 'COMPLETADO' 
         : formData.estado === 'en_proceso' 
           ? 'EN_PROCESO' 
-          : 'PROGRAMADO';
+          : formData.estado === 'cancelado'
+            ? 'CANCELADO'
+            : 'PROGRAMADO';
       
       // Preparar datos para actualización
       const updateData: Partial<MaintenanceItem> = {
         status: estadoBackend as any,
-        technicianName: formData.tecnico,
+        technicianName: currentUser.fullName, // Obtener directamente el nombre completo del usuario actual
+        technicianId: currentUser.id, // Añadir ID del técnico
         observations: formData.observaciones,
         type: formData.tipoMantenimiento === 'preventivo' 
           ? 'PREVENTIVO' 
@@ -123,11 +126,20 @@ export default function Maintenance() {
         updateData.completionDate = new Date().toISOString();
       }
       
+      // Mostrar datos que se enviarán al backend para depuración
+      console.log('Datos que se envían al backend:', {
+        id: parseInt(selectedMantenimiento.id),
+        updateData,
+        estadoBackend
+      });
+      
       // Actualizar en el backend
-      await maintenanceService.updateMaintenance(
+      const updatedMaintenance = await maintenanceService.updateMaintenance(
         parseInt(selectedMantenimiento.id), 
         updateData
       );
+      
+      console.log('Respuesta del backend después de actualizar:', updatedMaintenance);
       
       // Recargar datos
       await fetchMaintenances();
@@ -320,9 +332,12 @@ export default function Maintenance() {
                       </button>
                       <button
                         onClick={() => {
+                          // Obtener usuario actual para auto-asignar el técnico
+                          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+                          
                           setSelectedMantenimiento(mantenimiento);
                           setFormData({
-                            tecnico: mantenimiento.tecnico || '',
+                            tecnico: currentUser.fullName || '', // Auto-asignar nombre del técnico logueado
                             tipoMantenimiento: mantenimiento.tipo.toLowerCase(),
                             observaciones: mantenimiento.observaciones || '',
                             estado: mantenimiento.estado.toLowerCase().replace(' ', '_')
@@ -458,11 +473,11 @@ export default function Maintenance() {
                       type="text"
                       id="tecnico"
                       value={formData.tecnico}
-                      onChange={(e) => setFormData({ ...formData, tecnico: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900
-                             focus:ring-2 focus:ring-blue-500"
+                      readOnly
+                      className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-900 cursor-not-allowed"
                       required
                     />
+                    <p className="mt-1 text-xs text-gray-500">El técnico se asigna automáticamente al usuario actual</p>
                   </div>
                   
                   <div>

@@ -38,18 +38,28 @@ const formatDate = (dateString: string) => {
 };
 
 export default function Reports() {
+  // Referencias para los gráficos (para exportar a PDF)
+  const maintenanceChartRef = useRef(null);
+  const maintenanceTypeChartRef = useRef(null);
+  const avgTimeChartRef = useRef(null);
+  const technicianChartRef = useRef(null);
+  const reportContainerRef = useRef(null);
+  
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [loading, setLoading] = useState(false);
   const [reportGenerated, setReportGenerated] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardData>({
-    summary: [],
+    summary: {
+      total: 0,
+      preventive: 0,
+      corrective: 0,
+      averagePreventiveTime: 0,
+      averageCorrectiveTime: 0
+    },
     monthlyStats: [],
-    technicianStats: []
-  });
-  const [equipmentStatus, setEquipmentStatus] = useState<{active: number, inactive: number}>({
-    active: 0,
-    inactive: 0
+    technicianStats: {},
+    equipmentStatus: { activo: 0, inactivo: 0 }
   });
   const [generatingReport, setGeneratingReport] = useState(false);
   
@@ -63,22 +73,13 @@ export default function Reports() {
     setError(null); // Limpiar errores previos
     
     try {
-      // Obtener los datos del dashboard para el rango de fechas
-      const data = await reportService.getDashboardData({ startDate, endDate });
+      // Obtener todos los datos del dashboard en una sola llamada
+      const dashboardData = await reportService.getDashboardData({ startDate, endDate });
       
-      console.log('Dashboard data received:', JSON.stringify(data, null, 2));
-      setDashboardData(data);
+      console.log('Datos del dashboard:', dashboardData);
       
-      // Obtener los datos de estado de equipos
-      try {
-        const statusData = await inventoryService.getEquipmentStatusSummary();
-        console.log('Equipment status data:', statusData);
-        setEquipmentStatus(statusData);
-      } catch (statusError) {
-        console.error('Error al obtener el estado de los equipos:', statusError);
-        // No detenemos el flujo si falla esta petición
-        setEquipmentStatus({ active: 0, inactive: 0 });
-      }
+      // Actualizar el estado con los datos obtenidos
+      setDashboardData(dashboardData);
       
       // Marcar que el reporte ha sido generado
       setReportGenerated(true);
@@ -91,9 +92,16 @@ export default function Reports() {
       
       // Limpiar datos en caso de error
       setDashboardData({
-        summary: [],
+        summary: {
+          total: 0,
+          preventive: 0,
+          corrective: 0,
+          averagePreventiveTime: 0,
+          averageCorrectiveTime: 0
+        },
         monthlyStats: [],
-        technicianStats: []
+        technicianStats: {},
+        equipmentStatus: { activo: 0, inactivo: 0 }
       });
       
       setReportGenerated(false);
@@ -134,72 +142,40 @@ export default function Reports() {
       }
     } else {
       setFechaFin(value);
-      if (fechaInicio && value && new Date(fechaInicio) > new Date(value)) {
-        // Si la fecha de fin es menor que la de inicio, actualizar la de inicio
-        setFechaInicio(value);
-      }
-    }
-    
-    // Si ya se había generado un reporte, lo marcamos como no generado
-    if (reportGenerated) {
-      setReportGenerated(false);
     }
   };
   
-  // Referencias para los contenedores de gráficos
-  const reportContainerRef = useRef<HTMLDivElement>(null);
-  const maintenanceChartRef = useRef<HTMLDivElement>(null);
-  const equipmentChartRef = useRef<HTMLDivElement>(null);
-  const maintenanceTypeChartRef = useRef<HTMLDivElement>(null);
-  const avgTimeChartRef = useRef<HTMLDivElement>(null);
-  const technicianChartRef = useRef<HTMLDivElement>(null); // Nueva referencia para el gráfico de técnicos
-
-
-
-  // Efecto que se ejecuta cuando cambian las fechas
-  useEffect(() => {
-    // No cargar datos automáticamente, solo cuando el usuario haga clic en Generar Reporte
-  }, [fechaInicio, fechaFin]);
-
+  // Obtener el año seleccionado para el título del informe
+  const selectedYear = fechaInicio ? new Date(fechaInicio).getFullYear().toString() : new Date().getFullYear().toString();
+  
   // Función para generar y descargar el reporte en PDF
   const generateReport = async () => {
-    if (!maintenanceChartRef.current || !equipmentChartRef.current || 
-        !maintenanceTypeChartRef.current || !avgTimeChartRef.current ||
-        !technicianChartRef.current) {
-      console.error('No se pudieron encontrar las referencias a los gráficos');
+    if (!reportGenerated) {
+      alert('Por favor, primero genere un reporte.');
       return;
     }
     
+    setGeneratingReport(true);
+    
     try {
-      setGeneratingReport(true);
-      
-      // Configurar opciones de captura para máxima calidad
+      // Opciones para la captura de los gráficos
       const captureOptions = {
-        scale: 3, // Una escala mayor para mejor calidad
+        scale: 2,
         useCORS: true,
         allowTaint: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        imageTimeout: 0,
-        windowWidth: 1600, // Más ancho para mejor calidad
-        windowHeight: 900  // Más alto para mejor calidad
+        backgroundColor: '#ffffff'
       };
       
-      // Crear un nuevo documento PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      // Crear nuevo documento PDF
+      const pdf = new jsPDF('portrait', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      
-      // Configurar márgenes
-      const margin = 15;
+      const margin = 10;
       const contentWidth = pageWidth - (margin * 2);
       
-      // Encabezado
-      pdf.setFillColor(52, 152, 219);
-      pdf.rect(0, 0, pageWidth, 20, 'F');
-      
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(14);
+      // Título del informe
+      pdf.setFontSize(16);
+      pdf.setTextColor(0, 0, 0);
       pdf.setFont('helvetica', 'bold');
       pdf.text(`INFORME DE MANTENIMIENTOS - AÑO ${selectedYear}`, pageWidth / 2, 13, { align: 'center' });
       
@@ -210,17 +186,23 @@ export default function Reports() {
       pdf.text('RESUMEN DE MANTENIMIENTOS', margin, 30);
       
       // Calcular totales
-      const preventiveMaintenance = dashboardData.summary.find(s => s.type === 'Preventivo')?.quantity || 0;
-      const correctiveMaintenance = dashboardData.summary.find(s => s.type === 'Correctivo')?.quantity || 0;
-      const totalMaintenance = preventiveMaintenance + correctiveMaintenance;
+      const preventiveMaintenance = dashboardData.summary.preventive || 0;
+      const correctiveMaintenance = dashboardData.summary.corrective || 0;
+      const totalMaintenance = dashboardData.summary.total || 0;
       const preventivePercentage = totalMaintenance > 0 ? Math.round((preventiveMaintenance / totalMaintenance) * 100) : 0;
       const correctivePercentage = totalMaintenance > 0 ? Math.round((correctiveMaintenance / totalMaintenance) * 100) : 0;
       
       // Crear tabla de resumen
       const summaryTable = [
         ['Tipo', 'Cantidad', '%', 'Tiempo Promedio'],
-        ['Preventivo', preventiveMaintenance.toString(), `${preventivePercentage}%`, dashboardData.summary.find(s => s.type === 'Preventivo')?.averageTime || '0 horas'],
-        ['Correctivo', correctiveMaintenance.toString(), `${correctivePercentage}%`, dashboardData.summary.find(s => s.type === 'Correctivo')?.averageTime || '0 horas'],
+        ['Preventivo', 
+         preventiveMaintenance.toString(), 
+         `${preventivePercentage}%`, 
+         `${dashboardData.summary.averagePreventiveTime.toFixed(2)} horas`],
+        ['Correctivo', 
+         correctiveMaintenance.toString(), 
+         `${correctivePercentage}%`, 
+         `${dashboardData.summary.averageCorrectiveTime.toFixed(2)} horas`],
         ['TOTAL', totalMaintenance.toString(), '100%', '']
       ];
       
@@ -270,9 +252,6 @@ export default function Reports() {
       summaryTableY += rowHeight + 5;
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9);
-      pdf.text(`• Equipos activos: ${equipmentStatus.active}`, margin, summaryTableY + 5);
-      pdf.text(`• Equipos inactivos: ${equipmentStatus.inactive}`, margin + 80, summaryTableY + 5);
-      pdf.text(`• Total de equipos: ${equipmentStatus.active + equipmentStatus.inactive}`, margin + 160, summaryTableY + 5);
       
       // Título para gráficos
       pdf.setFontSize(10);
@@ -294,39 +273,29 @@ export default function Reports() {
       const maintenanceImgData = maintenanceCanvas.toDataURL('image/png', 1.0);
       pdf.addImage(maintenanceImgData, 'PNG', margin, chartsStartY + 5, halfWidth, chartHeight);
       
-      // 2. Estado de Equipos (superior derecha)
-      pdf.text('Estado de Equipos', margin + halfWidth + 5, chartsStartY);
-      
-      console.log('Capturando gráfico de estado de equipos...');
-      const equipmentCanvas = await html2canvas(equipmentChartRef.current, captureOptions);
-      const equipmentImgData = equipmentCanvas.toDataURL('image/png', 1.0);
-      pdf.addImage(equipmentImgData, 'PNG', margin + halfWidth + 5, chartsStartY + 5, halfWidth - 10, chartHeight);
-      
-      // 3. Tipos de Mantenimiento (medio izquierda)
-      pdf.text('Tipos de Mantenimiento', margin, chartsStartY + chartHeight + 10);
+      // 2. Tipos de Mantenimiento (superior derecha)
+      pdf.text('Tipos de Mantenimiento', margin + halfWidth + 5, chartsStartY);
       
       console.log('Capturando gráfico de tipos de mantenimiento...');
       const typeCanvas = await html2canvas(maintenanceTypeChartRef.current, captureOptions);
       const typeImgData = typeCanvas.toDataURL('image/png', 1.0);
-      pdf.addImage(typeImgData, 'PNG', margin, chartsStartY + chartHeight + 15, halfWidth, chartHeight);
+      pdf.addImage(typeImgData, 'PNG', margin + halfWidth + 5, chartsStartY + 5, halfWidth - 10, chartHeight);
       
-      // 4. Tiempo Promedio (medio derecha)
-      pdf.text('Tiempo Promedio de Mantenimiento', margin + halfWidth + 5, chartsStartY + chartHeight + 10);
+      // 3. Tiempo Promedio (medio izquierda)
+      pdf.text('Tiempo Promedio de Mantenimiento', margin, chartsStartY + chartHeight + 10);
       
       console.log('Capturando gráfico de tiempo promedio...');
       const timeCanvas = await html2canvas(avgTimeChartRef.current, captureOptions);
       const timeImgData = timeCanvas.toDataURL('image/png', 1.0);
-      pdf.addImage(timeImgData, 'PNG', margin + halfWidth + 5, chartsStartY + chartHeight + 15, halfWidth - 10, chartHeight);
+      pdf.addImage(timeImgData, 'PNG', margin, chartsStartY + chartHeight + 15, halfWidth, chartHeight);
       
-      // 5. Mantenimientos por Técnico (tercera fila)
-      pdf.text('Mantenimientos por Técnico', margin, chartsStartY + (chartHeight * 2) + 20);
+      // 4. Mantenimientos por Técnico (medio derecha)
+      pdf.text('Mantenimientos por Técnico', margin + halfWidth + 5, chartsStartY + chartHeight + 10);
       
       console.log('Capturando gráfico de mantenimientos por técnico...');
       const technicianCanvas = await html2canvas(technicianChartRef.current, captureOptions);
       const technicianImgData = technicianCanvas.toDataURL('image/png', 1.0);
-      
-      // Usar todo el ancho para este gráfico
-      pdf.addImage(technicianImgData, 'PNG', margin, chartsStartY + (chartHeight * 2) + 25, contentWidth, chartHeight);
+      pdf.addImage(technicianImgData, 'PNG', margin + halfWidth + 5, chartsStartY + chartHeight + 15, halfWidth - 10, chartHeight);
       
       // Pie de página
       pdf.setFontSize(8);
@@ -344,124 +313,125 @@ export default function Reports() {
     }
   };
   
-  // Preparar datos para el gráfico de barras
-  const barChartData = {
-    labels: dashboardData.monthlyStats.map(item => item.month.substring(0, 3)), // Primeras 3 letras del mes
+  // Preparar datos para los gráficos
+  const monthlyChartData = {
+    labels: dashboardData.monthlyStats.map(stat => {
+      const [year, month] = stat.month.split('-');
+      return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long'
+      });
+    }),
     datasets: [
       {
         label: 'Preventivo',
-        data: dashboardData.monthlyStats.map(item => item.preventiveMaintenance),
+        data: dashboardData.monthlyStats.map(stat => stat.preventive || 0),
         backgroundColor: 'rgba(59, 130, 246, 0.8)',
         borderColor: 'rgb(59, 130, 246)',
         borderWidth: 1,
       },
       {
         label: 'Correctivo',
-        data: dashboardData.monthlyStats.map(item => item.correctiveMaintenance),
-        backgroundColor: 'rgba(147, 51, 234, 0.8)',
-        borderColor: 'rgb(147, 51, 234)',
+        data: dashboardData.monthlyStats.map(stat => stat.corrective || 0),
+        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+        borderColor: 'rgb(239, 68, 68)',
         borderWidth: 1,
       }
     ]
   };
 
-  // Preparar datos para el gráfico de tipos de mantenimiento
+  // Datos para el gráfico de tipos de mantenimiento
   const maintenanceTypeData = {
-    labels: dashboardData.summary.map(item => item.type),
+    labels: ['Preventivo', 'Correctivo'],
     datasets: [{
-      data: dashboardData.summary.map(item => item.quantity),
+      data: [
+        dashboardData.summary.preventive || 0, 
+        dashboardData.summary.corrective || 0
+      ],
       backgroundColor: [
         'rgba(59, 130, 246, 0.8)',
-        'rgba(147, 51, 234, 0.8)'
-      ],
-      borderColor: [
-        'rgb(59, 130, 246)',
-        'rgb(147, 51, 234)'
-      ],
-      borderWidth: 1
-    }]
-  };
-
-  // Datos para el estado de equipos
-  const equipmentStatusData = {
-    labels: ['Activo', 'Inactivo'],
-    datasets: [{
-      data: [equipmentStatus.active, equipmentStatus.inactive],
-      backgroundColor: [
-        'rgba(34, 197, 94, 0.8)',
         'rgba(239, 68, 68, 0.8)'
       ],
       borderColor: [
-        'rgb(34, 197, 94)',
+        'rgb(59, 130, 246)',
         'rgb(239, 68, 68)'
       ],
       borderWidth: 1
     }]
   };
 
-  // Datos para el tiempo promedio (simulados por ahora)
+  // Verificar si hay datos para mostrar
+  const hasMaintenanceData = dashboardData.summary.total > 0;
+
+  // Datos para el tiempo promedio
   const averageTimeData = {
-    labels: dashboardData.monthlyStats.map(item => item.month.substring(0, 3)),
-    datasets: [{
-      label: 'Horas',
-      data: dashboardData.monthlyStats.map((_, index) => index < dashboardData.summary.length ? 
-        parseFloat(dashboardData.summary[index % dashboardData.summary.length].averageTime) || 0 : 0),
-      borderColor: 'rgb(59, 130, 246)',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
-      tension: 0.4,
-      fill: true
-    }]
+    labels: dashboardData.monthlyStats.map(stat => {
+      const [year, month] = stat.month.split('-');
+      return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('es-ES', {
+        month: 'short'
+      });
+    }),
+    datasets: [
+      {
+        label: 'Tiempo Promedio (horas)',
+        data: dashboardData.monthlyStats.map(stat => {
+          const total = (stat.preventive || 0) + (stat.corrective || 0);
+          if (total === 0) return 0;
+          const summary = dashboardData.summary || { averagePreventiveTime: 0, averageCorrectiveTime: 0 };
+          const avgPreventive = ((stat.preventive || 0) / total) * (summary.averagePreventiveTime || 0);
+          const avgCorrective = ((stat.corrective || 0) / total) * (summary.averageCorrectiveTime || 0);
+          return parseFloat((avgPreventive + avgCorrective).toFixed(2));
+        }),
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.4,
+        fill: true
+      }
+    ]
   };
 
   // Datos para mantenimientos por técnico
+  const firstMonth = dashboardData.monthlyStats.length > 0 ? dashboardData.monthlyStats[0].month : '';
+  const technicianStats = firstMonth ? dashboardData.technicianStats[firstMonth] || [] : [];
+  const hasTechnicianData = technicianStats.length > 0 && technicianStats.some(tech => tech.total > 0);
+    
+  console.log('Datos de técnicos para mostrar:', {
+    hasTechnicianData,
+    technicianStats,
+    firstMonth
+  });
+
   const technicianData = {
-    labels: dashboardData.technicianStats?.map(item => item.name) || [
-      'Juan Pérez',
-      'María García',
-      'Carlos López',
-      'Ana Martínez',
-      'Luis Rodríguez'
-    ],
+    labels: hasTechnicianData 
+      ? technicianStats.map(tech => tech.technicianName)
+      : [],
     datasets: [{
       label: 'Mantenimientos',
-      data: dashboardData.technicianStats?.map(item => item.maintenanceCount) || [
-        Math.floor(Math.random() * 20) + 5, // Entre 5 y 24
-        Math.floor(Math.random() * 20) + 5,
-        Math.floor(Math.random() * 20) + 5,
-        Math.floor(Math.random() * 20) + 5,
-        Math.floor(Math.random() * 20) + 5
-      ],
+      data: hasTechnicianData ? technicianStats.map(tech => tech.total) : [],
       backgroundColor: [
-        'rgba(37, 99, 235, 0.8)',  // blue-600
-        'rgba(29, 78, 216, 0.8)',  // blue-700
-        'rgba(30, 64, 175, 0.8)',  // blue-800
-        'rgba(30, 58, 138, 0.8)',  // blue-900
-        'rgba(59, 130, 246, 0.8)'  // blue-500
-      ],
-      borderColor: [
-        'rgba(37, 99, 235, 1)',
-        'rgba(29, 78, 216, 1)',
-        'rgba(30, 64, 175, 1)',
-        'rgba(30, 58, 138, 1)',
         'rgba(59, 130, 246, 1)'
       ],
       borderWidth: 1,
       borderRadius: 8,
-      barThickness: 40,
-      maxBarThickness: 50
+      barThickness: hasTechnicianData ? 40 : 0,
+      maxBarThickness: hasTechnicianData ? 50 : 0
     }]
   };
 
   // Opciones del gráfico de técnicos
   const technicianOptions = {
-    indexAxis: 'x', // Barras verticales (valor por defecto)
+    indexAxis: 'x',
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: hasTechnicianData ? 1000 : 0
+    },
     plugins: {
       legend: {
-        display: false // Ocultar la leyenda ya que solo hay un dataset
+        display: false
       },
       tooltip: {
+        enabled: hasTechnicianData,
         callbacks: {
           label: function(context) {
             return `Mantenimientos: ${context.raw}`;
@@ -469,17 +439,38 @@ export default function Reports() {
         }
       },
       datalabels: {
-        display: true,
+        display: hasTechnicianData,
         color: '#000',
         anchor: 'end',
         align: 'top',
-        formatter: (value) => value
+        formatter: function(value) {
+          return value;
+        }
+      },
+      // Mostrar mensaje cuando no hay datos
+      beforeDraw: (chart: any) => {
+        if (!hasTechnicianData) {
+          const ctx = chart.ctx;
+          const width = chart.width;
+          const height = chart.height;
+          
+          chart.clear();
+          
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = '16px Arial';
+          ctx.fillStyle = '#666';
+          ctx.fillText('No hay datos disponibles', width / 2, height / 2);
+          ctx.restore();
+        }
       }
     },
     scales: {
       x: {
+        display: hasTechnicianData,
         title: {
-          display: true,
+          display: hasTechnicianData,
           text: 'Técnicos',
           font: {
             weight: 'bold'
@@ -490,8 +481,9 @@ export default function Reports() {
         }
       },
       y: {
+        display: hasTechnicianData,
         title: {
-          display: true,
+          display: hasTechnicianData,
           text: 'Cantidad de Mantenimientos',
           font: {
             weight: 'bold'
@@ -504,7 +496,34 @@ export default function Reports() {
       }
     }
   };
-
+  
+  // Datos para el resumen en tabla
+  const summary = dashboardData.summary || {
+    preventive: 0,
+    corrective: 0,
+    total: 0,
+    averagePreventiveTime: 0,
+    averageCorrectiveTime: 0
+  };
+  
+  const summaryData = [
+    {
+      type: 'Preventivo',
+      quantity: summary.preventive || 0,
+      averageTime: `${(summary.averagePreventiveTime || 0).toFixed(2)} horas`
+    },
+    {
+      type: 'Correctivo',
+      quantity: summary.corrective || 0,
+      averageTime: `${(summary.averageCorrectiveTime || 0).toFixed(2)} horas`
+    },
+    {
+      type: 'Total',
+      quantity: summary.total || 0,
+      averageTime: '-'
+    }
+  ];
+  
   return (
     <div className="space-y-6">
       <AnimatedContainer>
@@ -514,233 +533,236 @@ export default function Reports() {
             <button 
               onClick={generateReport}
               disabled={generatingReport}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-              {generatingReport ? 'Generando...' : 'Descargar PDF'}
+              {generatingReport ? 'Generando PDF...' : 'Descargar PDF'}
             </button>
           )}
         </div>
-
-        {/* Selectores de fecha */}
-        <div className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Seleccionar rango de fechas</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fecha de inicio
-              </label>
-              <input
-                type="date"
-                value={fechaInicio}
-                max={fechaFin || new Date().toISOString().split('T')[0]}
-                onChange={(e) => handleDateChange(e, 'start')}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Fecha de fin
-              </label>
-              <input
-                type="date"
-                value={fechaFin}
-                min={fechaInicio}
-                max={new Date().toISOString().split('T')[0]}
-                onChange={(e) => handleDateChange(e, 'end')}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            
-            <div className="flex justify-end">
-              <button
-                onClick={handleGenerateReport}
-                disabled={!fechaInicio || !fechaFin || loading}
-                className="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Cargando...' : 'Generar Reporte'}
-              </button>
-            </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de inicio</label>
+            <input
+              type="date"
+              value={fechaInicio}
+              onChange={(e) => handleDateChange(e, 'start')}
+              className="w-full p-2 border rounded-md"
+            />
           </div>
-          
-          {error ? (
-            <div className="mt-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg">
-              <p className="font-medium">Error</p>
-              <p>{error}</p>
-            </div>
-          ) : reportGenerated ? (
-            <div className="mt-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm">
-              Mostrando datos desde el <span className="font-medium">{formatDate(fechaInicio)}</span> hasta el <span className="font-medium">{formatDate(fechaFin)}</span>
-            </div>
-          ) : null}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de fin</label>
+            <input
+              type="date"
+              value={fechaFin}
+              onChange={(e) => handleDateChange(e, 'end')}
+              className="w-full p-2 border rounded-md"
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={handleGenerateReport}
+              disabled={loading}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? 'Cargando...' : 'Generar Reporte'}
+            </button>
+          </div>
         </div>
-      </AnimatedContainer>
 
-      {/* Gráficos - Solo se muestran después de generar el reporte */}
-      <AnimatedContainer className="mt-6">
-        {reportGenerated && !error ? (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <AnimatedContainer delay={0.2}>
-                <div className="bg-white p-6 rounded-xl shadow-lg" ref={maintenanceChartRef}>
-                  <h3 className="text-lg font-semibold mb-4">Mantenimientos por Mes</h3>
-                  <div className="h-72">
-                    <Bar 
-                      data={barChartData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: {
-                            position: 'top',
-                          }
-                        },
-                        scales: {
-                          y: {
-                            beginAtZero: true,
-                            grid: {
-                              color: 'rgba(0, 0, 0, 0.05)'
+        {reportGenerated && (
+          <div className="mt-8">
+            {!error ? (
+              <div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <AnimatedContainer delay={0.1}>
+                    <div className="bg-white p-6 rounded-xl shadow-lg" ref={maintenanceChartRef}>
+                      <h3 className="text-lg font-semibold mb-4">Mantenimientos por Mes</h3>
+                      <div className="h-72">
+                        <Bar 
+                          data={monthlyChartData}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                              legend: {
+                                position: 'top',
+                              },
+                              tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                              },
+                            },
+                            scales: {
+                              y: {
+                                beginAtZero: true,
+                                title: {
+                                  display: true,
+                                  text: 'Cantidad'
+                                },
+                                ticks: {
+                                  precision: 0
+                                }
+                              }
                             }
-                          },
-                          x: {
-                            grid: {
-                              display: false
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </AnimatedContainer>
+
+                  <AnimatedContainer delay={0.2}>
+                    <div className="bg-white p-6 rounded-xl shadow-lg" ref={maintenanceTypeChartRef}>
+                      <h3 className="text-lg font-semibold mb-4">Tipos de Mantenimiento</h3>
+                      <div className="h-72 flex items-center justify-center">
+                        {hasMaintenanceData ? (
+                          <Doughnut 
+                            data={maintenanceTypeData}
+                            options={{
+                              responsive: true,
+                              maintainAspectRatio: false,
+                              plugins: {
+                                legend: {
+                                  position: 'bottom',
+                                  labels: {
+                                    padding: 20,
+                                    font: { size: 12 }
+                                  }
+                                },
+                                tooltip: {
+                                  callbacks: {
+                                    label: function(context) {
+                                      const label = context.label || '';
+                                      const value = context.raw || 0;
+                                      const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                      const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                      return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                  }
+                                }
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className="h-full flex items-center justify-center text-gray-500">
+                            No hay datos de mantenimientos para mostrar
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </AnimatedContainer>
+
+                  <AnimatedContainer delay={0.3}>
+                    <div className="bg-white p-6 rounded-xl shadow-lg" ref={avgTimeChartRef}>
+                      <h3 className="text-lg font-semibold mb-4">Tiempo Promedio de Reparación</h3>
+                      <div className="h-72">
+                        <Line 
+                          data={averageTimeData}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                              legend: {
+                                display: false
+                              },
+                              tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                              },
+                            },
+                            scales: {
+                              y: {
+                                beginAtZero: true,
+                                title: {
+                                  display: true,
+                                  text: 'Horas'
+                                }
+                              },
+                              x: {
+                                grid: {
+                                  display: false
+                                }
+                              }
                             }
-                          }
-                        }
-                      }}
-                    />
-                  </div>
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </AnimatedContainer>
+
+                  <AnimatedContainer delay={0.4}>
+                    <div className="bg-white p-6 rounded-xl shadow-lg" ref={technicianChartRef}>
+                      <h3 className="text-lg font-semibold mb-4">Mantenimientos por Técnico</h3>
+                      <div className="h-72">
+                        <Bar 
+                          data={technicianData}
+                          options={technicianOptions}
+                        />
+                      </div>
+                    </div>
+                  </AnimatedContainer>
                 </div>
-              </AnimatedContainer>
-
-              <AnimatedContainer delay={0.3}>
-                <div className="bg-white p-6 rounded-xl shadow-lg" ref={equipmentChartRef}>
-                  <h3 className="text-lg font-semibold mb-4">Estado de Equipos</h3>
-                  <div className="h-72">
-                    <Doughnut 
-                      data={equipmentStatusData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: {
-                            position: 'bottom',
-                            labels: {
-                              padding: 20,
-                              font: { size: 12 }
-                            }
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              </AnimatedContainer>
-
-              <AnimatedContainer delay={0.4}>
-                <div className="bg-white p-6 rounded-xl shadow-lg" ref={maintenanceTypeChartRef}>
-                  <h3 className="text-lg font-semibold mb-4">Tipos de Mantenimiento</h3>
-                  <div className="h-72">
-                    <Doughnut 
-                      data={maintenanceTypeData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: {
-                            position: 'bottom',
-                            labels: {
-                              padding: 20,
-                              font: { size: 12 }
-                            }
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              </AnimatedContainer>
-
-              <AnimatedContainer delay={0.5}>
-                <div className="bg-white p-6 rounded-xl shadow-lg" ref={avgTimeChartRef}>
-                  <h3 className="text-lg font-semibold mb-4">Tiempo Promedio de Reparación (días)</h3>
-                  <div className="h-72">
-                    <Line 
-                      data={averageTimeData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: {
-                            position: 'top',
-                          }
-                        },
-                        scales: {
-                          y: {
-                            beginAtZero: true,
-                            grid: {
-                              color: 'rgba(0, 0, 0, 0.05)'
-                            }
-                          },
-                          x: {
-                            grid: {
-                              display: false
-                            }
-                          }
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-              </AnimatedContainer>
-            </div>
-
-            <AnimatedContainer delay={0.6}>
-              <div className="bg-white p-6 rounded-xl shadow-lg" ref={technicianChartRef}>
-                <h3 className="text-lg font-semibold mb-4">Mantenimientos por Técnico</h3>
-                <div className="h-72">
-                  <Bar 
-                    data={technicianData}
-                    options={technicianOptions}
-                  />
+                
+                <div className="mt-6">
+                  <AnimatedContainer delay={0.5}>
+                    <div className="bg-white rounded-xl shadow-lg overflow-hidden" ref={reportContainerRef}>
+                      <h3 className="text-lg font-semibold p-6 border-b">Resumen de Mantenimientos</h3>
+                      <div className="p-6 overflow-x-auto">
+                        <table className="min-w-full">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-3 px-4 text-sm font-semibold">Tipo</th>
+                              <th className="text-left py-3 px-4 text-sm font-semibold">Cantidad</th>
+                              <th className="text-left py-3 px-4 text-sm font-semibold">Tiempo Promedio</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {summaryData.length > 0 ? (
+                              summaryData.map((item, index) => (
+                                <tr 
+                                  key={item.type}
+                                  className={`${index < summaryData.length - 1 ? 'border-b' : ''} ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100`}
+                                >
+                                  <td className="py-3 px-4 text-sm">
+                                    {item.type}
+                                  </td>
+                                  <td className="py-3 px-4 text-sm font-medium text-center">
+                                    {item.quantity}
+                                  </td>
+                                  <td className="py-3 px-4 text-sm text-center">
+                                    {item.averageTime}
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={3} className="py-4 text-center text-gray-500">
+                                  No hay datos de mantenimientos para mostrar
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </AnimatedContainer>
                 </div>
               </div>
-            </AnimatedContainer>
-
-            <AnimatedContainer delay={0.7}>
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden" ref={reportContainerRef}>
-                <h3 className="text-lg font-semibold p-6 border-b">Resumen de Mantenimientos</h3>
-                <div className="p-6 overflow-x-auto">
-                  <table className="min-w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 text-sm font-semibold">Tipo</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold">Cantidad</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold">Tiempo Promedio</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dashboardData.summary.map((item, index) => (
-                        <tr key={index} className={index < dashboardData.summary.length - 1 ? "border-b hover:bg-gray-50" : "hover:bg-gray-50"}>
-                          <td className="py-3 px-4 text-sm">{item.type}</td>
-                          <td className="py-3 px-4 text-sm">{item.count}</td>
-                          <td className="py-3 px-4 text-sm">
-                            {item.averageTime ? `${Math.round(item.averageTime / 60)} horas` : 'N/A'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            ) : (
+              <div className="bg-white p-8 rounded-xl shadow-lg text-center">
+                <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Error al cargar datos</h3>
+                <p className="text-gray-500 mb-4">{error}</p>
               </div>
-            </AnimatedContainer>
+            )}
           </div>
-        ) : !error ? (
+        )}
+
+        {!reportGenerated && !error && (
           <div className="bg-white p-8 rounded-xl shadow-lg text-center">
             <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -750,7 +772,7 @@ export default function Reports() {
             <h3 className="text-lg font-medium text-gray-900 mb-2">No hay datos para mostrar</h3>
             <p className="text-gray-500 mb-4">Selecciona un rango de fechas y haz clic en "Generar Reporte" para ver las estadísticas.</p>
           </div>
-        ) : null}
+        )}
       </AnimatedContainer>
     </div>
   );

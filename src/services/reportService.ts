@@ -33,20 +33,28 @@ reportApi.interceptors.request.use(
 export interface MaintenanceSummary {
   type: string;
   quantity: number;
-  averageTime: string;
+  averageTime: number; // Cambiado de string a number
 }
 
 export interface MonthlyReport {
   month: string;
-  preventiveMaintenance: number;
-  correctiveMaintenance: number;
-  totalMaintenance: number;
+  total: number;
+  corrective: number;
+  preventive: number;
 }
 
 export interface TechnicianReport {
-  id: number;
-  name: string;
-  maintenanceCount: number;
+  technicianId: string | null;
+  technicianName: string;
+  total: number;
+}
+
+export interface DashboardSummary {
+  total: number;
+  preventive: number;
+  corrective: number;
+  averagePreventiveTime: number;
+  averageCorrectiveTime: number;
 }
 
 export interface DateRange {
@@ -55,147 +63,241 @@ export interface DateRange {
 }
 
 export interface DashboardData {
-  summary: MaintenanceSummary[];
+  summary: DashboardSummary;
   monthlyStats: MonthlyReport[];
-  technicianStats: TechnicianReport[];
+  technicianStats: { [key: string]: TechnicianReport[] };
+  equipmentStatus: { [key: string]: number };
 }
 
 // Servicio para manejar las operaciones de reportes
 const reportService = {
-  // Obtener resumen de mantenimientos
-  getMaintenanceSummary: async (): Promise<MaintenanceSummary[]> => {
-    if (USE_MOCK_DATA) {
-      return [
-        {
-          type: 'Preventivo',
-          quantity: 45,
-          averageTime: '2.5 horas'
-        },
-        {
-          type: 'Correctivo',
-          quantity: 23,
-          averageTime: '4 horas'
-        }
-      ];
-    }
 
-    try {
-      const response = await reportApi.get(`${REPORTS_URL}/summary`);
-      return response.data;
-    } catch (error) {
-      console.error('Error al obtener el resumen de mantenimientos:', error);
-      
-      // Datos de fallback para desarrollo
-      return [
-        {
-          type: 'Preventivo',
-          quantity: 45,
-          averageTime: '2.5 horas'
-        },
-        {
-          type: 'Correctivo',
-          quantity: 23,
-          averageTime: '4 horas'
-        }
-      ];
-    }
-  },
-
-  // Obtener datos mensuales
-  getMonthlyReport: async (year?: number): Promise<MonthlyReport[]> => {
-    if (USE_MOCK_DATA) {
-      return generateMockMonthlyData();
-    }
-
-    try {
-      const url = year ? `${REPORTS_URL}/monthly?year=${year}` : `${REPORTS_URL}/monthly`;
-      const response = await reportApi.get(url);
-      return response.data;
-    } catch (error) {
-      console.error('Error al obtener el reporte mensual:', error);
-      
-      // Datos de fallback para desarrollo
-      return generateMockMonthlyData();
-    }
-  },
-
-    // Obtener todos los datos para el dashboard
+  // Obtener datos del dashboard
   getDashboardData: async (dateRange: DateRange): Promise<DashboardData> => {
     if (USE_MOCK_DATA) {
-      console.log('Usando datos simulados para el dashboard');
       return {
-        summary: [
+        summary: {
+          total: 150,
+          preventive: 100,
+          corrective: 50,
+          averagePreventiveTime: 2.5,
+          averageCorrectiveTime: 4.2
+        },
+        monthlyStats: [
           {
-            type: 'Preventivo',
-            quantity: 45,
-            averageTime: '2.5 horas'
+            month: '2025-05',
+            preventive: 75,
+            corrective: 25,
+            total: 100
           },
           {
-            type: 'Correctivo',
-            quantity: 23,
-            averageTime: '4 horas'
+            month: '2025-04',
+            preventive: 25,
+            corrective: 25,
+            total: 50
           }
         ],
-        monthlyStats: generateMockMonthlyData(),
-        technicianStats: generateMockTechnicianData()
+        technicianStats: {
+          '2025-05': [
+            { technicianId: '1', technicianName: 'Juan Pérez', total: 30 },
+            { technicianId: '2', technicianName: 'María Gómez', total: 45 }
+          ]
+        },
+        equipmentStatus: {
+          'activo': 85,
+          'inactivo': 15
+        }
       };
     }
 
     try {
       const { startDate, endDate } = dateRange;
-      const url = `${REPORTS_URL}/dashboard?startDate=${startDate}&endDate=${endDate}`;
+      const response = await reportApi.get(`${REPORTS_URL}/dashboard`, {
+        params: { 
+          startDate,
+          endDate
+        }
+      });
       
-      console.log('Solicitando datos del dashboard con rango:', { startDate, endDate });
-      const response = await reportApi.get(url);
-      return response.data;
+      // Formatear los datos para que coincidan con la interfaz
+      const data = response.data;
+      
+      // Si el backend no envía equipmentStatus, lo inicializamos
+      if (!data.equipmentStatus) {
+        data.equipmentStatus = { activo: 0, inactivo: 0 };
+      }
+      
+      return data as DashboardData;
+      
     } catch (error) {
       console.error('Error al obtener los datos del dashboard:', error);
-      throw new Error('Ha ocurrido un error al buscar los datos. Por favor, contacte con el administrador.');
-    }
-  },
-  
-  // Obtener resumen de mantenimientos
-  getMaintenanceSummary: async (dateRange: DateRange): Promise<MaintenanceSummary[]> => {
-    if (USE_MOCK_DATA) {
-      return [
-        {
-          type: 'Preventivo',
-          quantity: 45,
-          averageTime: '2.5 horas'
+      // Devolver datos vacíos en caso de error
+      return {
+        summary: {
+          total: 0,
+          preventive: 0,
+          corrective: 0,
+          averagePreventiveTime: 0,
+          averageCorrectiveTime: 0
         },
-        {
-          type: 'Correctivo',
-          quantity: 23,
-          averageTime: '4 horas'
-        }
-      ];
-    }
-
-    try {
-      const { startDate, endDate } = dateRange;
-      const url = `${REPORTS_URL}/summary?startDate=${startDate}&endDate=${endDate}`;
-      const response = await reportApi.get(url);
-      return response.data;
-    } catch (error) {
-      console.error('Error al obtener el resumen de mantenimientos:', error);
-      throw new Error('Ha ocurrido un error al obtener el resumen de mantenimientos. Por favor, contacte con el administrador.');
+        monthlyStats: [],
+        technicianStats: {},
+        equipmentStatus: { activo: 0, inactivo: 0 }
+      };
     }
   },
-  
-  // Obtener reporte mensual
-  getMonthlyReport: async (dateRange: DateRange): Promise<MonthlyReport[]> => {
+
+  // Obtener reporte mensual por rango de fechas o año
+  getMonthlyReport: async (dateRange: DateRange | number): Promise<MonthlyReport[]> => {
     if (USE_MOCK_DATA) {
       return generateMockMonthlyData();
     }
 
     try {
-      const { startDate, endDate } = dateRange;
-      const url = `${REPORTS_URL}/monthly?startDate=${startDate}&endDate=${endDate}`;
-      const response = await reportApi.get(url);
-      return response.data;
+      const params: any = {};
+      
+      if (typeof dateRange === 'number') {
+        // Si es un número, asumimos que es un año
+        params.year = dateRange;
+      } else if (dateRange) {
+        // Si es un objeto DateRange, usamos las fechas
+        params.startDate = dateRange.startDate;
+        params.endDate = dateRange.endDate;
+      }
+      
+      const response = await reportApi.get('/api/maintenance/report/monthly', { params });
+      
+      // Mapear la respuesta al formato esperado
+      if (Array.isArray(response.data)) {
+        return response.data.map((item: any) => ({
+          month: item.month,
+          preventiveMaintenance: item.preventive || 0,
+          correctiveMaintenance: item.corrective || 0,
+          totalMaintenance: (item.preventive || 0) + (item.corrective || 0)
+        }));
+      }
+      
+      return [];
     } catch (error) {
       console.error('Error al obtener el reporte mensual:', error);
-      throw new Error('Ha ocurrido un error al obtener el reporte mensual. Por favor, contacte con el administrador.');
+      // En caso de error, devolver datos vacíos
+      return [];
+    }
+  },
+
+  // Obtener estadísticas de técnicos
+  getTechnicianStats: async (dateRange: DateRange): Promise<TechnicianReport[]> => {
+    if (USE_MOCK_DATA) {
+      return generateMockTechnicianData();
+    }
+
+    try {
+      const { startDate, endDate } = dateRange || {};
+      const response = await reportApi.get('/api/maintenance/report/technician-stats', {
+        params: { 
+          startDate: startDate || '',
+          endDate: endDate || ''
+        }
+      });
+      
+      console.log('Datos de técnicos recibidos:', response.data);
+      
+      // Asegurarse de que la respuesta sea un array
+      if (!Array.isArray(response.data)) {
+        console.error('La respuesta de técnicos no es un array:', response.data);
+        return [];
+      }
+      
+      // Mapear la respuesta al formato esperado
+      return response.data.map((tech: any) => ({
+        id: tech.id || 0,
+        name: tech.name || 'Técnico sin nombre',
+        maintenanceCount: tech.maintenanceCount || 0
+      }));
+    } catch (error) {
+      console.error('Error al obtener las estadísticas de técnicos:', error);
+      // En lugar de lanzar un error, devolvemos un array vacío
+      return [];
+    }
+  },
+
+  // Obtener todos los datos para el dashboard
+  async getDashboardData(dateRange: DateRange): Promise<DashboardData> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No se encontró el token de autenticación');
+      }
+
+      // Intentar obtener los datos del dashboard
+      let dashboardResponse;
+      try {
+        dashboardResponse = await axios.get(`${REPORTS_URL}/dashboard`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          params: {
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate
+          }
+        });
+      } catch (dashboardError) {
+        console.warn('Error al obtener datos del dashboard, intentando obtener datos individualmente', dashboardError);
+        dashboardResponse = { data: {} };
+      }
+
+      // Crear un objeto de datos con valores por defecto
+      const dashboardData: DashboardData = {
+        summary: [],
+        monthlyStats: [],
+        technicianStats: []
+      };
+
+      // Obtener datos de resumen
+      try {
+        if (dashboardResponse.data?.summary) {
+          dashboardData.summary = dashboardResponse.data.summary;
+        } else {
+          const summary = await this.getMaintenanceSummary(dateRange);
+          dashboardData.summary = summary;
+        }
+      } catch (error) {
+        console.error('Error al obtener el resumen:', error);
+      }
+
+      // Obtener estadísticas mensuales
+      try {
+        if (dashboardResponse.data?.monthlyStats) {
+          dashboardData.monthlyStats = dashboardResponse.data.monthlyStats;
+        } else {
+          const monthlyStats = await this.getMonthlyReport(dateRange);
+          dashboardData.monthlyStats = monthlyStats;
+        }
+      } catch (error) {
+        console.error('Error al obtener estadísticas mensuales:', error);
+      }
+
+      // Obtener estadísticas de técnicos
+      try {
+        if (dashboardResponse.data?.technicianStats) {
+          dashboardData.technicianStats = dashboardResponse.data.technicianStats;
+        } else {
+          const technicianStats = await this.getTechnicianStats(dateRange);
+          dashboardData.technicianStats = technicianStats;
+        }
+      } catch (error) {
+        console.error('Error al obtener estadísticas de técnicos:', error);
+      }
+
+      return dashboardData;
+    } catch (error) {
+      console.error('Error al obtener los datos del dashboard:', error);
+      // Devolver datos vacíos en lugar de lanzar el error
+      return {
+        summary: [],
+        monthlyStats: [],
+        technicianStats: []
+      };
     }
   }
 };
