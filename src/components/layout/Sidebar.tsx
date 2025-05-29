@@ -27,7 +27,10 @@ const Sidebar = () => {
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  
+  // Obtener el rol del usuario actual
+  const userRole = user?.role || '';
 
   // Cerrar el sidebar al cambiar de página
   useEffect(() => {
@@ -50,49 +53,67 @@ const Sidebar = () => {
     }
   }, [location.pathname]);
 
-  const menuItems = [
-    { name: 'Dashboard', href: '/', icon: HomeIcon },
-    { 
-      name: 'Inventario',
-      icon: Squares2X2Icon,
-      isOpen: inventoryOpen,
-      onToggle: () => setInventoryOpen(!inventoryOpen),
-      subItems: [
-        { name: 'Equipos', href: '/inventario', icon: ComputerDesktopIcon },
-        { name: 'Camaras', href: '', icon: CameraIcon },
-        { name: 'Impresoras', href: '', icon: PrinterIcon },
-      ]
-    },
+  // Definir los elementos del menú base
+  const dashboardItem = { name: 'Dashboard', href: '/', icon: HomeIcon };
+  
+  const inventoryItem = { 
+    name: 'Inventario',
+    icon: Squares2X2Icon,
+    isOpen: inventoryOpen,
+    onToggle: () => setInventoryOpen(!inventoryOpen),
+    subItems: [
+      { name: 'Equipos', href: '/inventario', icon: ComputerDesktopIcon },
+      { name: 'Camaras', href: '', icon: CameraIcon },
+      { name: 'Impresoras', href: '', icon: PrinterIcon },
+    ]
+  };
 
-    { 
-      name: 'Mantenimientos',
-      icon: WrenchScrewdriverIcon,
-      isOpen: maintenanceOpen,
-      onToggle: () => setMaintenanceOpen(!maintenanceOpen),
-      subItems: [
-        {name: 'Equipos', href: '/mantenimientos', icon: ComputerDesktopIcon},
-        { name: 'Camaras', href: '', icon: CameraIcon },
-        { name: 'Impresoras', href: '', icon: PrinterIcon },
-        { name: 'Historial Mantenimientos', href: '/historial', icon: ClipboardDocumentListIcon }
-      ]
-    },
-    { 
-      name: 'Reportes',
-      icon: ChartBarIcon,
-      isOpen: reportsOpen,
-      onToggle: () => setReportsOpen(!reportsOpen),
-      subItems: [
-        { name: 'Mantenimientos', href: '/reportes', icon: ChartBarIcon },
-      ]
-    },
-    
-  ];
+  const maintenanceItem = { 
+    name: 'Mantenimientos',
+    icon: WrenchScrewdriverIcon,
+    isOpen: maintenanceOpen,
+    onToggle: () => setMaintenanceOpen(!maintenanceOpen),
+    subItems: [
+      {name: 'Equipos', href: '/mantenimientos', icon: ComputerDesktopIcon},
+      { name: 'Camaras', href: '', icon: CameraIcon },
+      { name: 'Impresoras', href: '', icon: PrinterIcon },
+      { name: 'Historial Mantenimientos', href: '/historial', icon: ClipboardDocumentListIcon }
+    ]
+  };
+  
+  const reportsItem = { 
+    name: 'Reportes',
+    icon: ChartBarIcon,
+    isOpen: reportsOpen,
+    onToggle: () => setReportsOpen(!reportsOpen),
+    subItems: [
+      { name: 'Mantenimientos', href: '/reportes', icon: ChartBarIcon },
+      // Aquí se añadirá el nuevo apartado de reportes para usuarios
+    ]
+  };
 
   const configItems = [
     { name: 'Usuarios', href: '/configuracion/usuarios', icon: UserGroupIcon },
     { name: 'Empresas Y Sedes', href: '/configuracion/empresas', icon: BuildingOfficeIcon },
-    { name: 'Mantenimientos Automáticos', href: '/mantenimientos/configuracion', icon: WrenchScrewdriverIcon },
+    { name: 'Programacion De Mantenimientos', href: '/mantenimientos/configuracion', icon: WrenchScrewdriverIcon },
   ];
+  
+  // Filtrar los elementos del menú según el rol del usuario
+  let menuItems = [];
+  
+  if (userRole === 'Administrador') {
+    // El administrador tiene acceso a todo
+    menuItems = [dashboardItem, inventoryItem, maintenanceItem, reportsItem];
+  } else if (userRole === 'Tecnico') {
+    // El técnico solo tiene acceso a inventario y mantenimientos
+    menuItems = [dashboardItem, inventoryItem, maintenanceItem];
+  } else if (userRole === 'Usuario') {
+    // El usuario solo tiene acceso a reportes
+    menuItems = [dashboardItem, reportsItem];
+  } else {
+    // Por defecto, mostrar solo dashboard
+    menuItems = [dashboardItem];
+  }
 
   const handleLogout = () => {
     logout();
@@ -204,49 +225,51 @@ const Sidebar = () => {
                 </li>
               ))}
 
-              {/* Menú de Configuración */}
-              <li>
-                <button
-                  onClick={() => setConfigOpen(!configOpen)}
-                  className={`
-                    flex items-center w-full px-4 py-2.5 rounded-lg transition-all duration-200
-                    ${location.pathname?.startsWith('/configuracion')
-                      ? 'bg-blue-50/80 text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:bg-gray-50/80'}
-                    group
-                  `}
-                >
-                  <Cog6ToothIcon className="h-5 w-5 mr-3 transition-transform group-hover:scale-110" />
-                  <span className="font-medium flex-1 text-left">Configuración</span>
-                  <ChevronDownIcon 
-                    className={`h-5 w-5 transition-transform duration-300 ${configOpen ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                
-                {/* Submenú de Configuración */}
-                <div className={`
-                  mt-1 ml-4 space-y-1 border-l-2 border-gray-100
-                  transition-all duration-300 ease-in-out overflow-hidden
-                  ${configOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}
-                `}>
-                  {configItems.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={`
-                        flex items-center px-4 py-2 rounded-lg transition-all duration-200
-                        ${location.pathname === item.href
-                          ? 'bg-blue-50/80 text-blue-600 shadow-sm'
-                          : 'text-gray-600 hover:bg-gray-50/80'}
-                        group
-                      `}
-                    >
-                      <item.icon className="h-4 w-4 mr-3 transition-transform group-hover:scale-110" />
-                      <span className="font-medium text-sm">{item.name}</span>
-                    </Link>
-                  ))}
-                </div>
-              </li>
+              {/* Menú de Configuración - Solo visible para Administradores */}
+              {userRole === 'Administrador' && (
+                <li>
+                  <button
+                    onClick={() => setConfigOpen(!configOpen)}
+                    className={`
+                      flex items-center w-full px-4 py-2.5 rounded-lg transition-all duration-200
+                      ${location.pathname?.startsWith('/configuracion')
+                        ? 'bg-blue-50/80 text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-50/80'}
+                      group
+                    `}
+                  >
+                    <Cog6ToothIcon className="h-5 w-5 mr-3 transition-transform group-hover:scale-110" />
+                    <span className="font-medium flex-1 text-left">Configuración</span>
+                    <ChevronDownIcon 
+                      className={`h-5 w-5 transition-transform duration-300 ${configOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  
+                  {/* Submenú de Configuración */}
+                  <div className={`
+                    mt-1 ml-4 space-y-1 border-l-2 border-gray-100
+                    transition-all duration-300 ease-in-out overflow-hidden
+                    ${configOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}
+                  `}>
+                    {configItems.map((item) => (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className={`
+                          flex items-center px-4 py-2 rounded-lg transition-all duration-200
+                          ${location.pathname === item.href
+                            ? 'bg-blue-50/80 text-blue-600 shadow-sm'
+                            : 'text-gray-600 hover:bg-gray-50/80'}
+                          group
+                        `}
+                      >
+                        <item.icon className="h-4 w-4 mr-3 transition-transform group-hover:scale-110" />
+                        <span className="font-medium text-sm">{item.name}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </li>
+              )}
             </ul>
           </nav>
 

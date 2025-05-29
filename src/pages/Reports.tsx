@@ -391,15 +391,42 @@ export default function Reports() {
   };
 
   // Datos para mantenimientos por técnico
-  const firstMonth = dashboardData.monthlyStats.length > 0 ? dashboardData.monthlyStats[0].month : '';
-  const technicianStats = firstMonth ? dashboardData.technicianStats[firstMonth] || [] : [];
+  // Obtener todos los meses disponibles
+  const availableMonths = dashboardData.monthlyStats.map(stat => stat.month);
+  
+  // Consolidar datos de técnicos de todos los meses para evitar duplicados
+  let consolidatedTechnicianStats = [];
+  
+  if (availableMonths.length > 0) {
+    // Crear un mapa para consolidar los datos por ID de técnico
+    const technicianMap = new Map();
+    
+    // Procesar cada mes
+    availableMonths.forEach(month => {
+      const monthStats = dashboardData.technicianStats[month] || [];
+      
+      // Agregar o actualizar datos de técnicos
+      monthStats.forEach(tech => {
+        const techId = tech.technicianId;
+        if (technicianMap.has(techId)) {
+          // Sumar al total existente
+          const existingTech = technicianMap.get(techId);
+          existingTech.total += tech.total;
+        } else {
+          // Agregar nuevo técnico
+          technicianMap.set(techId, { ...tech });
+        }
+      });
+    });
+    
+    // Convertir el mapa a array
+    consolidatedTechnicianStats = Array.from(technicianMap.values());
+  }
+  
+  const technicianStats = consolidatedTechnicianStats;
   const hasTechnicianData = technicianStats.length > 0 && technicianStats.some(tech => tech.total > 0);
     
-  console.log('Datos de técnicos para mostrar:', {
-    hasTechnicianData,
-    technicianStats,
-    firstMonth
-  });
+  // Preparar datos para el gráfico de técnicos
 
   const technicianData = {
     labels: hasTechnicianData 

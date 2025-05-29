@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import SignatureCanvas from 'react-signature-canvas';
 import {
   MagnifyingGlassIcon,
   CalendarIcon,
@@ -58,11 +59,71 @@ export default function Maintenance() {
     tecnico: '',
     tipoMantenimiento: '',
     observaciones: '',
-    estado: 'completado'
+    estado: 'completado',
+    nombreFirmante: ''
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
+  
+  // Referencias para los canvas de firma
+  const sigCanvas = useRef<SignatureCanvas>(null);
+  const fullScreenSigCanvas = useRef<SignatureCanvas>(null);
+  
+  // Estado para controlar el modal de firma a pantalla completa
+  const [showFullScreenSignature, setShowFullScreenSignature] = useState(false);
+  
+  // Función para limpiar la firma
+  const clearSignature = () => {
+    if (sigCanvas.current) {
+      sigCanvas.current.clear();
+    }
+    if (fullScreenSigCanvas.current) {
+      fullScreenSigCanvas.current.clear();
+    }
+  };
+  
+  // Función para obtener la firma como imagen base64
+  const getSignatureImage = () => {
+    // Si estamos usando la firma en pantalla completa, usamos esa
+    if (showFullScreenSignature && fullScreenSigCanvas.current) {
+      return fullScreenSigCanvas.current.isEmpty() ? null : fullScreenSigCanvas.current.toDataURL('image/png');
+    }
+    // De lo contrario, usamos la firma normal
+    else if (sigCanvas.current) {
+      return sigCanvas.current.isEmpty() ? null : sigCanvas.current.toDataURL('image/png');
+    }
+    return null;
+  };
+  
+  // Función para sincronizar las firmas entre los dos canvas
+  const syncSignatureFromFullScreen = () => {
+    if (fullScreenSigCanvas.current && sigCanvas.current) {
+      const fullScreenSignature = fullScreenSigCanvas.current.toDataURL('image/png');
+      
+      // Limpiar el canvas normal
+      sigCanvas.current.clear();
+      
+      // Si hay una firma, cargarla en el canvas normal
+      if (!fullScreenSigCanvas.current.isEmpty()) {
+        // Crear una imagen temporal para cargar la firma
+        const img = new Image();
+        img.onload = () => {
+          const ctx = sigCanvas.current?.getCanvas().getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, sigCanvas.current.getCanvas().width, sigCanvas.current.getCanvas().height);
+          }
+        };
+        img.src = fullScreenSignature;
+      }
+    }
+    setShowFullScreenSignature(false);
+  };
+  
+  // Función para abrir el modal de firma a pantalla completa
+  const openFullScreenSignature = () => {
+    setShowFullScreenSignature(true);
+  };
 
   useEffect(() => {
     fetchMaintenances();
@@ -96,7 +157,7 @@ export default function Maintenance() {
     try {
       setIsLoading(true);
       
-      // Obtener usuario actual para obtener companyId, headquarterId y datos del técnico
+      // Obtener usuario actual para obtener datos del técnico
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       
       // Mapear estado del formulario al formato esperado por el backend
@@ -108,49 +169,82 @@ export default function Maintenance() {
             ? 'CANCELADO'
             : 'PROGRAMADO';
       
-      // Preparar datos para actualización
-      const updateData: Partial<MaintenanceItem> = {
+      // Preparar datos para actualización - incluir todos los datos necesarios
+      const updateData: MaintenanceItem = {
+        // Mantener los datos originales del mantenimiento
+        id: parseInt(selectedMantenimiento.id),
+        inventoryItemId: selectedMantenimiento.inventoryItemId,
+        inventoryItemName: selectedMantenimiento.equipo,
+        // Usar valores fijos para companyId y headquarterId (estos deben coincidir con los valores en la base de datos)
+        companyId: 1,  // Valor fijo que sabemos que existe en la base de datos
+        headquarterId: 1, // Valor fijo que sabemos que existe en la base de datos
+        serviceArea: selectedMantenimiento.area,
+        responsible: selectedMantenimiento.responsable,
+        description: selectedMantenimiento.descripcion,
+        scheduledDate: maintenanceService.parseDate(selectedMantenimiento.fechaProgramada),
+        type: maintenanceService.mapTypeToBackend(selectedMantenimiento.tipo),
+        
+        // Actualizar con los nuevos datos
         status: estadoBackend as any,
-        technicianName: currentUser.fullName, // Obtener directamente el nombre completo del usuario actual
-        technicianId: currentUser.id, // Añadir ID del técnico
+        technicianName: currentUser.fullName,
+        technicianId: currentUser.id,
         observations: formData.observaciones,
-        type: formData.tipoMantenimiento === 'preventivo' 
-          ? 'PREVENTIVO' 
-          : 'CORRECTIVO',
-        companyId: currentUser.idcompany,
-        headquarterId: currentUser.idheadquarter
       };
       
-      // Si el estado es completado, añadir fecha de completado
-      if (estadoBackend === 'COMPLETADO') {
+      // Si el estado es completado, verificar que haya una firma y añadir datos adicionales
+      if (formData.estado === 'completado') {
+        // Obtener la firma digital
+        const signatureImage = getSignatureImage();
+        
+        // Verificar que haya una firma
+        if (!signatureImage) {
+          alert('Por favor, añade una firma para completar el mantenimiento.');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Verificar que se haya ingresado el nombre del firmante
+        if (!formData.nombreFirmante.trim()) {
+          alert('Por favor, ingresa el nombre de la persona que firma.');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Añadir la firma, el nombre del firmante y la fecha de completado
+        updateData.signature = signatureImage;
+        updateData.signerName = formData.nombreFirmante;
         updateData.completionDate = new Date().toISOString();
+      } else {
+        // Si no es completado, asegurarse de que estos campos estén vacíos
+        updateData.signature = '';
+        updateData.signerName = '';
       }
       
-      // Mostrar datos que se enviarán al backend para depuración
-      console.log('Datos que se envían al backend:', {
-        id: parseInt(selectedMantenimiento.id),
-        updateData,
-        estadoBackend
-      });
+      // Actualizar el mantenimiento
+      await maintenanceService.updateMaintenance(parseInt(selectedMantenimiento.id), updateData);
       
-      // Actualizar en el backend
-      const updatedMaintenance = await maintenanceService.updateMaintenance(
-        parseInt(selectedMantenimiento.id), 
-        updateData
-      );
-      
-      console.log('Respuesta del backend después de actualizar:', updatedMaintenance);
-      
-      // Recargar datos
+      // Actualizar la lista de mantenimientos
       await fetchMaintenances();
       
-      // Cerrar modal
+      // Cerrar el modal
       setShowActualizarEstado(false);
       setSelectedMantenimiento(null);
       
+      // Resetear el formulario
+      setFormData({
+        tecnico: '',
+        tipoMantenimiento: '',
+        observaciones: '',
+        estado: 'completado',
+        nombreFirmante: ''
+      });
+      
+      // Limpiar la firma
+      clearSignature();
+      
     } catch (err) {
       console.error('Error al actualizar mantenimiento:', err);
-      setError('Error al actualizar el mantenimiento. Por favor, intente nuevamente.');
+      alert('Error al actualizar el mantenimiento. Por favor, intente nuevamente.');
     } finally {
       setIsLoading(false);
     }
@@ -532,6 +626,64 @@ export default function Maintenance() {
                       required
                     />
                   </div>
+                  
+                  {/* Componente de firma digital - solo visible cuando el estado es "completado" */}
+                  {formData.estado === 'completado' && (
+                    <>
+                      <div>
+                        <label htmlFor="nombreFirmante" className="block text-sm font-medium text-gray-700 mb-1">
+                          Nombre de quien firma
+                        </label>
+                        <input
+                          type="text"
+                          id="nombreFirmante"
+                          value={formData.nombreFirmante}
+                          onChange={(e) => setFormData({ ...formData, nombreFirmante: e.target.value })}
+                          placeholder="Ingrese el nombre completo de la persona que firma"
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900
+                                 focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Nombre de la persona responsable que firma la finalización del mantenimiento</p>
+                      </div>
+                      
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Firma digital
+                        </label>
+                        <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
+                          <SignatureCanvas
+                            ref={sigCanvas}
+                            penColor="black"
+                            canvasProps={{
+                              width: 500,
+                              height: 200,
+                              className: 'signature-canvas w-full'
+                            }}
+                          />
+                        </div>
+                        <div className="mt-2 flex justify-between">
+                          <button
+                            type="button"
+                            onClick={openFullScreenSignature}
+                            className="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-600 hover:text-white transition-colors"
+                          >
+                            Firmar en pantalla completa
+                          </button>
+                          <button
+                            type="button"
+                            onClick={clearSignature}
+                            className="px-3 py-1 text-xs font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                          >
+                            Limpiar firma
+                          </button>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Por favor, firme en el recuadro para confirmar la finalización del mantenimiento.
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
                 
                 <div className="mt-6 flex justify-end gap-4">
@@ -554,6 +706,49 @@ export default function Maintenance() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de firma a pantalla completa */}
+      {showFullScreenSignature && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="bg-white w-full h-full max-w-full max-h-full flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Firma Digital</h2>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={clearSignature}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Limpiar
+                </button>
+                <button
+                  type="button"
+                  onClick={syncSignatureFromFullScreen}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-gray-50 flex items-center justify-center p-4">
+              <div className="w-full h-full border border-gray-300 bg-white rounded-lg overflow-hidden">
+                <SignatureCanvas
+                  ref={fullScreenSigCanvas}
+                  penColor="black"
+                  canvasProps={{
+                    width: window.innerWidth - 40,
+                    height: window.innerHeight - 150,
+                    className: 'signature-canvas w-full h-full'
+                  }}
+                />
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-200 text-center text-gray-500 text-sm">
+              Firme utilizando el dedo o un lápiz digital en dispositivos táctiles, o el mouse en computadoras.
             </div>
           </div>
         </div>

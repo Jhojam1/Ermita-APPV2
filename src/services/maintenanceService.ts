@@ -41,6 +41,8 @@ export interface MaintenanceItem {
   technicianId?: number;
   technicianName?: string;
   observations?: string;
+  signature?: string; // Campo para almacenar la firma digital
+  signerName?: string; // Nombre de la persona que firma
   createdBy?: number;
   createdByName?: string;
   createdAt?: string;
@@ -64,10 +66,20 @@ export interface MaintenanceItemUI {
   technicianId?: number;
   area?: string;
   responsable?: string;
+  firma?: string; // Firma digital en formato base64
+  nombreFirmante?: string; // Nombre de la persona que firma
   isAutoScheduled?: boolean;
 }
 
 const maintenanceService = {
+  // Funciones auxiliares exportadas
+  mapStatus,
+  mapStatusToBackend,
+  mapType,
+  mapTypeToBackend,
+  formatDate,
+  parseDate,
+  
   // Obtener todos los mantenimientos
   getAllMaintenances: async (): Promise<MaintenanceItem[]> => {
     try {
@@ -157,6 +169,18 @@ const maintenanceService = {
 
   // Mapear datos del backend a la UI
   mapToUI: (maintenanceItem: MaintenanceItem): MaintenanceItemUI => {
+    // Asegurarse de que la firma sea una cadena válida para una imagen base64
+    let firmaValida = null;
+    if (maintenanceItem.signature && typeof maintenanceItem.signature === 'string' && maintenanceItem.signature.trim() !== '') {
+      // Verificar si la firma ya tiene el prefijo de data URL
+      if (!maintenanceItem.signature.startsWith('data:')) {
+        // Agregar el prefijo si no lo tiene
+        firmaValida = `data:image/png;base64,${maintenanceItem.signature}`;
+      } else {
+        firmaValida = maintenanceItem.signature;
+      }
+    }
+    
     return {
       id: maintenanceItem.id?.toString() || '',
       equipo: maintenanceItem.inventoryItemName || 'Sin nombre',
@@ -171,6 +195,8 @@ const maintenanceService = {
       technicianId: maintenanceItem.technicianId,
       area: maintenanceItem.serviceArea || 'No especificada',
       responsable: maintenanceItem.responsible || 'No asignado',
+      firma: firmaValida,
+      nombreFirmante: maintenanceItem.signerName,
       isAutoScheduled: maintenanceItem.isAutoScheduled
     };
   },
@@ -189,7 +215,9 @@ const maintenanceService = {
       technicianName: maintenanceItemUI.tecnico,
       observations: maintenanceItemUI.observaciones,
       serviceArea: maintenanceItemUI.area,
-      responsible: maintenanceItemUI.responsable
+      responsible: maintenanceItemUI.responsable,
+      signature: maintenanceItemUI.firma,
+      signerName: maintenanceItemUI.nombreFirmante
     };
   }
 };
