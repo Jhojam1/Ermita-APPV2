@@ -88,6 +88,7 @@ const Sidebar = () => {
     onToggle: () => setReportsOpen(!reportsOpen),
     subItems: [
       { name: 'Mantenimientos', href: '/reportes', icon: ChartBarIcon },
+      { name: 'Hosvital', href: '/reportes/hosvital', icon: ChartBarIcon },
       // Aquí se añadirá el nuevo apartado de reportes para usuarios
     ]
   };

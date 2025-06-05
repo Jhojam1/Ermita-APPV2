@@ -6,7 +6,12 @@ import Home from './pages/Home';
 import Inventory from './pages/Inventory';
 import Maintenance from './pages/Maintenance';
 import MaintenanceConfig from './pages/MaintenanceConfig';
+<<<<<<< HEAD
 import Reports from './pages/ReportsNew';
+=======
+import Reports from './pages/Reports';
+import ReportesHosvital from './pages/ReportesHosvital';
+>>>>>>> f396c0ee9324919640e2a67a25a0cad674fe52b1
 import History from './pages/History';
 import Configuration from './pages/Configuration';
 import Users from './pages/Users';
@@ -45,6 +50,11 @@ function App() {
           <Route path="/reportes" element={
             <Layout>
               <Reports />
+            </Layout>
+          } />
+          <Route path="/reportes/hosvital" element={
+            <Layout>
+              <ReportesHosvital />
             </Layout>
           } />
           <Route path="/historial" element={
