@@ -62,11 +62,27 @@ export interface DateRange {
   endDate: string;   // Formato YYYY-MM-DD
 }
 
+export interface ScheduledVsCompletedData {
+  yearMonth: string;
+  scheduled: number;
+  completed: number;
+}
+
+export interface MaintenanceOverviewData {
+  scheduled: number;
+  inProgress: number;
+  completed: number;
+  cancelled: number;
+  total: number;
+}
+
 export interface DashboardData {
   summary: DashboardSummary;
   monthlyStats: MonthlyReport[];
   technicianStats: { [key: string]: TechnicianReport[] };
   equipmentStatus: { [key: string]: number };
+  scheduledVsCompleted?: ScheduledVsCompletedData[];
+  maintenanceOverview?: MaintenanceOverviewData;
 }
 
 // Servicio para manejar las operaciones de reportes
@@ -221,6 +237,62 @@ const reportService = {
     }
   },
 
+  // Obtener datos de mantenimientos programados vs. realizados
+  async getScheduledVsCompletedReport(dateRange: DateRange): Promise<ScheduledVsCompletedData[]> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No se encontró el token de autenticación');
+      }
+
+      const response = await axios.get(`${REPORTS_URL}/scheduled-vs-completed`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        params: {
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener datos de mantenimientos programados vs. realizados:', error);
+      return [];
+    }
+  },
+
+  // Obtener datos de visión general de mantenimientos
+  async getMaintenanceOverview(dateRange: DateRange): Promise<MaintenanceOverviewData> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No se encontró el token de autenticación');
+      }
+
+      const response = await axios.get(`${REPORTS_URL}/maintenance-overview`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        params: {
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate
+        }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener datos de visión general de mantenimientos:', error);
+      return {
+        scheduled: 0,
+        inProgress: 0,
+        completed: 0,
+        cancelled: 0,
+        total: 0
+      };
+    }
+  },
+
   // Obtener todos los datos para el dashboard
   async getDashboardData(dateRange: DateRange): Promise<DashboardData> {
     try {
@@ -248,9 +320,24 @@ const reportService = {
 
       // Crear un objeto de datos con valores por defecto
       const dashboardData: DashboardData = {
-        summary: [],
+        summary: {
+          total: 0,
+          preventive: 0,
+          corrective: 0,
+          averagePreventiveTime: 0,
+          averageCorrectiveTime: 0
+        },
         monthlyStats: [],
-        technicianStats: []
+        technicianStats: {},
+        equipmentStatus: { activo: 0, inactivo: 0 },
+        scheduledVsCompleted: [],
+        maintenanceOverview: {
+          scheduled: 0,
+          inProgress: 0,
+          completed: 0,
+          cancelled: 0,
+          total: 0
+        }
       };
 
       // Obtener datos de resumen
@@ -288,15 +375,46 @@ const reportService = {
       } catch (error) {
         console.error('Error al obtener estadísticas de técnicos:', error);
       }
+      
+      // Obtener datos de mantenimientos programados vs. realizados
+      try {
+        const scheduledVsCompleted = await this.getScheduledVsCompletedReport(dateRange);
+        dashboardData.scheduledVsCompleted = scheduledVsCompleted;
+      } catch (error) {
+        console.error('Error al obtener datos de mantenimientos programados vs. realizados:', error);
+      }
+      
+      // Obtener datos de visión general de mantenimientos
+      try {
+        const maintenanceOverview = await this.getMaintenanceOverview(dateRange);
+        dashboardData.maintenanceOverview = maintenanceOverview;
+      } catch (error) {
+        console.error('Error al obtener datos de visión general de mantenimientos:', error);
+      }
 
       return dashboardData;
     } catch (error) {
       console.error('Error al obtener los datos del dashboard:', error);
       // Devolver datos vacíos en lugar de lanzar el error
       return {
-        summary: [],
+        summary: {
+          total: 0,
+          preventive: 0,
+          corrective: 0,
+          averagePreventiveTime: 0,
+          averageCorrectiveTime: 0
+        },
         monthlyStats: [],
-        technicianStats: []
+        technicianStats: {},
+        equipmentStatus: { activo: 0, inactivo: 0 },
+        scheduledVsCompleted: [],
+        maintenanceOverview: {
+          scheduled: 0,
+          inProgress: 0,
+          completed: 0,
+          cancelled: 0,
+          total: 0
+        }
       };
     }
   }

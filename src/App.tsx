@@ -6,7 +6,7 @@ import Home from './pages/Home';
 import Inventory from './pages/Inventory';
 import Maintenance from './pages/Maintenance';
 import MaintenanceConfig from './pages/MaintenanceConfig';
-import Reports from './pages/Reports';
+import Reports from './pages/ReportsNew';
 import History from './pages/History';
 import Configuration from './pages/Configuration';
 import Users from './pages/Users';
