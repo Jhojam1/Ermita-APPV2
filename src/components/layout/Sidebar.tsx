@@ -37,7 +37,7 @@ const Sidebar = () => {
     setIsOpen(false);
   }, [location.pathname]);
 
-  // Abrir el menú de configuración si estamos en una ruta de configuración
+  // Abrir el menú correspondiente según la ruta actual
   useEffect(() => {
     if (location.pathname?.startsWith('/configuracion')) {
       setConfigOpen(true);
@@ -48,7 +48,9 @@ const Sidebar = () => {
     if (location.pathname?.startsWith('/inventario')) {
       setInventoryOpen(true);
     }
-    if (location.pathname?.startsWith('/mantenimientos') || location.pathname?.startsWith('/historial')) {
+    // Abrir el menú de mantenimientos
+    if (location.pathname?.startsWith('/mantenimientos') || 
+        location.pathname?.startsWith('/historial')) {
       setMaintenanceOpen(true);
     }
   }, [location.pathname]);
@@ -93,10 +95,13 @@ const Sidebar = () => {
     ]
   };
 
+  // Eliminado el elemento de menú para Programación de Mantenimientos (trasladado a configuración)
+  
+  // Elementos del menú de configuración
   const configItems = [
     { name: 'Usuarios', href: '/configuracion/usuarios', icon: UserGroupIcon },
     { name: 'Empresas Y Sedes', href: '/configuracion/empresas', icon: BuildingOfficeIcon },
-    { name: 'Programacion De Mantenimientos', href: '/mantenimientos/configuracion', icon: WrenchScrewdriverIcon },
+    { name: 'Programación de Mantenimientos', href: '/configuracion/mantenimientos', icon: WrenchScrewdriverIcon },
   ];
   
   // Filtrar los elementos del menú según el rol del usuario
@@ -109,10 +114,10 @@ const Sidebar = () => {
     // El técnico solo tiene acceso a inventario y mantenimientos
     menuItems = [dashboardItem, inventoryItem, maintenanceItem];
   } else if (userRole === 'Usuario') {
-    // El usuario solo tiene acceso a reportes
+    // El usuario solo tiene acceso al dashboard y reportes
     menuItems = [dashboardItem, reportsItem];
   } else {
-    // Por defecto, mostrar solo dashboard
+    // Por defecto, solo mostrar el dashboard
     menuItems = [dashboardItem];
   }
 

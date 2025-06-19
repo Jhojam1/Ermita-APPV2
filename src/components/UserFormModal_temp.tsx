@@ -170,13 +170,10 @@ export default function UserFormModal({ isOpen, onClose, onSave, user, isEditing
       newErrors.fullName = 'El nombre completo es requerido';
     }
     
-    // Solo validar el correo electrónico si no estamos en modo edición
-    if (!isEditing) {
-      if (!formData.mail.trim()) {
-        newErrors.mail = 'El correo electrónico es requerido';
-      } else if (!/\S+@\S+\.\S+/.test(formData.mail)) {
-        newErrors.mail = 'El correo electrónico no es válido';
-      }
+    if (!formData.mail.trim()) {
+      newErrors.mail = 'El correo electrónico es requerido';
+    } else if (!/\\S+@\\S+\\.\\S+/.test(formData.mail)) {
+      newErrors.mail = 'El correo electrónico no es válido';
     }
     
     if (!isEditing && !formData.password?.trim()) {
@@ -443,18 +440,20 @@ export default function UserFormModal({ isOpen, onClose, onSave, user, isEditing
             )}
           </div>
           
-          {/* Campo de firma digital para todos los usuarios */}
-          <div className="mb-6">
-            <SignaturePad
-              value={formData.signature}
-              onChange={handleSignatureChange}
-              label="Firma Digital"
-              required={false}
-            />
-            {errors.signature && (
-              <p className="mt-1 text-sm text-red-600">{errors.signature}</p>
-            )}
-          </div>
+          {/* Campo de firma digital solo para técnicos */}
+          {formData.role === 'Tecnico' && (
+            <div className="mb-6">
+              <SignaturePad
+                value={formData.signature}
+                onChange={handleSignatureChange}
+                label="Firma Digital del Técnico"
+                required={false}
+              />
+              {errors.signature && (
+                <p className="mt-1 text-sm text-red-600">{errors.signature}</p>
+              )}
+            </div>
+          )}
           
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
             <button

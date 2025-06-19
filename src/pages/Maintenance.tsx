@@ -160,14 +160,31 @@ export default function Maintenance() {
       // Obtener usuario actual para obtener datos del técnico
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       
-      // Mapear estado del formulario al formato esperado por el backend
-      const estadoBackend = formData.estado === 'completado' 
-        ? 'COMPLETADO' 
-        : formData.estado === 'en_proceso' 
-          ? 'EN_PROCESO' 
-          : formData.estado === 'cancelado'
-            ? 'CANCELADO'
-            : 'PROGRAMADO';
+      // Mapear el estado seleccionado al formato del backend
+      const estadoBackend = formData.estado === 'completado' ? 'COMPLETADO' : 
+                           formData.estado === 'en_proceso' ? 'EN_PROCESO' : 
+                           formData.estado === 'cancelado' ? 'CANCELADO'
+                             : 'PROGRAMADO';
+      
+      // Validar si el estado es completado
+      if (formData.estado === 'completado') {
+        const signatureImage = getSignatureImage();
+        console.log('[DEBUG] Firma capturada:', signatureImage ? 'Sí (longitud: ' + signatureImage.length + ')' : 'No');
+        
+        if (!signatureImage) {
+          alert('Por favor, firme el documento para confirmar la finalización del mantenimiento.');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Validar el nombre del firmante
+        console.log('[DEBUG] Nombre del firmante:', formData.nombreFirmante);
+        if (!formData.nombreFirmante.trim()) {
+          alert('Por favor, ingrese el nombre del firmante.');
+          setIsLoading(false);
+          return;
+        }
+      }
       
       // Preparar datos para actualización - incluir todos los datos necesarios
       const updateData: MaintenanceItem = {
@@ -182,55 +199,58 @@ export default function Maintenance() {
         responsible: selectedMantenimiento.responsable,
         description: selectedMantenimiento.descripcion,
         scheduledDate: maintenanceService.parseDate(selectedMantenimiento.fechaProgramada),
-        type: maintenanceService.mapTypeToBackend(selectedMantenimiento.tipo),
-        
-        // Actualizar con los nuevos datos
-        status: estadoBackend as any,
-        technicianName: currentUser.fullName,
-        technicianId: currentUser.id,
+        status: estadoBackend,
         observations: formData.observaciones,
+        technicianName: formData.tecnico,
       };
       
-      // Si el estado es completado, verificar que haya una firma y añadir datos adicionales
+      // Si el estado es completado, agregar la fecha de finalización y la firma
       if (formData.estado === 'completado') {
-        // Obtener la firma digital
-        const signatureImage = getSignatureImage();
-        
-        // Verificar que haya una firma
-        if (!signatureImage) {
-          alert('Por favor, añade una firma para completar el mantenimiento.');
-          setIsLoading(false);
-          return;
-        }
-        
-        // Verificar que se haya ingresado el nombre del firmante
-        if (!formData.nombreFirmante.trim()) {
-          alert('Por favor, ingresa el nombre de la persona que firma.');
-          setIsLoading(false);
-          return;
-        }
-        
-        // Añadir la firma, el nombre del firmante y la fecha de completado
-        updateData.signature = signatureImage;
-        updateData.signerName = formData.nombreFirmante;
         updateData.completionDate = new Date().toISOString();
-      } else {
-        // Si no es completado, asegurarse de que estos campos estén vacíos
-        updateData.signature = '';
-        updateData.signerName = '';
+        console.log('[DEBUG] Fecha de finalización:', updateData.completionDate);
+        
+        // Guardar la firma del responsable
+        const firmaResponsable = getSignatureImage();
+        updateData.signature = firmaResponsable;
+        updateData.signerName = formData.nombreFirmante;
+        console.log('[DEBUG] Firma del responsable asignada:', firmaResponsable ? 'Sí (longitud: ' + firmaResponsable.length + ')' : 'No');
+        
+        // Guardar la firma del técnico también (la misma firma se usa para ambos)
+        // En un caso real, se podrían capturar firmas separadas para técnico y responsable
+        const firmaTecnico = getSignatureImage();
+        updateData.technicianSignature = firmaTecnico;
+        console.log('[DEBUG] Firma del técnico asignada:', firmaTecnico ? 'Sí (longitud: ' + firmaTecnico.length + ')' : 'No');
       }
       
-      // Actualizar el mantenimiento
-      await maintenanceService.updateMaintenance(parseInt(selectedMantenimiento.id), updateData);
+      // Enviar la actualización al backend
+      console.log('[DEBUG] Enviando datos al backend:', JSON.stringify({
+        id: parseInt(selectedMantenimiento.id),
+        estado: updateData.status,
+        tieneFirmaResponsable: !!updateData.signature,
+        tieneFirmaTecnico: !!updateData.technicianSignature,
+        nombreFirmante: updateData.signerName,
+        nombreTecnico: updateData.technicianName
+      }));
+      
+      try {
+        const respuesta = await maintenanceService.updateMaintenance(
+          parseInt(selectedMantenimiento.id), 
+          updateData
+        );
+        console.log('[DEBUG] Respuesta del backend:', respuesta);
+      } catch (error) {
+        console.error('[DEBUG] Error al actualizar mantenimiento:', error);
+        throw error;
+      }
       
       // Actualizar la lista de mantenimientos
       await fetchMaintenances();
       
-      // Cerrar el modal
+      // Cerrar el modal y limpiar la selección
       setShowActualizarEstado(false);
       setSelectedMantenimiento(null);
       
-      // Resetear el formulario
+      // Reiniciar el formulario
       setFormData({
         tecnico: '',
         tipoMantenimiento: '',
@@ -242,9 +262,9 @@ export default function Maintenance() {
       // Limpiar la firma
       clearSignature();
       
-    } catch (err) {
-      console.error('Error al actualizar mantenimiento:', err);
-      alert('Error al actualizar el mantenimiento. Por favor, intente nuevamente.');
+    } catch (error) {
+      console.error('Error al actualizar el mantenimiento:', error);
+      alert('Ocurrió un error al actualizar el mantenimiento. Por favor, intente nuevamente.');
     } finally {
       setIsLoading(false);
     }

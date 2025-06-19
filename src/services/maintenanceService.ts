@@ -41,8 +41,9 @@ export interface MaintenanceItem {
   technicianId?: number;
   technicianName?: string;
   observations?: string;
-  signature?: string; // Campo para almacenar la firma digital
+  signature?: string; // Campo para almacenar la firma digital del responsable
   signerName?: string; // Nombre de la persona que firma
+  technicianSignature?: string; // Campo para almacenar la firma digital del técnico
   createdBy?: number;
   createdByName?: string;
   createdAt?: string;
@@ -66,8 +67,9 @@ export interface MaintenanceItemUI {
   technicianId?: number;
   area?: string;
   responsable?: string;
-  firma?: string; // Firma digital en formato base64
+  firma?: string; // Firma digital del responsable en formato base64
   nombreFirmante?: string; // Nombre de la persona que firma
+  firmaTecnico?: string; // Firma digital del técnico en formato base64
   isAutoScheduled?: boolean;
 }
 
@@ -169,15 +171,48 @@ const maintenanceService = {
 
   // Mapear datos del backend a la UI
   mapToUI: (maintenanceItem: MaintenanceItem): MaintenanceItemUI => {
-    // Asegurarse de que la firma sea una cadena válida para una imagen base64
-    let firmaValida = null;
+    let firmaValida = '';
+    let firmaTecnicoValida = '';
+    
+    console.log(`[DEBUG] Procesando mantenimiento ID: ${maintenanceItem.id}`);
+    console.log(`[DEBUG] ¿Tiene firma de responsable?: ${!!maintenanceItem.signature}`);
+    console.log(`[DEBUG] ¿Tiene firma de técnico?: ${!!maintenanceItem.technicianSignature}`);
+    
+    // Procesar firma del responsable
     if (maintenanceItem.signature && typeof maintenanceItem.signature === 'string' && maintenanceItem.signature.trim() !== '') {
+      console.log('[DEBUG] Firma de responsable encontrada, longitud:', maintenanceItem.signature.length);
       // Verificar si la firma ya tiene el prefijo de data URL
       if (!maintenanceItem.signature.startsWith('data:')) {
         // Agregar el prefijo si no lo tiene
         firmaValida = `data:image/png;base64,${maintenanceItem.signature}`;
+        console.log('[DEBUG] Se agregó prefijo a firma de responsable');
       } else {
         firmaValida = maintenanceItem.signature;
+        console.log('[DEBUG] Firma de responsable ya tiene prefijo');
+      }
+    } else {
+      console.log('[DEBUG] No se encontró firma de responsable válida');
+      if (maintenanceItem.signature) {
+        console.log('[DEBUG] Valor de firma de responsable:', typeof maintenanceItem.signature, maintenanceItem.signature.substring(0, 20) + '...');
+      }
+    }
+    
+    // Procesar firma del técnico
+    if (maintenanceItem.technicianSignature && typeof maintenanceItem.technicianSignature === 'string' && maintenanceItem.technicianSignature.trim() !== '') {
+      console.log('[DEBUG] Firma de técnico encontrada, longitud:', maintenanceItem.technicianSignature.length);
+      // Verificar si la firma ya tiene el prefijo de data URL
+      if (!maintenanceItem.technicianSignature.startsWith('data:')) {
+        // Agregar el prefijo si no lo tiene
+        firmaTecnicoValida = `data:image/png;base64,${maintenanceItem.technicianSignature}`;
+        console.log('[DEBUG] Se agregó prefijo a firma de técnico');
+      } else {
+        firmaTecnicoValida = maintenanceItem.technicianSignature;
+        console.log('[DEBUG] Firma de técnico ya tiene prefijo');
+      }
+    } else {
+      console.log('[DEBUG] No se encontró firma de técnico válida');
+      if (maintenanceItem.technicianSignature) {
+        console.log('[DEBUG] Valor de firma de técnico:', typeof maintenanceItem.technicianSignature, maintenanceItem.technicianSignature.substring(0, 20) + '...');
       }
     }
     
@@ -197,6 +232,7 @@ const maintenanceService = {
       responsable: maintenanceItem.responsible || 'No asignado',
       firma: firmaValida,
       nombreFirmante: maintenanceItem.signerName,
+      firmaTecnico: firmaTecnicoValida,
       isAutoScheduled: maintenanceItem.isAutoScheduled
     };
   },
@@ -217,7 +253,8 @@ const maintenanceService = {
       serviceArea: maintenanceItemUI.area,
       responsible: maintenanceItemUI.responsable,
       signature: maintenanceItemUI.firma,
-      signerName: maintenanceItemUI.nombreFirmante
+      signerName: maintenanceItemUI.nombreFirmante,
+      technicianSignature: maintenanceItemUI.firmaTecnico
     };
   }
 };

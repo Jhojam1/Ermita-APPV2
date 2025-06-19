@@ -38,7 +38,7 @@ function App() {
               <Maintenance />
             </Layout>
           } />
-          <Route path="/mantenimientos/configuracion" element={
+          <Route path="/configuracion/mantenimientos" element={
             <Layout>
               <MaintenanceConfig />
             </Layout>

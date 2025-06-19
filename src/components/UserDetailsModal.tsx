@@ -66,6 +66,19 @@ export default function UserDetailsModal({ isOpen, onClose, user }: UserDetailsM
               <p className="text-sm text-gray-900">{user.sede}</p>
             </div>
           </div>
+          
+          {user.firma && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-gray-500 mb-2">Firma Digital</p>
+              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <img 
+                  src={user.firma} 
+                  alt="Firma digital" 
+                  className="max-h-32 mx-auto"
+                />
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="p-6 border-t border-gray-100 flex justify-end">

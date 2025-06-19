@@ -39,6 +39,7 @@ export interface UserItem {
   headquarterId?: number;
   companyName?: string;
   headquarterName?: string;
+  signature?: string;
 }
 
 // Interfaces para los datos que se muestran en la UI
@@ -54,6 +55,7 @@ export interface UserItemUI {
   sede: string;
   companyId?: number;
   headquarterId?: number;
+  firma?: string;
 }
 
 const userService = {
@@ -76,6 +78,27 @@ const userService = {
     } catch (error) {
       console.error(`Error al obtener usuario con ID ${id}:`, error);
       throw error;
+    }
+  },
+  
+  // Obtener la firma de un usuario por ID
+  getUserSignature: async (id: number): Promise<string | null> => {
+    try {
+      console.log(`[DEBUG] Obteniendo firma del usuario con ID ${id}`);
+      const user = await userService.getUserById(id);
+      if (user && user.signature) {
+        console.log(`[DEBUG] Firma encontrada para el usuario ${user.fullName}`);
+        // Verificar si la firma ya tiene el prefijo de data URL
+        if (!user.signature.startsWith('data:')) {
+          return `data:image/png;base64,${user.signature}`;
+        }
+        return user.signature;
+      }
+      console.log(`[DEBUG] No se encontró firma para el usuario con ID ${id}`);
+      return null;
+    } catch (error) {
+      console.error(`Error al obtener la firma del usuario con ID ${id}:`, error);
+      return null;
     }
   },
 
@@ -164,6 +187,7 @@ const userService = {
       sede: user.headquarterName || 'No asignada',
       companyId: user.companyId,
       headquarterId: user.headquarterId,
+      firma: user.signature,
     };
   },
 
@@ -179,6 +203,7 @@ const userService = {
       role: user.rol,
       companyId: user.companyId,
       headquarterId: user.headquarterId,
+      signature: user.firma,
       // No incluimos password aquí para evitar sobrescribir la contraseña en actualizaciones
     };
   }

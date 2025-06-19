@@ -5,7 +5,8 @@ import {
   DocumentIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import maintenanceService, { MaintenanceItemUI } from '../services/maintenanceService';
+import maintenanceService from '../services/maintenanceService';
+import userService from '../services/userService';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -14,6 +15,7 @@ export default function History() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMantenimiento, setSelectedMantenimiento] = useState<MaintenanceItemUI | null>(null);
+  const [technicianSignature, setTechnicianSignature] = useState<string | null>(null);
   const [showDetallesModal, setShowDetallesModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -34,6 +36,17 @@ export default function History() {
       setIsLoading(true);
       setError(null);
       const data = await maintenanceService.getMaintenancesByStatus('COMPLETADO');
+      console.log('Datos recibidos de mantenimientos completados:', data);
+      
+      // Verificar si hay firmas de técnicos en los datos
+      const firmasTecnicos = data.filter(item => item.firmaTecnico);
+      console.log('Mantenimientos con firma de técnico:', firmasTecnicos.length);
+      if (firmasTecnicos.length > 0) {
+        console.log('Ejemplo de firma de técnico:', firmasTecnicos[0].firmaTecnico?.substring(0, 50) + '...');
+      } else {
+        console.log('No se encontraron firmas de técnicos en los datos');
+      }
+      
       const mappedData = data.map(item => maintenanceService.mapToUI(item));
       setMantenimientosData(mappedData);
     } catch (err) {
@@ -44,9 +57,44 @@ export default function History() {
     }
   };
 
+  // Función para obtener la firma del técnico desde el servicio de usuarios
+  const fetchTechnicianSignature = async (technicianId: number | undefined) => {
+    console.log('[DEBUG] Datos del mantenimiento seleccionado:', {
+      id: selectedMantenimiento?.id,
+      tecnico: selectedMantenimiento?.tecnico,
+      technicianId: selectedMantenimiento?.technicianId,
+      nombreTecnico: selectedMantenimiento?.nombreTecnico
+    });
+    
+    if (!technicianId) {
+      console.log('[DEBUG] No hay ID de técnico disponible en el mantenimiento');
+      setTechnicianSignature(null);
+      return;
+    }
+    
+    try {
+      console.log(`[DEBUG] Obteniendo firma del técnico con ID ${technicianId}`);
+      const signature = await userService.getUserSignature(technicianId);
+      console.log(`[DEBUG] Firma del técnico obtenida:`, signature ? `Sí (longitud: ${signature.length})` : 'No');
+      setTechnicianSignature(signature);
+    } catch (error) {
+      console.error('[DEBUG] Error al obtener la firma del técnico:', error);
+      setTechnicianSignature(null);
+    }
+  };
+
+  // Función para mostrar los detalles de un mantenimiento
   const handleVerDetalles = (mantenimiento: MaintenanceItemUI) => {
     setSelectedMantenimiento(mantenimiento);
     setShowDetallesModal(true);
+    
+    // Si el mantenimiento tiene un ID de técnico, obtener su firma
+    if (mantenimiento.technicianId) {
+      fetchTechnicianSignature(mantenimiento.technicianId);
+    } else {
+      console.log('[DEBUG] El mantenimiento no tiene ID de técnico');
+      setTechnicianSignature(null);
+    }
   };
 
   const handleDescargarReporte = async (id: string) => {
@@ -58,14 +106,43 @@ export default function History() {
         return;
       }
       
-      // Verificar si el mantenimiento tiene firma
+      console.log('[DEBUG] Generando reporte para mantenimiento:', {
+        id: mantenimiento.id,
+        tecnico: mantenimiento.tecnico,
+        technicianId: mantenimiento.technicianId
+      });
       
-      // Verificar si hay firma y precargarla para asegurar que esté disponible para el PDF
+      // Verificar si hay firma del responsable y precargarla para asegurar que esté disponible para el PDF
       let firmaValida = false;
       let firmaImg = null;
       let firmaUrl = mantenimiento.firma;
       
-      // Si la firma existe pero no tiene el formato correcto, intentar corregirla
+      // Verificar si hay firma del técnico y precargarla
+      let firmaTecnicoUrl = null;
+      
+      // Obtener la firma del técnico desde el servicio de usuarios si hay un ID de técnico
+      if (mantenimiento.technicianId) {
+        try {
+          console.log(`[DEBUG] Obteniendo firma del técnico con ID ${mantenimiento.technicianId} para el reporte`);
+          const technicianSignature = await userService.getUserSignature(mantenimiento.technicianId);
+          if (technicianSignature) {
+            firmaTecnicoUrl = technicianSignature;
+            console.log('[DEBUG] Firma del técnico obtenida para el reporte, longitud:', technicianSignature.length);
+          } else {
+            console.log('[DEBUG] No se pudo obtener la firma del técnico para el reporte');
+          }
+        } catch (error) {
+          console.error('[DEBUG] Error al obtener la firma del técnico para el reporte:', error);
+        }
+      } else if (mantenimiento.firmaTecnico) {
+        // Usar la firma del técnico del mantenimiento si existe
+        firmaTecnicoUrl = mantenimiento.firmaTecnico;
+        console.log('[DEBUG] Usando firma del técnico del objeto mantenimiento');
+      } else {
+        console.log('[DEBUG] No hay firma de técnico disponible');
+      }
+      
+      // Si la firma del responsable existe pero no tiene el formato correcto, intentar corregirla
       if (firmaUrl && typeof firmaUrl === 'string' && firmaUrl.trim() !== '') {
         // Si la firma no comienza con 'data:', agregar el prefijo de data URL
         if (!firmaUrl.startsWith('data:')) {
@@ -96,6 +173,15 @@ export default function History() {
           firmaValida = false;
         }
       }
+      
+      // Asegurar que la firma del técnico tenga el formato correcto
+      if (firmaTecnicoUrl && typeof firmaTecnicoUrl === 'string' && firmaTecnicoUrl.trim() !== '') {
+        // Si la firma no comienza con 'data:', agregar el prefijo de data URL
+        if (!firmaTecnicoUrl.startsWith('data:')) {
+          firmaTecnicoUrl = `data:image/png;base64,${firmaTecnicoUrl}`;
+        }
+        console.log('[DEBUG] Firma del técnico preparada para el PDF');
+      }
 
       // Crear un elemento temporal para renderizar el informe
       const reporteContainer = document.createElement('div');
@@ -113,104 +199,117 @@ export default function History() {
         year: 'numeric'
       });
       
-      // Crear el contenido del informe
+      // Crear el contenido del informe con un diseño que ocupe toda la hoja
       reporteContainer.innerHTML = `
-        <div style="padding: 30px; font-family: Arial, sans-serif; line-height: 1.5; max-width: 750px; margin: 0 auto; display: flex; flex-direction: column; min-height: 100%;">
-          <!-- Encabezado con título -->
-          <div style="text-align: center; margin-bottom: 25px; border-bottom: 1px solid #000;">
-            <h1 style="font-size: 22px; color: #000; margin: 0 0 10px 0; text-transform: uppercase;">INFORME DE MANTENIMIENTO</h1>
-          </div>
+        <div style="padding: 15px; font-family: Arial, sans-serif; line-height: 1.3; max-width: 750px; margin: 0 auto; height: 1056px; display: flex; flex-direction: column; box-sizing: border-box;">
+          <!-- Contenido principal - distribuido con mejor espaciado -->
+          <div style="flex: 0 0 auto;">
+            <!-- Encabezado -->
+            <div style="text-align: center; margin-bottom: 25px; padding-top: 15px;">
+              <h1 style="font-size: 22px; margin: 0 0 8px 0; text-transform: uppercase; color: #000;">Informe de Mantenimiento</h1>
+              <p style="margin: 0; font-size: 14px; color: #000;">ID: ${mantenimiento.id.padStart(4, '0')} | Fecha: ${fechaActual}</p>
+            </div>
           
-          <!-- Contenido principal -->
-          <div style="flex: 1;">
-            <!-- Datos generales -->
-            <div style="margin-bottom: 20px;">
-              <h2 style="font-size: 16px; color: #1a4e8e; margin: 0 0 10px 0; border-bottom: 1px solid #1a4e8e; padding-bottom: 5px;">DATOS GENERALES</h2>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="width: 50%; padding: 4px 10px 4px 0;"><strong>Fecha del Informe:</strong></td>
-                  <td style="width: 50%; padding: 4px 0;">${fechaActual}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 4px 10px 4px 0;"><strong>ID del Mantenimiento:</strong></td>
-                  <td style="padding: 4px 0;">${mantenimiento.id.padStart(4, '0')}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 4px 10px 4px 0;"><strong>Responsable:</strong></td>
-                  <td style="padding: 4px 0;">${mantenimiento.tecnico}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 4px 10px 4px 0;"><strong>Área Solicitante:</strong></td>
-                  <td style="padding: 4px 0;">${mantenimiento.area || 'No especificada'}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 4px 10px 4px 0;"><strong>Tipo de Mantenimiento:</strong></td>
-                  <td style="padding: 4px 0;">${mantenimiento.tipo}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 4px 10px 4px 0;"><strong>Equipo:</strong></td>
-                  <td style="padding: 4px 0;">${mantenimiento.equipo}</td>
-                </tr>
-              </table>
-            </div>
-            
-            <!-- Detalle del mantenimiento -->
-            <div style="margin-bottom: 20px;">
-              <h2 style="font-size: 16px; color: #1a4e8e; margin: 0 0 10px 0; border-bottom: 1px solid #1a4e8e; padding-bottom: 5px;">DETALLE DEL MANTENIMIENTO</h2>
-              
-              <div style="margin-bottom: 15px;">
-                <h3 style="font-size: 14px; color: #000; margin: 0 0 5px 0;">Descripción del Servicio:</h3>
-                <p style="margin: 0; padding: 5px 0; color: #000;">${mantenimiento.descripcion}</p>
+            <!-- Datos principales sin tablas -->
+            <div style="margin-bottom: 25px; font-size: 14px; color: #000;">
+              <div style="border-bottom: 1px solid #ddd; padding-bottom: 15px; margin-bottom: 15px;">
+              <div style="display: flex; margin-bottom: 15px;">
+                <div style="width: 50%; padding-right: 15px;">
+                  <div style="margin-bottom: 10px;">
+                    <strong style="display: inline-block; width: 130px;">Equipo:</strong>
+                    <span>${mantenimiento.equipo}</span>
+                  </div>
+                  <div style="margin-bottom: 10px;">
+                    <strong style="display: inline-block; width: 130px;">Tipo:</strong>
+                    <span>${mantenimiento.tipo}</span>
+                  </div>
+                  <div>
+                    <strong style="display: inline-block; width: 130px;">Estado:</strong>
+                    <span>${mantenimiento.estado}</span>
+                  </div>
+                </div>
+                <div style="width: 50%; padding-left: 15px;">
+                  <div style="margin-bottom: 10px;">
+                    <strong style="display: inline-block; width: 130px;">Técnico:</strong>
+                    <span>${mantenimiento.tecnico}</span>
+                  </div>
+                  <div style="margin-bottom: 10px;">
+                    <strong style="display: inline-block; width: 130px;">Área:</strong>
+                    <span>${mantenimiento.area || 'No especificada'}</span>
+                  </div>
+                  <div>
+                    <strong style="display: inline-block; width: 130px;">Fecha programada:</strong>
+                    <span>${mantenimiento.fechaProgramada}</span>
+                  </div>
+                  ${mantenimiento.fechaCompletado ? `
+                  <div style="margin-top: 10px;">
+                    <strong style="display: inline-block; width: 130px;">Fecha completado:</strong>
+                    <span>${mantenimiento.fechaCompletado}</span>
+                  </div>` : ''}
+                </div>
               </div>
-              
-
-            </div>
-            
-            <!-- Observaciones -->
-            <div style="margin-bottom: 20px;">
-              <h2 style="font-size: 16px; color: #1a4e8e; margin: 0 0 10px 0; border-bottom: 1px solid #1a4e8e; padding-bottom: 5px;">OBSERVACIONES</h2>
-              <p style="margin: 0; padding: 5px 0; color: #000;">${mantenimiento.observaciones || 'Sin observaciones'}</p>
-            </div>
-            
-            <!-- Conformidad -->
-            <div style="margin-bottom: 20px;">
-              <h2 style="font-size: 16px; color: #1a4e8e; margin: 0 0 10px 0; border-bottom: 1px solid #1a4e8e; padding-bottom: 5px;">CONFORMIDAD</h2>
-              <p style="margin: 0; color: #000; text-align: justify;">
-                Se deja constancia de que el servicio de mantenimiento ${mantenimiento.tipo.toLowerCase()} fue realizado de manera satisfactoria, conforme a los protocolos establecidos y dentro de los tiempos programados. Durante la intervención, se llevaron a cabo las actividades correspondientes de inspección, limpieza, ajuste y verificación del funcionamiento de los equipos, garantizando el cumplimiento de los estándares de calidad y seguridad.
-              </p>
-              <p style="margin-top: 10px; color: #000; text-align: justify;">
-                Como resultado del mantenimiento, los equipos intervenidos se encuentran en condiciones operativas adecuadas, listos para su uso continuo y sin presentar fallas evidentes. Esta conformidad se emite una vez verificado el correcto funcionamiento de los mismos al término del servicio.
-              </p>
             </div>
           </div>
           
-          <!-- Firmas (al final de la página) -->
-          <div style="margin-top: auto; padding-top: 30px;">
-            <div style="display: flex; justify-content: space-between;">
-              <div style="width: 45%;">
-                <p style="font-weight: bold; margin-bottom: 8px; color: #000; text-align: center;">Firma del Técnico</p>
-                <div style="height: 70px; border: 1px solid #000; margin-bottom: 8px; display: flex; align-items: center; justify-content: center;"></div>
-                <p style="margin: 0; color: #000; text-align: center;">${mantenimiento.tecnico}</p>
+            <!-- Descripción con línea separadora superior -->
+            <div style="margin-bottom: 25px; border-top: 1px solid #ddd; padding-top: 15px;">
+              <h2 style="font-size: 18px; margin: 0 0 10px 0; color: #000; font-weight: bold;">Descripción</h2>
+              <div style="font-size: 14px; min-height: 60px; padding: 0 10px; color: #000;">${mantenimiento.descripcion}</div>
+            </div>
+          
+            <!-- Observaciones - con espacio considerable sin cuadro -->
+            <div style="margin-bottom: 30px;">
+              <h2 style="font-size: 18px; margin: 0 0 10px 0; color: #000; font-weight: bold;">Observaciones Técnicas</h2>
+              <div style="font-size: 14px; min-height: 100px; padding: 0 10px; color: #000;">${mantenimiento.observaciones || 'Sin observaciones'}</div>
+            </div>
+          
+            <!-- Texto de conformidad mejorado -->
+            <div style="margin-bottom: 30px;">
+              <h2 style="font-size: 18px; margin: 0 0 10px 0; color: #000; font-weight: bold;">Certificación de Conformidad</h2>
+              <p style="font-size: 14px; line-height: 1.5; margin: 0; color: #000; text-align: justify; padding: 0 15px;">
+                Por medio del presente documento, se certifica que el servicio de mantenimiento ${mantenimiento.tipo.toLowerCase()} identificado con el código ${mantenimiento.id.padStart(4, '0')} ha sido ejecutado satisfactoriamente en la fecha ${mantenimiento.fechaCompletado || 'no especificada'}, cumpliendo con todos los protocolos técnicos establecidos y dentro del cronograma previsto. Este documento tiene validez como constancia de la realización y aprobación del servicio.
+              </p>
+            </div>
+          </div>
+          
+          <!-- Espaciador que empuja las firmas hacia abajo -->
+          <div style="flex: 1 0 auto;"></div>
+          
+          <!-- Sección de firmas y pie de página - posición fija en la parte inferior -->
+          <div style="flex: 0 0 auto; margin-top: auto;">
+            <!-- Firmas -->
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+              <div style="width: 45%; text-align: center;">
+                <div style="min-height: 60px; margin-bottom: 5px;">
+                  ${firmaTecnicoUrl ? 
+                    `<img src="${firmaTecnicoUrl}" style="max-width: 80%; max-height: 60px; display: block; margin: 0 auto;">` : 
+                    `<p style="font-style: italic; color: #000; font-size: 12px; margin-top: 20px;">Sin firma</p>`
+                  }
+                </div>
+                <div style="border-top: 1px solid #000; padding-top: 5px;">
+                  <p style="margin: 0; font-size: 13px; color: #000;">${mantenimiento.tecnico}</p>
+                  <p style="margin: 2px 0 0; font-size: 11px; color: #000;">Técnico</p>
+                </div>
               </div>
               
-              <div style="width: 45%;">
-                <p style="font-weight: bold; margin-bottom: 8px; color: #000; text-align: center;">Firma del Responsable del Equipo</p>
-                ${firmaValida 
-                  ? `<div style="height: 70px; border: 1px solid #000; margin-bottom: 8px; display: flex; align-items: center; justify-content: center;">
-                      <img src="${firmaUrl}" style="max-width: 90%; max-height: 65px; object-fit: contain;">
-                    </div>` 
-                  : `<div style="height: 70px; border: 1px solid #000; margin-bottom: 8px; display: flex; align-items: center; justify-content: center;">
-                      <p style="color: #000; font-size: 11px;">Firma no disponible</p>
-                    </div>`
-                }
-                <p style="margin: 0; color: #000; text-align: center;">${mantenimiento.nombreFirmante || mantenimiento.responsable || 'No especificado'}</p>
+              <div style="width: 45%; text-align: center;">
+                <div style="min-height: 60px; margin-bottom: 5px;">
+                  ${firmaValida ? 
+                    `<img src="${firmaUrl}" style="max-width: 80%; max-height: 60px; display: block; margin: 0 auto;">` : 
+                    `<p style="font-style: italic; color: #000; font-size: 12px; margin-top: 20px;">Sin firma</p>`
+                  }
+                </div>
+                <div style="border-top: 1px solid #000; padding-top: 5px;">
+                  <p style="margin: 0; font-size: 13px; color: #000;">${mantenimiento.nombreFirmante || mantenimiento.responsable || 'No especificado'}</p>
+                  <p style="margin: 2px 0 0; font-size: 11px; color: #000;">Responsable del Área</p>
+                </div>
               </div>
             </div>
             
             <!-- Pie de página -->
-            <div style="margin-top: 25px; border-top: 1px solid #000; padding-top: 10px; text-align: center;">
-              <p style="margin: 0; color: #000; font-size: 10px;">Este documento es un informe oficial de mantenimiento. Para cualquier consulta, contacte al departamento de mantenimiento.</p>
-              <p style="margin: 2px 0 0 0; color: #000; font-size: 10px;">© ${new Date().getFullYear()} ErmitaAPP - Sistema de Gestión de Mantenimientos</p>
+            <div style="text-align: center; font-size: 11px; color: #000; border-top: 1px solid #ddd; padding-top: 8px;">
+              <p style="margin: 0;">ErmitaAPP - Sistema de Gestión de Mantenimiento</p>
+              <p style="margin: 3px 0 0;">Documento generado el ${fechaActual}</p>
             </div>
           </div>
         </div>
@@ -230,28 +329,14 @@ export default function History() {
       // Eliminar el elemento temporal
       document.body.removeChild(reporteContainer);
       
-      // Crear el PDF
+      // Crear el PDF - siempre una sola página
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgData = canvas.toDataURL('image/png');
       const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgHeight = Math.min((canvas.height * imgWidth) / canvas.width, 297); // Limitar a altura A4
       
-      // Si la imagen es más alta que una página A4, dividirla en múltiples páginas
-      let heightLeft = imgHeight;
-      let position = 0;
-      
-      // Primera página
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      
-      // Páginas adicionales si es necesario
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
+      // Añadir imagen centrada en la primera y única página
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       
       // Guardar el PDF
       pdf.save(`Informe_Mantenimiento_${mantenimiento.equipo.replace(/\s+/g, '_')}_${id}.pdf`);
@@ -627,46 +712,69 @@ export default function History() {
               
               {/* Sección de firmas */}
               <div className="mt-6">
-                <p className="text-sm font-medium text-gray-500 mb-2">Firmas</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Firmas</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Firma del técnico */}
                   <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2 text-center">Firma del Técnico</p>
-                    <div className="h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white">
-                      <p className="text-sm text-gray-400">Pendiente</p>
+                    <h4 className="text-xs font-medium text-gray-600 mb-1">Técnico</h4>
+                    <div className="border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50 h-32">
+                      {technicianSignature ? (
+                        <>
+                          <img 
+                            src={technicianSignature} 
+                            alt="Firma del técnico" 
+                            className="max-h-28 max-w-full object-contain"
+                            onError={(e) => {
+                              console.log('[DEBUG] Error al cargar la firma del técnico');
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = '';
+                              e.currentTarget.alt = 'Error al cargar la firma';
+                            }}
+                          />
+                          {/* Log oculto para depuración */}
+                          <div style={{ display: 'none' }}>
+                            {console.log('[DEBUG] Renderizando firma del técnico desde servicio de usuarios')}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-gray-400 text-sm">Sin firma</span>
+                          {/* Log oculto para depuración */}
+                          <div style={{ display: 'none' }}>
+                            {console.log('[DEBUG] No hay firma del técnico disponible')}
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-700 mt-2 text-center">{selectedMantenimiento.tecnico}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Firmado por: {selectedMantenimiento.nombreTecnico || selectedMantenimiento.tecnico || 'No especificado'}
+                    </p>
                   </div>
+                  
+                  {/* Firma del responsable */}
                   <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2 text-center">Firma del Responsable</p>
-                    {selectedMantenimiento.firma ? (
-                      <div className="h-24 border border-gray-200 rounded-lg bg-white flex items-center justify-center overflow-hidden">
+                    <h4 className="text-xs font-medium text-gray-600 mb-1">Responsable</h4>
+                    <div className="border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50 h-32">
+                      {selectedMantenimiento.firma ? (
                         <img 
-                          src={selectedMantenimiento.firma} 
+                          src={selectedMantenimiento.firma.startsWith('data:') ? 
+                            selectedMantenimiento.firma : 
+                            `data:image/png;base64,${selectedMantenimiento.firma}`} 
                           alt="Firma del responsable" 
-                          className="max-h-[80px] max-w-[90%] object-contain"
+                          className="max-h-28 max-w-full object-contain"
                           onError={(e) => {
-                            console.error('Error al cargar la imagen de firma');
-                            // Intentar corregir la URL de la firma si es necesario
-                            const target = e.target as HTMLImageElement;
-                            const firmaOriginal = selectedMantenimiento.firma || '';
-                            
-                            if (!firmaOriginal.startsWith('data:')) {
-                              console.log('Intentando corregir el formato de la firma...');
-                              target.src = `data:image/png;base64,${firmaOriginal}`;
-                            } else {
-                              target.onerror = null;
-                              target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjUwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZpbGw9IiM5OTk5OTkiPkZpcm1hIG5vIGRpc3BvbmlibGU8L3RleHQ+PC9zdmc+';
-                            }
+                            console.log('[DEBUG] Error al cargar la firma del responsable');
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = '';
+                            e.currentTarget.alt = 'Error al cargar la firma';
                           }}
                         />
-                      </div>
-                    ) : (
-                      <div className="h-24 border border-gray-200 rounded-lg flex items-center justify-center bg-white">
-                        <p className="text-sm text-gray-400">Sin firma</p>
-                      </div>
-                    )}
-                    <p className="text-sm text-gray-700 mt-2 text-center">
-                      {selectedMantenimiento.nombreFirmante || selectedMantenimiento.responsable || 'No especificado'}
+                      ) : (
+                        <span className="text-gray-400 text-sm">Sin firma</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Firmado por: {selectedMantenimiento.nombreFirmante || 'No especificado'}
                     </p>
                   </div>
                 </div>
