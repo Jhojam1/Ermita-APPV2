@@ -56,7 +56,7 @@ const Sidebar = () => {
   }, [location.pathname]);
 
   // Definir los elementos del menú base
-  const dashboardItem = { name: 'Dashboard', href: '/', icon: HomeIcon };
+  const homeItem = { name: 'Inicio', href: '/', icon: HomeIcon };
   
   const inventoryItem = { 
     name: 'Inventario',
@@ -109,16 +109,16 @@ const Sidebar = () => {
   
   if (userRole === 'Administrador') {
     // El administrador tiene acceso a todo
-    menuItems = [dashboardItem, inventoryItem, maintenanceItem, reportsItem];
+    menuItems = [homeItem, inventoryItem, maintenanceItem, reportsItem];
   } else if (userRole === 'Tecnico') {
     // El técnico solo tiene acceso a inventario y mantenimientos
-    menuItems = [dashboardItem, inventoryItem, maintenanceItem];
+    menuItems = [homeItem, inventoryItem, maintenanceItem];
   } else if (userRole === 'Usuario') {
-    // El usuario solo tiene acceso al dashboard y reportes
-    menuItems = [dashboardItem, reportsItem];
+    // El usuario solo tiene acceso al inicio y reportes
+    menuItems = [homeItem, reportsItem];
   } else {
-    // Por defecto, solo mostrar el dashboard
-    menuItems = [dashboardItem];
+    // Por defecto, solo mostrar el inicio
+    menuItems = [homeItem];
   }
 
   const handleLogout = () => {
