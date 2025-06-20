@@ -34,8 +34,8 @@ export default function ResetPassword() {
     setError('');
 
     try {
-      if (!token.trim()) {
-        throw new Error('Debes ingresar el código de verificación');
+      if (!token.trim() || token.length !== 6 || !/^\d{6}$/.test(token)) {
+        throw new Error('Debes ingresar un código numérico válido de 6 dígitos');
       }
       setStep(3);
     } catch (err: any) {
@@ -96,7 +96,7 @@ export default function ResetPassword() {
               </h1>
               <p className="text-gray-600 text-sm sm:text-base mt-1">
                 {step === 1 && 'Ingresa tu correo para recibir instrucciones'}
-                {step === 2 && 'Ingresa el código enviado a tu correo'}
+                {step === 2 && 'Ingresa el código de 6 dígitos recibido en tu correo'}
                 {step === 3 && 'Crea una nueva contraseña para tu cuenta'}
               </p>
             </div>
@@ -153,9 +153,17 @@ export default function ResetPassword() {
                     type="text"
                     id="token"
                     value={token}
-                    onChange={(e) => setToken(e.target.value)}
+                    onChange={(e) => {
+                      // Solo permitir dígitos numéricos y limitar a 6 caracteres
+                      const value = e.target.value.replace(/\D/g, '');
+                      if (value.length <= 6) {
+                        setToken(value);
+                      }
+                    }}
+                    maxLength={6}
+                    pattern="\d{6}"
                     required
-                    className="peer w-full px-4 py-3 rounded-xl border border-gray-300 placeholder-transparent
+                    className="peer w-full px-4 py-3 rounded-xl border border-gray-300 placeholder-transparent text-center text-2xl tracking-widest
                              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                              transition-all duration-200 bg-white/50"
                     placeholder="Código de verificación"
@@ -170,6 +178,7 @@ export default function ResetPassword() {
                     Código de verificación
                   </label>
                 </div>
+                <p className="text-xs text-gray-600">Ingresa el código numérico de 6 dígitos que recibiste en tu correo electrónico para restablecer tu contraseña de forma segura.</p>
 
                 <button
                   type="submit"
@@ -180,7 +189,7 @@ export default function ResetPassword() {
                     transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/30
                   `}
                 >
-                  {isLoading ? <LoadingSpinner /> : 'Verificar código'}
+                  {isLoading ? <LoadingSpinner /> : 'Verificar código numérico'}
                 </button>
               </form>
             )}

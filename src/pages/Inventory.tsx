@@ -1,17 +1,20 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  MagnifyingGlassIcon,
-  ChevronUpDownIcon,
-  FunnelIcon,
   EyeIcon,
   PencilSquareIcon,
-  XMarkIcon,
-  PlusIcon
+  PlusIcon,
+  TrashIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  ChevronUpDownIcon,
+  ChevronDownIcon,
+  ArrowsRightLeftIcon
 } from '@heroicons/react/24/outline';
 import inventoryService, { InventoryItem } from '../services/inventoryService';
 import AddInventoryItemModal from '../components/inventory/AddInventoryItemModal';
 import EditInventoryItemModal from '../components/inventory/EditInventoryItemModal';
 import ModalDetalles from '../components/inventory/ModalDetalles';
+import EquipmentTransferFormModal from '../components/inventory/EquipmentTransferFormModal';
 
 // Mapeo de propiedades del backend al frontend
 const mapInventoryItemToUI = (item: InventoryItem) => {
@@ -41,8 +44,10 @@ export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [selectedEquipo, setSelectedEquipo] = useState<any | null>(null);
+  const [selectedTab, setSelectedTab] = useState<number>(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEquipo, setEditingEquipo] = useState<any | null>(null);
+  const [transferEquipo, setTransferEquipo] = useState<any | null>(null);
   const [originalItems, setOriginalItems] = useState<InventoryItem[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   
@@ -200,6 +205,18 @@ export default function Inventory() {
     );
   };
 
+  // Manejar el traslado de un equipo
+  const handleTransferItem = (equipo: any) => {
+    setTransferEquipo(equipo);
+  };
+
+  // Actualizar la lista después de un traslado exitoso
+  const handleTransferSuccess = async () => {
+    setTransferEquipo(null);
+    setError(null);
+    await fetchInventoryItems();
+  };
+    
   // Manejar cambios en los filtros
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -418,7 +435,15 @@ export default function Inventory() {
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {filteredAndSortedData.map((equipo) => (
-                      <tr key={equipo.id} className="hover:bg-gray-50/50">
+                      <tr 
+                        key={equipo.id} 
+                        className="hover:bg-gray-50/50 cursor-pointer"
+                        onClick={() => {
+                          console.log('Equipo seleccionado (fila):', equipo);
+                          setSelectedEquipo(equipo);
+                          setSelectedTab(1); // Establece directamente la pestaña de Historial de traslados
+                        }}
+                      >
                         <td className="p-3 text-sm text-gray-600 whitespace-nowrap">{equipo.empresa}</td>
                         <td className="p-3 text-sm text-gray-600 whitespace-nowrap">{equipo.sede}</td>
                         <td className="p-3 text-sm font-medium text-gray-900 whitespace-nowrap">{equipo.serial}</td>
@@ -449,20 +474,38 @@ export default function Inventory() {
                           </span>
                         </td>
                         <td className="p-3 text-right whitespace-nowrap">
-                          <div className="flex justify-end items-center gap-2">
+                          <div className="flex items-center space-x-1">
                             <button
-                              onClick={() => setSelectedEquipo(equipo)}
+                              onClick={(e) => {
+                                e.stopPropagation(); // Evita que el evento se propague a la fila
+                                console.log('Ver detalles (ojo):', equipo);
+                                setSelectedEquipo(equipo);
+                                setSelectedTab(0); // Mostrar la pestaña de información general
+                              }}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                              title="Ver detalles"
+                              title="Ver información general"
                             >
                               <EyeIcon className="h-5 w-5" />
                             </button>
                             <button
-                              onClick={() => handleEditItem(equipo)}
+                              onClick={(e) => {
+                                e.stopPropagation(); // Evita que el evento se propague a la fila
+                                handleEditItem(equipo);
+                              }}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                               title="Editar equipo"
                             >
                               <PencilSquareIcon className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation(); // Evita que el evento se propague a la fila
+                                handleTransferItem(equipo);
+                              }}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-100"
+                              title="Trasladar equipo"
+                            >
+                              <ArrowsRightLeftIcon className="h-5 w-5" />
                             </button>
                           </div>
                         </td>
@@ -515,7 +558,11 @@ export default function Inventory() {
         {selectedEquipo && (
           <ModalDetalles
             equipo={selectedEquipo}
-            onClose={() => setSelectedEquipo(null)}
+            onClose={() => {
+              setSelectedEquipo(null);
+              setSelectedTab(0); // Resetear la pestaña seleccionada al cerrar
+            }}
+            selectedTab={selectedTab}
           />
         )}
 
@@ -534,6 +581,20 @@ export default function Inventory() {
             originalItem={editingEquipo.originalItem}
             onClose={() => setEditingEquipo(null)}
             onSave={handleSaveEdit}
+          />
+        )}
+
+        {/* Modal para Trasladar Equipo */}
+        {transferEquipo && (
+          <EquipmentTransferFormModal
+            equipmentId={transferEquipo.id}
+            equipmentName={`${transferEquipo.serial} - ${transferEquipo.modelo}`}
+            sourceCompanyId={transferEquipo.companyId}
+            sourceCompanyName={transferEquipo.empresa}
+            sourceHeadquarterId={transferEquipo.sedeId}
+            sourceHeadquarterName={transferEquipo.sede}
+            onClose={() => setTransferEquipo(null)}
+            onSaveSuccess={handleTransferSuccess}
           />
         )}
       </div>

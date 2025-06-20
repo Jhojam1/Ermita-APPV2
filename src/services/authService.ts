@@ -80,7 +80,7 @@ export const isAuthenticated = (): boolean => {
 
 export const requestPasswordReset = async (email: string): Promise<void> => {
   try {
-    await authApi.post('/reset-password-request', { email });
+    await authApi.post('/request-password-reset', { email });
   } catch (error: any) {
     if (error.response) {
       throw error.response.data.message || 'Error al solicitar restablecimiento de contraseña';

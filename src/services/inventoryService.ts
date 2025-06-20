@@ -60,6 +60,18 @@ export interface InventoryItem {
 }
 
 // Servicio para manejar las operaciones de inventario
+// Interfaz para movimientos de inventario
+export interface InventoryMovement {
+  id: number;
+  inventoryItemId: number;
+  type: string;
+  quantity: number;
+  movementDate: string;
+  userId: number;
+  userName: string;
+  description: string;
+}
+
 const inventoryService = {
   // Obtener todos los elementos del inventario
   getAllItems: async (): Promise<InventoryItem[]> => {
@@ -224,6 +236,30 @@ const inventoryService = {
     } catch (error) {
       console.error(`Error al eliminar el tipo con ID ${id}:`, error);
       throw error;
+    }
+  },
+  
+  // Obtener todos los movimientos de un elemento de inventario
+  getMovementsByItem: async (itemId: number): Promise<InventoryMovement[]> => {
+    try {
+      const response = await inventoryApi.get(`/api/inventory/movements/item/${itemId}`);
+      const data = response.data;
+      
+      // Verificar si los datos son un objeto único o un array
+      // y convertir a array si es necesario
+      if (data && !Array.isArray(data) && typeof data === 'object') {
+        console.log('Convirtiendo objeto único a array:', data);
+        return [data];
+      } else if (Array.isArray(data)) {
+        return data;
+      } else {
+        console.log('Datos de movimientos no válidos:', data);
+        return [];
+      }
+    } catch (error) {
+      console.error(`Error al obtener movimientos del elemento con ID ${itemId}:`, error);
+      // En caso de error, devolver un array vacío para evitar errores en la UI
+      return [];
     }
   },
 };
