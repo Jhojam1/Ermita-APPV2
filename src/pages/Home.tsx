@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import AnimatedContainer from "../components/ui/AnimatedContainer";
+import ServerMetrics from '../components/dashboard/ServerMetrics';
 import { 
   ComputerDesktopIcon, 
   WrenchScrewdriverIcon, 
@@ -255,10 +256,10 @@ const Home = () => {
         </div>
       </AnimatedContainer>
 
-      {/* Espacio reservado para implementación futura */}
+      {/* Sección de métricas del servidor (solo para administradores) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          {/* Espacio en blanco para implementación futura */}
+          {user?.role === 'Administrador' && <ServerMetrics />}
         </div>
 
         {/* Recursos y Ayuda personalizada según rol */}
