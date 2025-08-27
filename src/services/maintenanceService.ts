@@ -93,6 +93,17 @@ const maintenanceService = {
     }
   },
 
+  // Obtener mantenimientos asignados al técnico logueado
+  getMyAssignments: async (): Promise<MaintenanceItem[]> => {
+    try {
+      const response = await maintenanceApi.get('/my-assignments');
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener mantenimientos del técnico:', error);
+      throw error;
+    }
+  },
+
   // Obtener un mantenimiento por ID
   getMaintenanceById: async (id: number): Promise<MaintenanceItem> => {
     try {

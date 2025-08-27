@@ -118,7 +118,7 @@ export default function UserFormModal({ isOpen, onClose, onSave, user, isEditing
     
     if (name === 'numberIdentification') {
       // Validar que sea un número
-      if (value === '' || /^\\d+$/.test(value)) {
+      if (value === '' || /^\d+$/.test(value)) {
         setFormData({
           ...formData,
           [name]: value === '' ? 0 : parseInt(value),

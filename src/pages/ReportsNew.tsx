@@ -27,6 +27,7 @@ import TechnicianChart from '../components/reports/TechnicianChart';
 import MaintenanceSummaryTable from '../components/reports/MaintenanceSummaryTable';
 import ScheduledVsCompletedReport from '../components/reports/ScheduledVsCompletedReport';
 import MaintenanceOverviewChart from '../components/reports/MaintenanceOverviewChart';
+import TechnicianProductivityReport from '../components/maintenance/TechnicianProductivityReport';
 import { ErrorMessage, NoDataMessage } from '../components/reports/ReportMessages';
 
 ChartJS.register(
@@ -89,26 +90,54 @@ export default function ReportsNew() {
       // Obtener todos los datos del dashboard en una sola llamada
       const dashboardData = await reportService.getDashboardData({ startDate, endDate });
       
-      console.log('Datos del dashboard:', dashboardData);
+      console.log('=== DATOS RECIBIDOS DEL BACKEND ===');
+      console.log('📊 Datos completos del dashboard:', dashboardData);
+      console.log('📈 Datos de mantenimientos por mes:', dashboardData.monthlyStats);
+      console.log('👥 Datos de técnicos:', dashboardData.technicianStats);
+      console.log('📋 Resumen general:', dashboardData.summary);
+      console.log('⚙️ Estado de equipos:', dashboardData.equipmentStatus);
+      
+      // Análisis de datos faltantes
+      if (!dashboardData.monthlyStats || dashboardData.monthlyStats.length === 0) {
+        console.warn('⚠️ PROBLEMA: monthlyStats está vacío - No hay datos mensuales para el período seleccionado');
+      }
+      
+      if (!dashboardData.technicianStats || Object.keys(dashboardData.technicianStats).length === 0) {
+        console.warn('⚠️ PROBLEMA: technicianStats está vacío - No hay estadísticas de técnicos por mes');
+      }
+      
+      if (dashboardData.summary.total === 0) {
+        console.warn('⚠️ PROBLEMA: summary.total es 0 - No hay mantenimientos en el período o no están completados');
+      }
+      
+      if (dashboardData.equipmentStatus.activo === 0 && dashboardData.equipmentStatus.inactivo === 0) {
+        console.warn('⚠️ PROBLEMA: equipmentStatus en 0 - No se están consultando datos de inventario');
+      }
       
       // Si no hay datos de mantenimientos programados vs. realizados, obtenerlos
       if (!dashboardData.scheduledVsCompleted || dashboardData.scheduledVsCompleted.length === 0) {
         try {
           const scheduledVsCompleted = await reportService.getScheduledVsCompletedReport({ startDate, endDate });
+          console.log('📅 Datos de mantenimientos programados vs realizados:', scheduledVsCompleted);
           dashboardData.scheduledVsCompleted = scheduledVsCompleted;
         } catch (error) {
-          console.error('Error al obtener datos de mantenimientos programados vs. realizados:', error);
+          console.error('❌ Error al obtener datos de mantenimientos programados vs. realizados:', error);
         }
+      } else {
+        console.log('📅 Datos de mantenimientos programados vs realizados (ya incluidos):', dashboardData.scheduledVsCompleted);
       }
       
       // Si no hay datos de visión general, obtenerlos
       if (!dashboardData.maintenanceOverview || Object.keys(dashboardData.maintenanceOverview).length === 0) {
         try {
           const maintenanceOverview = await reportService.getMaintenanceOverview({ startDate, endDate });
+          console.log('🔍 Datos de visión general de mantenimientos:', maintenanceOverview);
           dashboardData.maintenanceOverview = maintenanceOverview;
         } catch (error) {
-          console.error('Error al obtener datos de visión general:', error);
+          console.error('❌ Error al obtener datos de visión general:', error);
         }
+      } else {
+        console.log('🔍 Datos de visión general (ya incluidos):', dashboardData.maintenanceOverview);
       }
       
       // Actualizar el estado con los datos obtenidos
@@ -390,6 +419,19 @@ export default function ReportsNew() {
                     data={dashboardData.maintenanceOverview || {}}
                     chartRef={maintenanceOverviewRef}
                   />
+                </div>
+                
+                {/* Gráfico de productividad de técnicos */}
+                <div className="mt-6">
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <svg className="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      Productividad de Técnicos
+                    </h3>
+                    <TechnicianProductivityReport />
+                  </div>
                 </div>
                 
                 {/* Tabla de resumen */}

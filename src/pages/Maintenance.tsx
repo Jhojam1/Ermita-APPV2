@@ -133,7 +133,20 @@ export default function Maintenance() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await maintenanceService.getAllMaintenances();
+      
+      // Obtener datos del usuario actual
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const userRole = currentUser.role?.name || currentUser.roleName || currentUser.role || '';
+      
+      let data;
+      
+      // Si es técnico, usar el endpoint específico para técnicos
+      if (userRole === 'Técnico') {
+        data = await maintenanceService.getMyAssignments();
+      } else {
+        // Para otros roles (Administrador, Supervisor), mostrar todos
+        data = await maintenanceService.getAllMaintenances();
+      }
       
       // Filtrar solo los mantenimientos pendientes y en proceso
       const filteredData = data.filter(item => 
@@ -142,6 +155,7 @@ export default function Maintenance() {
       
       const mappedData = filteredData.map(item => maintenanceService.mapToUI(item));
       setMantenimientosData(mappedData);
+      
     } catch (err) {
       console.error('Error al cargar mantenimientos:', err);
       setError('Error al cargar los datos de mantenimientos. Por favor, intente nuevamente.');

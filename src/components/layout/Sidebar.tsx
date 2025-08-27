@@ -16,7 +16,7 @@ import {
   ChevronDownIcon,
   CameraIcon,
   PrinterIcon,
-  Squares2X2Icon  
+  Squares2X2Icon,
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
@@ -77,6 +77,7 @@ const Sidebar = () => {
     onToggle: () => setMaintenanceOpen(!maintenanceOpen),
     subItems: [
       {name: 'Equipos', href: '/mantenimientos', icon: ComputerDesktopIcon},
+      { name: 'Asignar Técnicos', href: '/mantenimientos/asignaciones', icon: UserGroupIcon },
       { name: 'Camaras', href: '', icon: CameraIcon },
       { name: 'Impresoras', href: '', icon: PrinterIcon },
       { name: 'Historial Mantenimientos', href: '/historial', icon: ClipboardDocumentListIcon }
@@ -90,7 +91,6 @@ const Sidebar = () => {
     onToggle: () => setReportsOpen(!reportsOpen),
     subItems: [
       { name: 'Mantenimientos', href: '/reportes', icon: ChartBarIcon },
-      { name: 'Hosvital', href: '/reportes/hosvital', icon: ChartBarIcon },
       // Aquí se añadirá el nuevo apartado de reportes para usuarios
     ]
   };
