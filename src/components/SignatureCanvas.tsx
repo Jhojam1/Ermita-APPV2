@@ -114,12 +114,12 @@ const SignaturePad: React.FC<SignaturePadProps> = ({
     }
   };
 
-  // Cargar firma existente al montar el componente
+  // Cargar firma existente al montar el componente o cuando cambie el valor
   React.useEffect(() => {
     if (value && sigCanvas.current) {
       load(value);
     }
-  }, []);
+  }, [value]);
 
   return (
     <div className="w-full">

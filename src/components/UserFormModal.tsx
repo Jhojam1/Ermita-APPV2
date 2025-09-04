@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import userService, { UserItem } from '../services/userService';
 import companyService, { Company, Headquarter } from '../services/companyService';
+import { roleService, Role } from '../services/roleService';
 import SignaturePad from './SignatureCanvas';
 
 interface UserFormModalProps {
@@ -21,6 +22,7 @@ export default function UserFormModal({ isOpen, onClose, onSave, user, isEditing
     password: '',
     numberPhone: '',
     role: 'Usuario',
+    roleId: undefined,
     companyId: undefined,
     headquarterId: undefined,
     signature: undefined,
@@ -29,12 +31,14 @@ export default function UserFormModal({ isOpen, onClose, onSave, user, isEditing
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [headquarters, setHeadquarters] = useState<Headquarter[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Cargar empresas al montar el componente
+  // Cargar empresas y roles al montar el componente
   useEffect(() => {
     if (isOpen) {
       fetchCompanies();
+      fetchRoles();
     }
   }, [isOpen]);
   
@@ -46,13 +50,14 @@ export default function UserFormModal({ isOpen, onClose, onSave, user, isEditing
   }, [formData.companyId]);
 
   useEffect(() => {
-    if (user && isEditing) {
+    if (user && isEditing && roles.length > 0) {
       console.log('Datos recibidos para edición:', user);
+      console.log('Roles disponibles:', roles);
       setFormData({
         ...user,
         password: '', // No mostrar la contraseña por seguridad
       });
-    } else {
+    } else if (!isEditing) {
       // Valores por defecto para nuevo usuario
       setFormData({
         fullName: '',
@@ -62,12 +67,13 @@ export default function UserFormModal({ isOpen, onClose, onSave, user, isEditing
         password: '',
         numberPhone: '',
         role: 'Usuario',
+        roleId: undefined,
         companyId: undefined,
         headquarterId: undefined,
         signature: undefined,
       });
     }
-  }, [user, isEditing, isOpen]);
+  }, [user, isEditing, isOpen, roles]);
 
   const fetchCompanies = async () => {
     try {
@@ -84,6 +90,30 @@ export default function UserFormModal({ isOpen, onClose, onSave, user, isEditing
       }
     } catch (error) {
       console.error('Error al cargar empresas:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      setIsLoading(true);
+      const data = await roleService.getAllRoles();
+      setRoles(data.filter(role => role.active)); // Solo roles activos
+      
+      // Solo establecer rol por defecto si NO estamos editando y no hay roleId
+      if (data.length > 0 && !formData.roleId && !isEditing) {
+        const defaultRole = data.find(role => role.name === 'Usuario');
+        if (defaultRole) {
+          setFormData(prev => ({
+            ...prev,
+            roleId: defaultRole.id,
+            role: defaultRole.name
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error al cargar roles:', error);
     } finally {
       setIsLoading(false);
     }
@@ -116,34 +146,27 @@ export default function UserFormModal({ isOpen, onClose, onSave, user, isEditing
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    if (name === 'numberIdentification') {
-      // Validar que sea un número
-      if (value === '' || /^\d+$/.test(value)) {
-        setFormData({
-          ...formData,
-          [name]: value === '' ? 0 : parseInt(value),
-        });
-      }
-    } else if (name === 'companyId' || name === 'headquarterId') {
-      // Manejar valores numéricos
-      setFormData({
-        ...formData,
-        [name]: parseInt(value),
-      });
+    if (name === 'roleId') {
+      // Cuando cambia el roleId, también actualizar el nombre del rol
+      const selectedRole = roles.find(role => role.id === Number(value));
+      setFormData(prev => ({
+        ...prev,
+        roleId: Number(value),
+        role: selectedRole ? selectedRole.name : ''
+      }));
     } else {
-      // Manejar valores de texto
-      setFormData({
-        ...formData,
-        [name]: value,
-      });
+      setFormData(prev => ({
+        ...prev,
+        [name]: name === 'numberIdentification' ? Number(value) || 0 : value
+      }));
     }
     
-    // Limpiar error si el campo se ha llenado
-    if (errors[name] && value) {
-      setErrors({
-        ...errors,
-        [name]: '',
-      });
+    // Limpiar error del campo cuando el usuario empiece a escribir
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
     }
   };
 
@@ -195,6 +218,10 @@ export default function UserFormModal({ isOpen, onClose, onSave, user, isEditing
       newErrors.headquarterId = 'La sede es requerida';
     }
     
+    if (!formData.roleId) {
+      newErrors.roleId = 'El rol es requerido';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -209,14 +236,17 @@ export default function UserFormModal({ isOpen, onClose, onSave, user, isEditing
     setIsSubmitting(true);
     
     try {
-      // Asegurarse de que companyId y headquarterId sean números
+      // Asegurarse de que companyId, headquarterId y roleId sean números
       const dataToSave = {
         ...formData,
         companyId: formData.companyId ? Number(formData.companyId) : undefined,
         headquarterId: formData.headquarterId ? Number(formData.headquarterId) : undefined,
+        roleId: formData.roleId ? Number(formData.roleId) : undefined,
       };
       
       console.log('Datos a guardar desde el formulario:', dataToSave);
+      console.log('RoleId específico:', dataToSave.roleId);
+      console.log('FormData roleId original:', formData.roleId);
       onSave(dataToSave);
     } catch (error) {
       console.error('Error al guardar usuario:', error);
@@ -347,20 +377,29 @@ export default function UserFormModal({ isOpen, onClose, onSave, user, isEditing
             </div>
             
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-                Rol
+              <label htmlFor="roleId" className="block text-sm font-medium text-gray-700 mb-1">
+                Rol *
               </label>
               <select
-                id="role"
-                name="role"
-                value={formData.role}
+                id="roleId"
+                name="roleId"
+                value={formData.roleId || ''}
                 onChange={handleChange}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className={`w-full px-4 py-2 rounded-lg border ${
+                  errors.roleId ? 'border-red-500' : 'border-gray-300'
+                } focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                disabled={isLoading || roles.length === 0}
               >
-                <option value="Administrador">Administrador</option>
-                <option value="Tecnico">Técnico</option>
-                <option value="Usuario">Usuario</option>
+                <option value="">Seleccionar rol...</option>
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.name}
+                  </option>
+                ))}
               </select>
+              {errors.roleId && (
+                <p className="mt-1 text-sm text-red-600">{errors.roleId}</p>
+              )}
             </div>
             
             <div>

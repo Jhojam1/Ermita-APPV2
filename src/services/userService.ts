@@ -34,7 +34,9 @@ export interface UserItem {
   mail: string;
   password?: string;
   numberPhone?: string;
-  role: string;
+  role?: string; // Mantener para compatibilidad
+  roleName?: string; // Nuevo campo del backend
+  roleId?: number;
   companyId?: number;
   headquarterId?: number;
   companyName?: string;
@@ -51,6 +53,7 @@ export interface UserItemUI {
   email: string;
   telefono: string;
   rol: string;
+  roleId?: number; // Agregar roleId para preservarlo
   empresa: string;
   sede: string;
   companyId?: number;
@@ -111,7 +114,8 @@ const userService = {
       const userData = {
         ...user,
         companyId: user.companyId ? Number(user.companyId) : undefined,
-        headquarterId: user.headquarterId ? Number(user.headquarterId) : undefined
+        headquarterId: user.headquarterId ? Number(user.headquarterId) : undefined,
+        roleId: user.roleId ? Number(user.roleId) : undefined
       };
       
       const response = await userApi.post('/save', userData);
@@ -131,7 +135,8 @@ const userService = {
       const userData = {
         ...user,
         companyId: user.companyId ? Number(user.companyId) : undefined,
-        headquarterId: user.headquarterId ? Number(user.headquarterId) : undefined
+        headquarterId: user.headquarterId ? Number(user.headquarterId) : undefined,
+        roleId: user.roleId ? Number(user.roleId) : undefined
       };
       
       const response = await userApi.put(`/${id}`, userData);
@@ -182,7 +187,8 @@ const userService = {
       estado: user.state || 'Inactivo',
       email: user.mail || '',
       telefono: user.numberPhone || '',
-      rol: user.role || 'Usuario',
+      rol: user.roleName || user.role || 'Usuario', // Usar roleName primero, luego role como fallback
+      roleId: user.roleId, // Preservar el roleId del backend
       empresa: user.companyName || 'No asignada',
       sede: user.headquarterName || 'No asignada',
       companyId: user.companyId,
@@ -201,6 +207,7 @@ const userService = {
       mail: user.email,
       numberPhone: user.telefono,
       role: user.rol,
+      roleId: user.roleId, // Preservar el roleId de la UI
       companyId: user.companyId,
       headquarterId: user.headquarterId,
       signature: user.firma,

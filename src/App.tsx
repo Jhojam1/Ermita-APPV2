@@ -17,6 +17,8 @@ import ResetPassword from './pages/ResetPassword';
 import TechnicianAssignmentManager from './components/maintenance/TechnicianAssignmentManager';
 import TechnicianProductivityReport from './components/maintenance/TechnicianProductivityReport';
 import TechnicianDashboard from './components/maintenance/TechnicianDashboard';
+import RoleManagement from './pages/RoleManagement';
+import PermissionManagement from './pages/PermissionManagement';
 import './index.css';
 
 // Componente para manejar la redirección basada en roles
@@ -24,7 +26,7 @@ function HomeRedirect() {
   const { user } = useAuth();
   
   // Si es técnico, redirigir al dashboard de técnico
-  if (user?.role === 'Tecnico') {
+  if (user?.roleName === 'Tecnico' || user?.role === 'Tecnico') {
     return <Navigate to="/dashboard/tecnico" replace />;
   }
   
@@ -87,6 +89,21 @@ function App() {
           <Route path="/configuracion/empresas" element={
             <Layout>
               <Companies />
+            </Layout>
+          } />
+          <Route path="/configuracion/mantenimientos" element={
+            <Layout>
+              <MaintenanceConfig />
+            </Layout>
+          } />
+          <Route path="/configuracion/roles" element={
+            <Layout>
+              <RoleManagement />
+            </Layout>
+          } />
+          <Route path="/configuracion/permisos" element={
+            <Layout>
+              <PermissionManagement />
             </Layout>
           } />
           <Route path="/configuracion/sedes" element={

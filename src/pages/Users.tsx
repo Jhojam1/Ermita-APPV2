@@ -162,6 +162,10 @@ export default function Users() {
         userData.headquarterId = Number(userData.headquarterId);
       }
       
+      if (userData.roleId) {
+        userData.roleId = Number(userData.roleId);
+      }
+      
       await userService.updateUser(parseInt(selectedUser.id), userData);
       setShowEditUserModal(false);
       fetchUsers(); // Recargar la lista de usuarios

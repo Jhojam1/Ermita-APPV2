@@ -8,6 +8,19 @@ import {
 } from '../services/authService';
 
 // Definir la interfaz para el contexto
+export interface User {
+  id: number;
+  fullName: string;
+  numberIdentification: number;
+  mail: string;
+  role: string; // Legacy field for backward compatibility
+  roleId: number;
+  roleName: string;
+  companyId: number;
+  headquarterId: number;
+  permissions: string[];
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;

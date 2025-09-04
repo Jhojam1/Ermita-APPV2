@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePermissions } from '../PermissionWrapper';
 import { 
   HomeIcon, 
   ClipboardDocumentListIcon, 
@@ -25,17 +26,41 @@ const Sidebar = () => {
   const [reportsOpen, setReportsOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { hasModuleAccess, hasPermission } = usePermissions();
   
   // Obtener el rol del usuario actual
   const userRole = user?.role || '';
 
-  // Cerrar el sidebar al cambiar de página
+  // Detectar si es dispositivo móvil
   useEffect(() => {
-    setIsOpen(false);
-  }, [location.pathname]);
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      // En desktop, mantener el sidebar siempre abierto
+      if (!mobile) {
+        setIsOpen(true);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Cerrar el sidebar al cambiar de página solo en móviles
+  useEffect(() => {
+    if (isMobile) {
+      setIsOpen(false);
+    } else {
+      // En desktop, mantener siempre abierto
+      setIsOpen(true);
+    }
+  }, [location.pathname, isMobile]);
 
   // Abrir el menú correspondiente según la ruta actual
   useEffect(() => {
@@ -54,6 +79,7 @@ const Sidebar = () => {
       setMaintenanceOpen(true);
     }
   }, [location.pathname]);
+
 
   // Definir los elementos del menú base
   const homeItem = { name: 'Inicio', href: '/', icon: HomeIcon };
@@ -104,21 +130,45 @@ const Sidebar = () => {
     { name: 'Programación de Mantenimientos', href: '/configuracion/mantenimientos', icon: WrenchScrewdriverIcon },
   ];
   
-  // Filtrar los elementos del menú según el rol del usuario
-  let menuItems = [];
+  // Filtrar los elementos del menú según los permisos del usuario
+  let menuItems = [homeItem]; // Todos tienen acceso al inicio
   
-  if (userRole === 'Administrador') {
-    // El administrador tiene acceso a todo
-    menuItems = [homeItem, inventoryItem, maintenanceItem, reportsItem];
-  } else if (userRole === 'Tecnico') {
-    // El técnico solo tiene acceso a inventario y mantenimientos
-    menuItems = [homeItem, inventoryItem, maintenanceItem];
-  } else if (userRole === 'Usuario') {
-    // El usuario solo tiene acceso al inicio y reportes
-    menuItems = [homeItem, reportsItem];
-  } else {
-    // Por defecto, solo mostrar el inicio
-    menuItems = [homeItem];
+  // Agregar módulos basados en permisos
+  if (hasModuleAccess('INVENTORY')) {
+    menuItems.push(inventoryItem);
+  }
+  
+  if (hasModuleAccess('MAINTENANCE')) {
+    menuItems.push(maintenanceItem);
+  }
+  
+  if (hasModuleAccess('REPORTS')) {
+    menuItems.push(reportsItem);
+  }
+
+  // Agregar menú de Configuración si tiene acceso
+  if (hasModuleAccess('CONFIGURATION')) {
+    const configurationItem = {
+      name: 'Configuración',
+      href: '/configuracion',
+      icon: Cog6ToothIcon,
+      isOpen: configOpen,
+      onToggle: () => setConfigOpen(!configOpen),
+      subItems: configItems
+        .filter(item => {
+          // Filtrar elementos de configuración por permisos
+          if (item.href.includes('/usuarios')) return hasPermission('USERS_VIEW');
+          if (item.href.includes('/empresas')) return hasPermission('COMPANIES_VIEW');
+          if (item.href.includes('/mantenimientos')) return hasPermission('CONFIGURATION_VIEW');
+          return true;
+        })
+        .concat([
+          // Agregar gestión de roles y permisos si tiene permisos de configuración
+          ...(hasPermission('CONFIGURATION_VIEW') ? [{ name: 'Roles', href: '/configuracion/roles', icon: UserGroupIcon }] : []),
+          ...(hasPermission('CONFIGURATION_VIEW') ? [{ name: 'Permisos', href: '/configuracion/permisos', icon: Cog6ToothIcon }] : [])
+        ])
+    };
+    menuItems.push(configurationItem);
   }
 
   const handleLogout = () => {
@@ -155,11 +205,11 @@ const Sidebar = () => {
 
       <aside
         className={`
-          fixed top-0 left-0 h-full w-[280px] bg-white shadow-lg z-50
-          transform transition-all duration-300 ease-in-out
-          border-r border-gray-100
-          lg:translate-x-0
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          w-[280px] bg-white shadow-lg border-r border-gray-100
+          transition-all duration-300 ease-in-out
+          lg:relative lg:translate-x-0
+          ${isMobile ? 'fixed top-0 left-0 h-full z-50' : 'h-screen sticky top-0'}
+          ${isOpen || !isMobile ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
         <div className="flex flex-col h-full">
@@ -207,8 +257,8 @@ const Sidebar = () => {
                   {item.subItems && (
                     <div className={`
                       mt-1 ml-4 space-y-1 border-l-2 border-gray-100
-                      transition-all duration-300 ease-in-out overflow-hidden
-                      ${item.isOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}
+                      transition-all duration-300 ease-in-out
+                      ${item.isOpen ? 'max-h-96 opacity-100 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'}
                     `}>
                       {item.subItems.map((subItem) => (
                         <Link
@@ -230,56 +280,15 @@ const Sidebar = () => {
                   )}
                 </li>
               ))}
-
-              {/* Menú de Configuración - Solo visible para Administradores */}
-              {userRole === 'Administrador' && (
-                <li>
-                  <button
-                    onClick={() => setConfigOpen(!configOpen)}
-                    className={`
-                      flex items-center w-full px-4 py-2.5 rounded-lg transition-all duration-200
-                      ${location.pathname?.startsWith('/configuracion')
-                        ? 'bg-blue-50/80 text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:bg-gray-50/80'}
-                      group
-                    `}
-                  >
-                    <Cog6ToothIcon className="h-5 w-5 mr-3 transition-transform group-hover:scale-110" />
-                    <span className="font-medium flex-1 text-left">Configuración</span>
-                    <ChevronDownIcon 
-                      className={`h-5 w-5 transition-transform duration-300 ${configOpen ? 'rotate-180' : ''}`}
-                    />
-                  </button>
-                  
-                  {/* Submenú de Configuración */}
-                  <div className={`
-                    mt-1 ml-4 space-y-1 border-l-2 border-gray-100
-                    transition-all duration-300 ease-in-out overflow-hidden
-                    ${configOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}
-                  `}>
-                    {configItems.map((item) => (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        className={`
-                          flex items-center px-4 py-2 rounded-lg transition-all duration-200
-                          ${location.pathname === item.href
-                            ? 'bg-blue-50/80 text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:bg-gray-50/80'}
-                          group
-                        `}
-                      >
-                        <item.icon className="h-4 w-4 mr-3 transition-transform group-hover:scale-110" />
-                        <span className="font-medium text-sm">{item.name}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </li>
-              )}
             </ul>
           </nav>
 
-          <div className="p-4 border-t border-gray-100 bg-gradient-to-r from-blue-50/50 to-white">
+          {/* Footer con información del usuario y logout */}
+          <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+            <div className="mb-3 px-2">
+              <p className="text-sm font-medium text-gray-700">{user?.fullName}</p>
+              <p className="text-xs text-gray-500">{user?.roleName || user?.role}</p>
+            </div>
             <button
               onClick={handleLogout}
               className="flex items-center w-full px-4 py-2.5 rounded-lg text-gray-600 hover:bg-gray-50/80 transition-all duration-200 group"
@@ -290,6 +299,13 @@ const Sidebar = () => {
           </div>
         </div>
       </aside>
+
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
     </>
   );
 };

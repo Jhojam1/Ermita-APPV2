@@ -33,9 +33,15 @@ export interface LoginCredentials {
 
 export interface User {
   id: number;
-  name: string;
-  email: string;
-  role: string;
+  fullName: string;
+  numberIdentification: number;
+  mail: string;
+  role: string; // Legacy field for backward compatibility
+  roleId: number;
+  roleName: string;
+  companyId: number;
+  headquarterId: number;
+  permissions: string[];
   token: string;
 }
 

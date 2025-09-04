@@ -16,11 +16,11 @@ const Layout = ({ children }: LayoutProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 flex overflow-hidden">
       <Sidebar />
       
-      <div className="lg:pl-[280px] pt-16 lg:pt-0 min-h-screen">
-        <main className="p-4 sm:p-6 md:p-8">
+      <div className="flex-1 pt-16 lg:pt-0 h-full overflow-auto">
+        <main className="p-4 sm:p-6 md:p-8 min-h-full">
           {children}
         </main>
       </div>
