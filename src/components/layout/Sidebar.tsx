@@ -103,7 +103,8 @@ const Sidebar = () => {
     onToggle: () => setMaintenanceOpen(!maintenanceOpen),
     subItems: [
       {name: 'Equipos', href: '/mantenimientos', icon: ComputerDesktopIcon},
-      { name: 'Asignar Técnicos', href: '/mantenimientos/asignaciones', icon: UserGroupIcon },
+      // Solo mostrar "Asignar Técnicos" si tiene el permiso MAINTENANCE_ASSIGN
+      ...(hasPermission('MAINTENANCE_ASSIGN') ? [{ name: 'Asignar Técnicos', href: '/mantenimientos/asignaciones', icon: UserGroupIcon }] : []),
       { name: 'Camaras', href: '', icon: CameraIcon },
       { name: 'Impresoras', href: '', icon: PrinterIcon },
       { name: 'Historial Mantenimientos', href: '/historial', icon: ClipboardDocumentListIcon }
@@ -133,21 +134,21 @@ const Sidebar = () => {
   // Filtrar los elementos del menú según los permisos del usuario
   let menuItems = [homeItem]; // Todos tienen acceso al inicio
   
-  // Agregar módulos basados en permisos
-  if (hasModuleAccess('INVENTORY')) {
+  // Agregar módulos basados en permisos específicos
+  if (hasPermission('INVENTORY_VIEW')) {
     menuItems.push(inventoryItem);
   }
   
-  if (hasModuleAccess('MAINTENANCE')) {
+  if (hasPermission('MAINTENANCE_VIEW')) {
     menuItems.push(maintenanceItem);
   }
   
-  if (hasModuleAccess('REPORTS')) {
+  if (hasPermission('REPORTS_VIEW')) {
     menuItems.push(reportsItem);
   }
 
-  // Agregar menú de Configuración si tiene acceso
-  if (hasModuleAccess('CONFIGURATION')) {
+  // Agregar menú de Configuración si tiene acceso a alguna configuración
+  if (hasPermission('CONFIGURATION_VIEW') || hasPermission('USERS_VIEW') || hasPermission('COMPANIES_VIEW')) {
     const configurationItem = {
       name: 'Configuración',
       href: '/configuracion',

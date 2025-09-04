@@ -234,7 +234,7 @@ const maintenanceService = {
     } else {
       console.log('[DEBUG] No se encontró firma de técnico válida');
       if (maintenanceItem.technicianSignature) {
-        console.log('[DEBUG] Valor de firma de técnico:', typeof maintenanceItem.technicianSignature, maintenanceItem.technicianSignature.substring(0, 20) + '...');
+        console.log('[DEBUG] Valor de firma de técnico:', typeof maintenanceItem.technicianSignature);
       }
     }
     
@@ -275,8 +275,8 @@ const maintenanceService = {
       serviceArea: maintenanceItemUI.area,
       responsible: maintenanceItemUI.responsable,
       signature: maintenanceItemUI.firma,
-      signerName: maintenanceItemUI.nombreFirmante,
-      technicianSignature: maintenanceItemUI.firmaTecnico
+      signerName: maintenanceItemUI.nombreFirmante
+      // technicianSignature se obtiene dinámicamente del servicio de usuarios
     };
   }
 };

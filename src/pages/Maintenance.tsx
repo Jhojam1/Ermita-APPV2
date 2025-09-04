@@ -137,12 +137,13 @@ export default function Maintenance() {
       // Obtener datos del usuario actual
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       const userRole = currentUser.role?.name || currentUser.roleName || currentUser.role || '';
+      const userId = currentUser.id;
       
       let data;
       
-      // Si es técnico, usar el endpoint específico para técnicos
-      if (userRole === 'Técnico') {
-        data = await maintenanceService.getMyAssignments();
+      // Si es técnico, usar el endpoint específico para técnicos con su ID
+      if (userRole === 'Técnico' || userRole === 'Tecnico') {
+        data = await maintenanceService.getMaintenancesByTechnicianId(userId);
       } else {
         // Para otros roles (Administrador, Supervisor), mostrar todos
         data = await maintenanceService.getAllMaintenances();
@@ -213,6 +214,7 @@ export default function Maintenance() {
         responsible: selectedMantenimiento.responsable,
         description: selectedMantenimiento.descripcion,
         scheduledDate: maintenanceService.parseDate(selectedMantenimiento.fechaProgramada),
+        type: maintenanceService.mapTypeToBackend(selectedMantenimiento.tipo), // ¡CAMPO FALTANTE!
         status: estadoBackend,
         observations: formData.observaciones,
         technicianName: formData.tecnico,

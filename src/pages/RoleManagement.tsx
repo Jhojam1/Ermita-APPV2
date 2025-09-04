@@ -324,26 +324,87 @@ const RoleManagement: React.FC = () => {
             <Spin size="large" />
           </div>
         ) : (
-          <Transfer
-            dataSource={permissions.map(p => ({
-              key: p.name,
-              title: p.name,
-              description: p.description,
-            }))}
-            titles={['Permisos Disponibles', 'Permisos Asignados']}
-            targetKeys={rolePermissions}
-            onChange={handlePermissionChange}
-            render={item => `${item.title} - ${item.description}`}
-            listStyle={{
-              width: 350,
-              height: 400,
-            }}
-            showSearch
-            filterOption={(inputValue, option) =>
-              option.title.toLowerCase().includes(inputValue.toLowerCase()) ||
-              (option.description && option.description.toLowerCase().includes(inputValue.toLowerCase()))
-            }
-          />
+          <div className="permission-transfer-container">
+            <Transfer
+              dataSource={permissions.map(p => ({
+                key: p.name,
+                title: p.name,
+                description: p.description,
+              }))}
+              titles={['Permisos Disponibles', 'Permisos Asignados']}
+              targetKeys={rolePermissions}
+              onChange={handlePermissionChange}
+              render={item => `${item.title} - ${item.description}`}
+              listStyle={{
+                width: 350,
+                height: 400,
+              }}
+              showSearch
+              filterOption={(inputValue, option) =>
+                option.title.toLowerCase().includes(inputValue.toLowerCase()) ||
+                (option.description && option.description.toLowerCase().includes(inputValue.toLowerCase()))
+              }
+              style={{
+                '--ant-transfer-operation-btn-cursor': 'pointer'
+              } as React.CSSProperties}
+            />
+            <style jsx global>{`
+              .permission-transfer-container .ant-transfer-operation .ant-btn {
+                display: flex !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+                color: rgba(0, 0, 0, 0.65) !important;
+              }
+              
+              .permission-transfer-container .ant-transfer-operation .ant-btn:disabled {
+                display: flex !important;
+                visibility: visible !important;
+                opacity: 0.6 !important;
+                color: rgba(0, 0, 0, 0.25) !important;
+              }
+              
+              .permission-transfer-container .ant-transfer-operation .ant-btn .anticon {
+                display: block !important;
+                visibility: visible !important;
+                color: inherit !important;
+              }
+              
+              .permission-transfer-container .ant-transfer-operation .ant-btn:hover:not(:disabled) {
+                background-color: #1890ff !important;
+                border-color: #1890ff !important;
+                color: #fff !important;
+              }
+              
+              .permission-transfer-container .ant-transfer-operation .ant-btn:hover:not(:disabled) .anticon {
+                color: #fff !important;
+              }
+              
+              .permission-transfer-container :global(.ant-transfer-list-header) {
+                background: #fafafa;
+                border-bottom: 1px solid #f0f0f0;
+                padding: 12px 16px;
+                font-weight: 500;
+              }
+              
+              .permission-transfer-container :global(.ant-transfer-list-body) {
+                background: #fff;
+              }
+              
+              .permission-transfer-container :global(.ant-transfer-list-content-item:hover) {
+                background-color: #e6f7ff;
+                border-color: #1890ff;
+              }
+              
+              .permission-transfer-container :global(.ant-transfer-list-content-item.ant-transfer-list-content-item-checked) {
+                background-color: #1890ff;
+                color: #fff;
+              }
+              
+              .permission-transfer-container :global(.ant-transfer-list-content-item.ant-transfer-list-content-item-checked:hover) {
+                background-color: #096dd9;
+              }
+            `}</style>
+          </div>
         )}
       </Modal>
     </div>
