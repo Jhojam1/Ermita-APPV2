@@ -1,18 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Switch, message, Space, Card, Typography, Popconfirm, Tabs, Transfer, Spin } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, KeyOutlined } from '@ant-design/icons';
-import { roleService, Role, CreateRoleRequest, UpdateRoleRequest } from '../services/roleService';
+import { Table, Button, Modal, Form, Input, Switch, message, Space, Card, Typography, Transfer, Popconfirm, Spin } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
+import { roleService, Role } from '../services/roleService';
 import { permissionService, Permission } from '../services/permissionService';
 import { PermissionWrapper } from '../components/PermissionWrapper';
 
 const { Title } = Typography;
-const { TabPane } = Tabs;
 
-interface TransferItem {
-  key: string;
-  title: string;
-  description?: string;
-}
 
 const RoleManagement: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -92,14 +86,14 @@ const RoleManagement: React.FC = () => {
   const handleSubmit = async (values: any) => {
     try {
       if (editingRole) {
-        const updateData: UpdateRoleRequest = {
+        const updateData = {
           name: values.name,
           description: values.description,
         };
         await roleService.updateRole(editingRole.id, updateData);
         message.success('Rol actualizado exitosamente');
       } else {
-        const createData: CreateRoleRequest = {
+        const createData = {
           name: values.name,
           description: values.description,
         };
@@ -119,7 +113,7 @@ const RoleManagement: React.FC = () => {
     setPermissionModalVisible(true);
   };
 
-  const handlePermissionChange = (targetKeys: string[]) => {
+  const handlePermissionChange = (targetKeys: any[]) => {
     setRolePermissions(targetKeys);
   };
 
@@ -173,7 +167,7 @@ const RoleManagement: React.FC = () => {
     {
       title: 'Acciones',
       key: 'actions',
-      render: (_, record: Role) => (
+      render: (_: any, record: Role) => (
         <Space>
           <PermissionWrapper permission="USERS_EDIT">
             <Button
@@ -188,7 +182,7 @@ const RoleManagement: React.FC = () => {
           <PermissionWrapper permission="CONFIGURATION_MANAGE_PERMISSIONS">
             <Button
               type="link"
-              icon={<KeyOutlined />}
+              icon={<SettingOutlined />}
               onClick={() => handleManagePermissions(record)}
             >
               Permisos
@@ -340,15 +334,11 @@ const RoleManagement: React.FC = () => {
                 height: 400,
               }}
               showSearch
-              filterOption={(inputValue, option) =>
-                option.title.toLowerCase().includes(inputValue.toLowerCase()) ||
-                (option.description && option.description.toLowerCase().includes(inputValue.toLowerCase()))
-              }
               style={{
                 '--ant-transfer-operation-btn-cursor': 'pointer'
               } as React.CSSProperties}
             />
-            <style jsx global>{`
+            <style>{`
               .permission-transfer-container .ant-transfer-operation .ant-btn {
                 display: flex !important;
                 visibility: visible !important;

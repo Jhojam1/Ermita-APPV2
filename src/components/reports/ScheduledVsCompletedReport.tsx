@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { Bar } from 'react-chartjs-2';
 import AnimatedContainer from '../ui/AnimatedContainer';
 

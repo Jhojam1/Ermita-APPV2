@@ -4,7 +4,7 @@ import {
   Card, 
   Typography, 
   Space, 
-  Tag, 
+ 
   Tooltip,
   message, 
   Button, 
@@ -21,16 +21,13 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import inventoryTransferService, { InventoryTransfer } from '../../services/InventoryTransferService';
-import inventoryService from '../../services/InventoryService';
+import inventoryService, { InventoryItem as ServiceInventoryItem } from '../../services/inventoryService';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-interface InventoryItem {
-  id: number;
-  serial: string;
-  model: string;
-}
+// Usar la interfaz del servicio
+type InventoryItem = ServiceInventoryItem;
 
 const EquipmentTransferHistory: React.FC = () => {
   const navigate = useNavigate();
@@ -42,8 +39,12 @@ const EquipmentTransferHistory: React.FC = () => {
   useEffect(() => {
     const fetchInventoryItems = async () => {
       try {
-        const response = await inventoryService.getAllInventoryItems();
-        setInventoryItems(response.data);
+        const response = await inventoryService.getAllItems();
+        // Filtrar solo items con id definido
+        const itemsWithId = (response || []).filter((item): item is ServiceInventoryItem & { id: number } => 
+          item.id !== undefined
+        );
+        setInventoryItems(itemsWithId);
       } catch (error) {
         console.error('Error al cargar los equipos:', error);
         message.error('Error al cargar los equipos.');

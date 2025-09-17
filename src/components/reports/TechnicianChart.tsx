@@ -91,7 +91,7 @@ const TechnicianChart: React.FC<TechnicianChartProps> = ({ data, chartRef, delay
           display: hasData,
           text: 'Técnicos',
           font: {
-            weight: 'bold'
+            weight: 'bold' as const
           }
         },
         grid: {
@@ -104,7 +104,7 @@ const TechnicianChart: React.FC<TechnicianChartProps> = ({ data, chartRef, delay
           display: hasData,
           text: 'Cantidad de Mantenimientos',
           font: {
-            weight: 'bold'
+            weight: 'bold' as const
           }
         },
         beginAtZero: true,

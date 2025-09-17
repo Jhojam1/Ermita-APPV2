@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   EyeIcon,
   PencilSquareIcon,
   PlusIcon,
-  TrashIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   ChevronUpDownIcon,
-  ChevronDownIcon,
   ArrowsRightLeftIcon
 } from '@heroicons/react/24/outline';
 import inventoryService, { InventoryItem } from '../services/inventoryService';
@@ -74,7 +72,7 @@ export default function Inventory() {
       try {
         // Obtener tipos de equipos
         const typesData = await inventoryService.getAllTypes();
-        setTipos(typesData);
+        setTipos(typesData.map(type => ({ id: type.id || 0, name: type.name })));
         
         // Extraer empresas y sedes únicas de los datos de inventario
         const uniqueCompanies = new Map();
@@ -172,7 +170,7 @@ export default function Inventory() {
     if (sortConfig?.key === key && sortConfig.direction === 'asc') {
       direction = 'desc';
     }
-    setSortConfig({ key, direction });
+    setSortConfig({ key, direction: direction as 'asc' | 'desc' });
   };
 
   const handleAddItem = async (newItem: InventoryItem) => {

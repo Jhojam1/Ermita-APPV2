@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -56,7 +56,7 @@ export default function ReportsNew() {
   const reportContainerRef = useRef(null);
   const scheduledVsCompletedRef = useRef(null);
   const maintenanceOverviewRef = useRef(null);
-  
+
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
   const [loading, setLoading] = useState(false);
@@ -73,10 +73,23 @@ export default function ReportsNew() {
     technicianStats: {},
     equipmentStatus: { activo: 0, inactivo: 0 },
     scheduledVsCompleted: [],
-    maintenanceOverview: {}
+    maintenanceOverview: {
+      scheduled: 0,
+      inProgress: 0,
+      completed: 0,
+      cancelled: 0,
+      total: 0
+    }
   });
   const [generatingReport, setGeneratingReport] = useState(false);
-  
+  // const [maintenanceOverview, setMaintenanceOverview] = useState<MaintenanceOverviewData>({
+  //   scheduled: 0,
+  //   inProgress: 0,
+  //   completed: 0,
+  //   cancelled: 0,
+  //   total: 0
+  // });
+
   // Estado para el mensaje de error
   const [error, setError] = useState<string | null>(null);
 
@@ -85,35 +98,35 @@ export default function ReportsNew() {
     setLoading(true);
     setReportGenerated(false);
     setError(null); // Limpiar errores previos
-    
+
     try {
       // Obtener todos los datos del dashboard en una sola llamada
       const dashboardData = await reportService.getDashboardData({ startDate, endDate });
-      
+
       console.log('=== DATOS RECIBIDOS DEL BACKEND ===');
       console.log('📊 Datos completos del dashboard:', dashboardData);
       console.log('📈 Datos de mantenimientos por mes:', dashboardData.monthlyStats);
       console.log('👥 Datos de técnicos:', dashboardData.technicianStats);
       console.log('📋 Resumen general:', dashboardData.summary);
       console.log('⚙️ Estado de equipos:', dashboardData.equipmentStatus);
-      
+
       // Análisis de datos faltantes
       if (!dashboardData.monthlyStats || dashboardData.monthlyStats.length === 0) {
         console.warn('⚠️ PROBLEMA: monthlyStats está vacío - No hay datos mensuales para el período seleccionado');
       }
-      
+
       if (!dashboardData.technicianStats || Object.keys(dashboardData.technicianStats).length === 0) {
         console.warn('⚠️ PROBLEMA: technicianStats está vacío - No hay estadísticas de técnicos por mes');
       }
-      
+
       if (dashboardData.summary.total === 0) {
         console.warn('⚠️ PROBLEMA: summary.total es 0 - No hay mantenimientos en el período o no están completados');
       }
-      
+
       if (dashboardData.equipmentStatus.activo === 0 && dashboardData.equipmentStatus.inactivo === 0) {
         console.warn('⚠️ PROBLEMA: equipmentStatus en 0 - No se están consultando datos de inventario');
       }
-      
+
       // Si no hay datos de mantenimientos programados vs. realizados, obtenerlos
       if (!dashboardData.scheduledVsCompleted || dashboardData.scheduledVsCompleted.length === 0) {
         try {
@@ -126,32 +139,32 @@ export default function ReportsNew() {
       } else {
         console.log('📅 Datos de mantenimientos programados vs realizados (ya incluidos):', dashboardData.scheduledVsCompleted);
       }
-      
+
       // Si no hay datos de visión general, obtenerlos
       if (!dashboardData.maintenanceOverview || Object.keys(dashboardData.maintenanceOverview).length === 0) {
         try {
           const maintenanceOverview = await reportService.getMaintenanceOverview({ startDate, endDate });
           console.log('🔍 Datos de visión general de mantenimientos:', maintenanceOverview);
-          dashboardData.maintenanceOverview = maintenanceOverview;
+          setDashboardData({ ...dashboardData, maintenanceOverview });
         } catch (error) {
           console.error('❌ Error al obtener datos de visión general:', error);
         }
       } else {
         console.log('🔍 Datos de visión general (ya incluidos):', dashboardData.maintenanceOverview);
       }
-      
+
       // Actualizar el estado con los datos obtenidos
       setDashboardData(dashboardData);
-      
+
       // Marcar que el reporte ha sido generado
       setReportGenerated(true);
       return true;
     } catch (error) {
       console.error('Error al cargar los datos de reportes:', error);
-      
+
       // Establecer mensaje de error
       setError('Ha ocurrido un error al buscar los datos. Por favor, contacte con el administrador.');
-      
+
       // Limpiar datos en caso de error
       setDashboardData({
         summary: {
@@ -165,28 +178,34 @@ export default function ReportsNew() {
         technicianStats: {},
         equipmentStatus: { activo: 0, inactivo: 0 },
         scheduledVsCompleted: [],
-        maintenanceOverview: {}
+        maintenanceOverview: {
+          scheduled: 0,
+          inProgress: 0,
+          completed: 0,
+          cancelled: 0,
+          total: 0
+        }
       });
-      
+
       setReportGenerated(false);
       return false;
     } finally {
       setLoading(false);
     }
   }, []);
-  
+
   // Generar reporte con las fechas seleccionadas
   const handleGenerateReport = async () => {
     if (!fechaInicio || !fechaFin) {
       alert('Por favor seleccione un rango de fechas');
       return;
     }
-    
+
     if (new Date(fechaInicio) > new Date(fechaFin)) {
       alert('La fecha de inicio no puede ser mayor a la fecha de fin');
       return;
     }
-    
+
     try {
       await fetchData(fechaInicio, fechaFin);
     } catch (error) {
@@ -194,86 +213,86 @@ export default function ReportsNew() {
       alert('Error al generar el reporte. Por favor intente nuevamente.');
     }
   };
-  
+
   // Manejar cambio de fechas
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
     const value = e.target.value;
-    
+
     if (type === 'start') {
       setFechaInicio(value);
     } else {
       setFechaFin(value);
     }
-    
+
     // Si ambas fechas están seleccionadas, limpiar el reporte generado
     if (fechaInicio && fechaFin) {
       setReportGenerated(false);
     }
   };
-  
+
   // Función para generar y descargar el reporte en PDF
   const generateReport = async () => {
     if (!reportGenerated) return;
-    
+
     setGeneratingReport(true);
-    
+
     try {
       // Crear un nuevo documento PDF
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      
+
       // Añadir título y fecha
       pdf.setFontSize(18);
       pdf.text('Informe de Mantenimientos', pageWidth / 2, 20, { align: 'center' });
-      
+
       pdf.setFontSize(12);
       pdf.text(`Período: ${formatDate(fechaInicio)} - ${formatDate(fechaFin)}`, pageWidth / 2, 30, { align: 'center' });
-      
+
       // Añadir gráficos al PDF
       let yPosition = 40;
       const margin = 10;
       const graphWidth = pageWidth - 2 * margin;
-      const graphHeight = 60;
-      
+      // const graphHeight = 60;
+
       // Función para añadir un gráfico al PDF
-      const addChartToPdf = async (ref: React.RefObject<HTMLDivElement>, title: string) => {
-        if (ref.current) {
-          const canvas = await html2canvas(ref.current);
-          const imgData = canvas.toDataURL('image/png');
-          
-          // Verificar si necesitamos una nueva página
-          if (yPosition + graphHeight + 10 > pageHeight) {
-            pdf.addPage();
-            yPosition = 20;
-          }
-          
-          // Añadir título del gráfico
-          pdf.setFontSize(14);
-          pdf.text(title, margin, yPosition);
-          yPosition += 10;
-          
-          // Añadir imagen del gráfico
-          pdf.addImage(imgData, 'PNG', margin, yPosition, graphWidth, graphHeight);
-          yPosition += graphHeight + 20;
-        }
-      };
-      
+      // const addChartToPdf = async (ref: React.RefObject<HTMLDivElement>, title: string) => {
+      //   if (ref.current) {
+      //     const canvas = await html2canvas(ref.current);
+      //     const imgData = canvas.toDataURL('image/png');
+
+      //     // Verificar si necesitamos una nueva página
+      //     if (yPosition + graphHeight + 10 > pageHeight) {
+      //       pdf.addPage();
+      //       yPosition = 20;
+      //     }
+
+      //     // Añadir título del gráfico
+      //     pdf.setFontSize(14);
+      //     pdf.text(title, margin, yPosition);
+      //     yPosition += 10;
+
+      //     // Añadir imagen del gráfico
+      //     pdf.addImage(imgData, 'PNG', margin, yPosition, graphWidth, graphHeight);
+      //     yPosition += graphHeight + 20;
+      //   }
+      // };
+
       // Añadir gráficos al PDF
-      await addChartToPdf(maintenanceChartRef, 'Mantenimientos por Mes');
-      await addChartToPdf(maintenanceTypeChartRef, 'Tipos de Mantenimiento');
-      await addChartToPdf(avgTimeChartRef, 'Tiempo Promedio de Reparación');
-      await addChartToPdf(technicianChartRef, 'Mantenimientos por Técnico');
-      
-      // Añadir los nuevos gráficos
-      await addChartToPdf(scheduledVsCompletedRef, 'Mantenimientos Programados vs. Realizados');
-      await addChartToPdf(maintenanceOverviewRef, 'Visión General de Mantenimientos');
-      
+      // await addChartToPdf(maintenanceChartRef!, 'Mantenimientos por Mes');
+      // await addChartToPdf(maintenanceTypeChartRef!, 'Tipos de Mantenimiento');
+      // await addChartToPdf(avgTimeChartRef!, 'Tiempo Promedio de Reparación');
+        
+        // Generar PDF adicional
+        // await generatePDF(technicianChartRef!, 'Estadísticas de Técnicos');
+        // await generatePDF(scheduledVsCompletedRef!, 'Programados vs Completados');
+        // await generatePDF(maintenanceOverviewRef!, 'Resumen de Mantenimientos');
+
       // Añadir tabla de resumen
       if (reportContainerRef.current) {
         const canvas = await html2canvas(reportContainerRef.current);
         const imgData = canvas.toDataURL('image/png');
-        
+
         // Verificar si necesitamos una nueva página
         if (yPosition + 60 > pageHeight) {
           pdf.addPage();
@@ -416,7 +435,13 @@ export default function ReportsNew() {
 
                   {/* Nuevo gráfico: Visión general de mantenimientos */}
                   <MaintenanceOverviewChart
-                    data={dashboardData.maintenanceOverview || {}}
+                    data={dashboardData.maintenanceOverview || {
+                      scheduled: 0,
+                      inProgress: 0,
+                      completed: 0,
+                      cancelled: 0,
+                      total: 0
+                    }}
                     chartRef={maintenanceOverviewRef}
                   />
                 </div>

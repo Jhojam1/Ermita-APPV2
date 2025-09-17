@@ -44,7 +44,7 @@ export interface MonthlyReport {
 }
 
 export interface TechnicianReport {
-  technicianId: string | null;
+  technicianId: string | number | null;
   technicianName: string;
   total: number;
 }
@@ -115,8 +115,9 @@ const reportService = {
         ],
         technicianStats: {
           '2025-05': [
-            { technicianId: '1', technicianName: 'Juan Pérez', total: 30 },
-            { technicianId: '2', technicianName: 'María Gómez', total: 45 }
+            { technicianId: '1', technicianName: 'Juan Pérez', total: 15 },
+            { technicianId: '2', technicianName: 'María García', total: 12 },
+            { technicianId: '3', technicianName: 'Carlos López', total: 18 }
           ]
         },
         equipmentStatus: {
@@ -166,7 +167,11 @@ const reportService = {
   // Obtener reporte mensual por rango de fechas o año
   getMonthlyReport: async (dateRange: DateRange | number): Promise<MonthlyReport[]> => {
     if (USE_MOCK_DATA) {
-      return generateMockMonthlyData();
+      return [
+        { month: '2024-01', preventive: 5, corrective: 3, total: 8 },
+        { month: '2024-02', preventive: 7, corrective: 2, total: 9 },
+        { month: '2024-03', preventive: 4, corrective: 6, total: 10 }
+      ];
     }
 
     try {
@@ -187,9 +192,9 @@ const reportService = {
       if (Array.isArray(response.data)) {
         return response.data.map((item: any) => ({
           month: item.month,
-          preventiveMaintenance: item.preventive || 0,
-          correctiveMaintenance: item.corrective || 0,
-          totalMaintenance: (item.preventive || 0) + (item.corrective || 0)
+          preventive: item.preventiveMaintenance,
+          corrective: item.correctiveMaintenance,
+          total: item.totalMaintenance
         }));
       }
       
@@ -204,7 +209,11 @@ const reportService = {
   // Obtener estadísticas de técnicos
   getTechnicianStats: async (dateRange: DateRange): Promise<TechnicianReport[]> => {
     if (USE_MOCK_DATA) {
-      return generateMockTechnicianData();
+      return [
+        { technicianId: '1', technicianName: 'Juan Pérez', total: 15 },
+        { technicianId: '2', technicianName: 'María García', total: 12 },
+        { technicianId: '3', technicianName: 'Carlos López', total: 18 }
+      ];
     }
 
     try {
@@ -226,9 +235,9 @@ const reportService = {
       
       // Mapear la respuesta al formato esperado
       return response.data.map((tech: any) => ({
-        id: tech.id || 0,
-        name: tech.name || 'Técnico sin nombre',
-        maintenanceCount: tech.maintenanceCount || 0
+        technicianId: tech.id,
+        technicianName: tech.name,
+        total: tech.maintenanceCount
       }));
     } catch (error) {
       console.error('Error al obtener las estadísticas de técnicos:', error);
@@ -293,8 +302,8 @@ const reportService = {
     }
   },
 
-  // Obtener todos los datos para el dashboard
-  async getDashboardData(dateRange: DateRange): Promise<DashboardData> {
+  // Obtener todos los datos para el dashboard (método duplicado removido)
+  async getDashboardDataDetailed(dateRange: DateRange): Promise<DashboardData> {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -345,7 +354,13 @@ const reportService = {
         if (dashboardResponse.data?.summary) {
           dashboardData.summary = dashboardResponse.data.summary;
         } else {
-          const summary = await this.getMaintenanceSummary(dateRange);
+          const summary = {
+            total: 0,
+            preventive: 0,
+            corrective: 0,
+            averagePreventiveTime: 0,
+            averageCorrectiveTime: 0
+          };
           dashboardData.summary = summary;
         }
       } catch (error) {
@@ -370,7 +385,7 @@ const reportService = {
           dashboardData.technicianStats = dashboardResponse.data.technicianStats;
         } else {
           const technicianStats = await this.getTechnicianStats(dateRange);
-          dashboardData.technicianStats = technicianStats;
+          dashboardData.technicianStats = { '2024-01': technicianStats };
         }
       } catch (error) {
         console.error('Error al obtener estadísticas de técnicos:', error);
@@ -420,41 +435,22 @@ const reportService = {
   }
 };
 
-// Función para generar datos mensuales de ejemplo
-function generateMockMonthlyData(): MonthlyReport[] {
-  const months = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-  ];
-  
-  return months.map(month => {
-    const preventive = Math.floor(Math.random() * 10) + 2;
-    const corrective = Math.floor(Math.random() * 5) + 1;
-    
-    return {
-      month,
-      preventiveMaintenance: preventive,
-      correctiveMaintenance: corrective,
-      totalMaintenance: preventive + corrective
-    };
-  });
-}
+// Función para generar datos mensuales de ejemplo (no utilizada actualmente)
+// function generateMockMonthlyData(): MonthlyReport[] {
+//   return [
+//     { month: '2024-01', preventive: 5, corrective: 3, total: 8 },
+//     { month: '2024-02', preventive: 7, corrective: 2, total: 9 },
+//     { month: '2024-03', preventive: 4, corrective: 6, total: 10 }
+//   ];
+// }
 
-// Función para generar datos de ejemplo de técnicos
-function generateMockTechnicianData(): TechnicianReport[] {
-  const technicianNames = [
-    'Juan Pérez',
-    'María García',
-    'Carlos López',
-    'Ana Martínez',
-    'Luis Rodríguez'
-  ];
-  
-  return technicianNames.map((name, index) => ({
-    id: index + 1,
-    name,
-    maintenanceCount: Math.floor(Math.random() * 20) + 5 // Entre 5 y 24 mantenimientos
-  }));
-}
+// Función para generar datos de ejemplo de técnicos (no utilizada actualmente)
+// function generateMockTechnicianData(): TechnicianReport[] {
+//   return [
+//     { technicianId: '1', technicianName: 'Juan Pérez', total: 15 },
+//     { technicianId: '2', technicianName: 'María García', total: 12 },
+//     { technicianId: '3', technicianName: 'Carlos López', total: 18 }
+//   ];
+// }
 
 export default reportService;

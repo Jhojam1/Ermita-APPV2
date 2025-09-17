@@ -2,8 +2,7 @@ import axios from 'axios';
 
 // Definir la URL base del API
 const API_BASE_URL = 'http://localhost:8080';
-const INVENTORY_URL = `${API_BASE_URL}/api/inventory`;
-const COMPANY_URL = `${API_BASE_URL}/api/companies`;
+const INVENTORY_URL = `${API_BASE_URL}/inventory`;
 
 // Crear una instancia de axios con la URL base
 const inventoryApi = axios.create({

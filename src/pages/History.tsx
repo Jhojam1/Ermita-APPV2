@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import {
   MagnifyingGlassIcon,
   CalendarIcon,
-  DocumentIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import maintenanceService from '../services/maintenanceService';
@@ -11,10 +10,10 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export default function History() {
-  const [mantenimientosData, setMantenimientosData] = useState<MaintenanceItemUI[]>([]);
+  const [mantenimientosData, setMantenimientosData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedMantenimiento, setSelectedMantenimiento] = useState<MaintenanceItemUI | null>(null);
+  const [selectedMantenimiento, setSelectedMantenimiento] = useState<any | null>(null);
   const [technicianSignature, setTechnicianSignature] = useState<string | null>(null);
   const [showDetallesModal, setShowDetallesModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,10 +38,10 @@ export default function History() {
       console.log('Datos recibidos de mantenimientos completados:', data);
       
       // Verificar si hay firmas de técnicos en los datos
-      const firmasTecnicos = data.filter(item => item.firmaTecnico);
+      const firmasTecnicos = data.filter(item => item.technicianSignature);
       console.log('Mantenimientos con firma de técnico:', firmasTecnicos.length);
       if (firmasTecnicos.length > 0) {
-        console.log('Ejemplo de firma de técnico:', firmasTecnicos[0].firmaTecnico?.substring(0, 50) + '...');
+        console.log('Ejemplo de firma de técnico:', firmasTecnicos[0].technicianSignature?.substring(0, 50) + '...');
       } else {
         console.log('No se encontraron firmas de técnicos en los datos');
       }
@@ -84,7 +83,7 @@ export default function History() {
   };
 
   // Función para mostrar los detalles de un mantenimiento
-  const handleVerDetalles = (mantenimiento: MaintenanceItemUI) => {
+  const handleVerDetalles = (mantenimiento: any) => {
     setSelectedMantenimiento(mantenimiento);
     setShowDetallesModal(true);
     
@@ -114,7 +113,7 @@ export default function History() {
       
       // Verificar si hay firma del responsable y precargarla para asegurar que esté disponible para el PDF
       let firmaValida = false;
-      let firmaImg = null;
+      let firmaImg: HTMLImageElement | null = null;
       let firmaUrl = mantenimiento.firma;
       
       // Verificar si hay firma del técnico y precargarla
@@ -156,11 +155,11 @@ export default function History() {
           
           // Esperar a que la imagen se cargue o falle
           await new Promise((resolve) => {
-            firmaImg.onload = () => {
+            firmaImg!.onload = () => {
               firmaValida = true;
               resolve(true);
             };
-            firmaImg.onerror = () => {
+            firmaImg!.onerror = () => {
               firmaValida = false;
               resolve(false);
             };
@@ -733,7 +732,7 @@ export default function History() {
                           />
                           {/* Log oculto para depuración */}
                           <div style={{ display: 'none' }}>
-                            {console.log('[DEBUG] Renderizando firma del técnico desde servicio de usuarios')}
+                            {/* DEBUG: Renderizando firma del técnico desde servicio de usuarios */}
                           </div>
                         </>
                       ) : (
@@ -741,7 +740,7 @@ export default function History() {
                           <span className="text-gray-400 text-sm">Sin firma</span>
                           {/* Log oculto para depuración */}
                           <div style={{ display: 'none' }}>
-                            {console.log('[DEBUG] No hay firma del técnico disponible')}
+                            {/* DEBUG: No hay firma del técnico disponible */}
                           </div>
                         </>
                       )}

@@ -115,7 +115,13 @@ export default function ReportesHosvital() {
   const [selectedReport, setSelectedReport] = useState('oportunidad-triage');
   const [selectedYear, setSelectedYear] = useState('2025');
   const [selectedMonth, setSelectedMonth] = useState('Febrero');
-  const [selectedFilters, setSelectedFilters] = useState({
+  const [selectedFilters, setSelectedFilters] = useState<{
+    genero: string | null;
+    grupoEtario: string | null;
+    empresa: string | null;
+    medico: string | null;
+    prioridad: string | null;
+  }>({
     genero: null,
     grupoEtario: null,
     empresa: null,
@@ -133,7 +139,36 @@ export default function ReportesHosvital() {
   ];
 
   // Manejadores de eventos para los filtros
-  const handleGeneroClick = (elements) => {
+  // const handleExportPDF = (_event: any) => {
+  //   console.log('Export PDF functionality not implemented');
+  // };
+
+  // const handleExportExcel = (_event: any) => {
+  //   console.log('Export Excel functionality not implemented');
+  // };
+
+  // const handlePrint = (_event: any) => {
+  //   window.print();
+  // };
+
+  const handleEmpresaClick = (empresa: any) => {
+    setSelectedFilters(prev => ({
+      ...prev,
+      empresa: prev.empresa === empresa.name ? null : empresa.name
+    }));
+  };
+
+  const handleMedicoClick = (elements: any) => {
+    if (elements.length > 0) {
+      const medico = chartData.medicosData.labels[elements[0].index];
+      setSelectedFilters(prev => ({
+        ...prev,
+        medico: prev.medico === medico ? null : medico as string
+      }));
+    }
+  };
+
+  const handleGeneroClick = (elements: any) => {
     if (elements.length > 0) {
       const genero = ['F', 'M'][elements[0].index];
       setSelectedFilters(prev => ({
@@ -143,36 +178,19 @@ export default function ReportesHosvital() {
     }
   };
 
-  const handleGrupoEtarioClick = (elements) => {
+  const handleGrupoEtarioClick = (elements: any) => {
     if (elements.length > 0) {
-      const grupoEtario = chartData.grupoEtarioData.labels[elements[0].index];
+      const grupoEtario = (filteredData as any).grupoEtario.labels[elements[0].index];
       setSelectedFilters(prev => ({
         ...prev,
-        grupoEtario: prev.grupoEtario === grupoEtario ? null : grupoEtario
-      }));
-    }
-  };
-
-  const handleEmpresaClick = (empresa) => {
-    setSelectedFilters(prev => ({
-      ...prev,
-      empresa: prev.empresa === empresa.name ? null : empresa.name
-    }));
-  };
-
-  const handleMedicoClick = (elements) => {
-    if (elements.length > 0) {
-      const medico = chartData.medicosData.labels[elements[0].index];
-      setSelectedFilters(prev => ({
-        ...prev,
-        medico: prev.medico === medico ? null : medico
+        grupoEtario: prev.grupoEtario === grupoEtario ? null : grupoEtario as string
       }));
     }
   };
 
   // Función para filtrar datos basados en las selecciones
   const filteredData = useMemo(() => {
-    let result = { 
+    let result: any = { 
       genero: {}, 
       empresas: new Map(), 
       medicos: new Map(),
@@ -192,7 +210,7 @@ export default function ReportesHosvital() {
 
       // Filtrar por grupo etario
       if (includeData && selectedFilters.grupoEtario && genData.grupoEtario) {
-        if (genData.grupoEtario[selectedFilters.grupoEtario] === 0) {
+        if ((genData.grupoEtario as any)[selectedFilters.grupoEtario] === 0) {
           includeData = false;
         }
       }
@@ -206,7 +224,7 @@ export default function ReportesHosvital() {
 
       // Filtrar por médico
       if (includeData && selectedFilters.medico && genData.medicos) {
-        if (!genData.medicos[selectedFilters.medico]) {
+        if (!(genData.medicos as any)[selectedFilters.medico]) {
           includeData = false;
         }
       }
@@ -229,7 +247,7 @@ export default function ReportesHosvital() {
 
         // Procesar médicos
         if (genData.medicos) {
-          Object.entries(genData.medicos).forEach(([medico, count]) => {
+          Object.entries(genData.medicos).forEach(([medico, count]: [string, any]) => {
             if (!selectedFilters.medico || selectedFilters.medico === medico) {
               const currentCount = result.medicos.get(medico) || 0;
               result.medicos.set(medico, currentCount + count);
@@ -273,9 +291,9 @@ export default function ReportesHosvital() {
       datasets: [{
         data: grupoEtarioLabels.map(label => {
           let total = 0;
-          Object.values(filteredData.genero).forEach(genData => {
+          Object.values(filteredData.genero).forEach((genData: any) => {
             if (genData?.grupoEtario) {
-              total += genData.grupoEtario[label] || 0;
+              total += (genData.grupoEtario as any)[label] || 0;
             }
           });
           return total;
@@ -295,9 +313,9 @@ export default function ReportesHosvital() {
           data: oportunidadesLabels.map(label => {
             let sum = 0;
             let count = 0;
-            Object.values(filteredData.genero).forEach(genData => {
+            Object.values(filteredData.genero).forEach((genData: any) => {
               if (genData?.oportunidades?.[label]) {
-                sum += genData.oportunidades[label][0];
+                sum += (genData.oportunidades as any)[label][0];
                 count++;
               }
             });
@@ -313,9 +331,9 @@ export default function ReportesHosvital() {
           data: oportunidadesLabels.map(label => {
             let sum = 0;
             let count = 0;
-            Object.values(filteredData.genero).forEach(genData => {
+            Object.values(filteredData.genero).forEach((genData: any) => {
               if (genData?.oportunidades?.[label]) {
-                sum += genData.oportunidades[label][1];
+                sum += (genData.oportunidades as any)[label][1];
                 count++;
               }
             });
@@ -331,9 +349,9 @@ export default function ReportesHosvital() {
           data: oportunidadesLabels.map(label => {
             let sum = 0;
             let count = 0;
-            Object.values(filteredData.genero).forEach(genData => {
+            Object.values(filteredData.genero).forEach((genData: any) => {
               if (genData?.oportunidades?.[label]) {
-                sum += genData.oportunidades[label][2];
+                sum += (genData.oportunidades as any)[label][2];
                 count++;
               }
             });
@@ -348,7 +366,7 @@ export default function ReportesHosvital() {
     };
 
     // Preparar datos de empresas
-    const empresasData = Array.from(filteredData.empresas.entries())
+    const empresasData = Array.from(filteredData.empresas.entries() as [string, number][])
       .map(([name, value]) => ({
         name,
         value,
@@ -563,7 +581,7 @@ export default function ReportesHosvital() {
                     position: 'bottom'
                   }
                 },
-                onClick: (event, elements) => {
+                onClick: (_event, elements) => {
                   handleGeneroClick(elements);
                 }
               }}
@@ -589,7 +607,7 @@ export default function ReportesHosvital() {
                     display: false
                   }
                 },
-                onClick: (event, elements) => {
+                onClick: (_event, elements) => {
                   handleGrupoEtarioClick(elements);
                 }
               }}
@@ -659,7 +677,7 @@ export default function ReportesHosvital() {
                     display: false
                   }
                 },
-                onClick: (event, elements) => {
+                onClick: (_event, elements) => {
                   handleMedicoClick(elements);
                 }
               }}

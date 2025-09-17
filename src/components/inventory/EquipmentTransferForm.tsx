@@ -11,11 +11,11 @@ import {
   Divider 
 } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import inventoryTransferService, { CreateInventoryTransferDTO } from '../../services/InventoryTransferService';
-import companyService from '../../services/CompanyService';
-import inventoryService from '../../services/InventoryService';
+import inventoryTransferService from '../../services/InventoryTransferService';
+import companyService from '../../services/companyService';
+import inventoryService, { InventoryItem as ServiceInventoryItem } from '../../services/inventoryService';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
@@ -30,15 +30,8 @@ interface Headquarter {
   name: string;
 }
 
-interface InventoryItem {
-  id: number;
-  serial: string;
-  model: string;
-  companyId: number;
-  companyName: string;
-  sedeId: number;
-  sedeName: string;
-}
+// Usar la interfaz del servicio con filtros necesarios
+type InventoryItem = ServiceInventoryItem;
 
 const EquipmentTransferForm: React.FC = () => {
   const [form] = Form.useForm();
@@ -53,7 +46,10 @@ const EquipmentTransferForm: React.FC = () => {
     const fetchCompanies = async () => {
       try {
         const response = await companyService.getAllCompanies();
-        setCompanies(response.data);
+        setCompanies((response || []).map(company => ({
+          ...company,
+          headquarters: company.headquarters || []
+        })));
       } catch (error) {
         console.error('Error al cargar las empresas:', error);
         message.error('Error al cargar las empresas.');
@@ -62,8 +58,12 @@ const EquipmentTransferForm: React.FC = () => {
 
     const fetchInventoryItems = async () => {
       try {
-        const response = await inventoryService.getAllInventoryItems();
-        setInventoryItems(response.data);
+        const response = await inventoryService.getAllItems();
+        // Filtrar solo items con id definido
+        const itemsWithId = (response || []).filter((item): item is ServiceInventoryItem & { id: number } => 
+          item.id !== undefined
+        );
+        setInventoryItems(itemsWithId);
       } catch (error) {
         console.error('Error al cargar los equipos:', error);
         message.error('Error al cargar los equipos.');
@@ -107,15 +107,25 @@ const EquipmentTransferForm: React.FC = () => {
     const destinationCompany = companies.find(c => c.id === values.destinationCompanyId);
     const destinationHeadquarter = headquarters.find(h => h.id === values.destinationHeadquarterId);
 
-    const transferData: CreateInventoryTransferDTO = {
+    if (!selectedItem.id) {
+      message.error('Error: ID del equipo no válido.');
+      setLoading(false);
+      return;
+    }
+
+    const transferData = {
       inventoryItemId: selectedItem.id,
-      quantity: 1, // Para equipos individuales
-      destinationCompanyId: values.destinationCompanyId,
+      quantity: parseInt(form.getFieldValue('quantity')),
+      sourceCompanyId: selectedItem.companyId || 0,
+      sourceCompanyName: selectedItem.companyName || '',
+      sourceHeadquarterId: selectedItem.sedeId || 0,
+      sourceHeadquarterName: selectedItem.sedeName || '',
+      destinationCompanyId: form.getFieldValue('destinationCompanyId'),
       destinationCompanyName: destinationCompany?.name || '',
-      destinationHeadquarterId: values.destinationHeadquarterId,
+      destinationHeadquarterId: form.getFieldValue('destinationHeadquarterId'),
       destinationHeadquarterName: destinationHeadquarter?.name || '',
-      reason: values.reason,
-      description: values.description || ''
+      reason: form.getFieldValue('reason'),
+      description: form.getFieldValue('description'),
     };
 
     try {

@@ -61,9 +61,9 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
           { id: 3, name: 'Servidor' }
         ]);
         setCompanies([
-          { id: 1, name: 'TechCorp' },
-          { id: 2, name: 'MediSalud' },
-          { id: 3, name: 'EducaPlus' }
+          { id: 1, name: 'TechCorp', active: true },
+          { id: 2, name: 'MediSalud', active: true },
+          { id: 3, name: 'EducaPlus', active: true }
         ]);
       } finally {
         setIsLoading(false);
@@ -90,8 +90,8 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
           console.error(`Error al obtener sedes para la empresa ${formData.companyId}:`, error);
           // Datos de ejemplo en caso de error
           setHeadquarters([
-            { id: 1, name: 'Sede Principal', companyId: formData.companyId },
-            { id: 2, name: 'Sede Norte', companyId: formData.companyId }
+            { id: 1, name: 'Sede Principal', companyId: formData.companyId, active: true },
+            { id: 2, name: 'Sede Norte', companyId: formData.companyId, active: true }
           ]);
         } finally {
           setIsLoading(false);

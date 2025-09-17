@@ -6,7 +6,8 @@ const { Title, Text } = Typography;
 
 // Ejemplo de cómo usar el sistema de permisos en tus páginas
 const PermissionExample: React.FC = () => {
-  const { hasPermission, canPerformAction, permissions } = usePermissions();
+  // const { hasPermission } = useAuth();
+  const { canPerformAction, permissions } = usePermissions();
 
   return (
     <div className="p-6">

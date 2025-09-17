@@ -2,15 +2,16 @@ import React from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import AnimatedContainer from '../ui/AnimatedContainer';
 
+interface MaintenanceOverviewData {
+  scheduled: number;
+  inProgress: number;
+  completed: number;
+  cancelled: number;
+  total: number;
+}
+
 interface MaintenanceOverviewChartProps {
-  data: { 
-    [key: string]: number;
-    scheduled?: number;
-    inProgress?: number;
-    completed?: number;
-    cancelled?: number;
-    total?: number;
-  };
+  data: MaintenanceOverviewData;
   chartRef: React.RefObject<any>;
 }
 
@@ -98,7 +99,7 @@ const MaintenanceOverviewChart: React.FC<MaintenanceOverviewChartProps> = ({ dat
                         const datasets = chart.data.datasets;
                         return chart.data.labels?.map((label, i) => {
                           const meta = chart.getDatasetMeta(0);
-                          const style = meta.controller.getStyle(i);
+                          const style = meta.controller.getStyle(i, false);
                           const value = datasets[0].data[i] as number;
                           const percentage = totalMantenimientos > 0 ? Math.round((value / totalMantenimientos) * 100) : 0;
                           

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import inventoryTransferService, { InventoryTransfer } from '../../services/InventoryTransferService';
-import { ArrowRightIcon, CalendarIcon, UserIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, UserIcon } from '@heroicons/react/24/outline';
 
 // Usamos la interfaz del servicio directamente para los traslados
 interface Transfer extends InventoryTransfer {
@@ -51,13 +51,7 @@ const EquipmentTransferHistoryTab: React.FC<Props> = ({ equipmentId }) => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'dd/MM/yyyy HH:mm', { locale: es });
-    } catch (error) {
-      return 'Fecha inválida';
-    }
-  };
+  // formatDate function removed as it's not used
   
   if (loading) {
     return <div className="py-4 text-center text-gray-500">Cargando historial de movimientos...</div>;

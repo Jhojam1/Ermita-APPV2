@@ -7,7 +7,6 @@ import {
   PauseIcon,
   DocumentTextIcon,
   CalendarIcon,
-  UserIcon,
   ChartBarIcon,
   WrenchScrewdriverIcon
 } from '@heroicons/react/24/outline';
@@ -29,8 +28,8 @@ export default function TechnicianDashboard() {
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
   const technicianId = user?.id;
-  const companyId = user?.idcompany || 1;
-  const headquarterId = user?.idheadquarter || 1;
+  // const companyId = user?.idcompany || 1;
+  // const headquarterId = user?.idheadquarter || 1;
 
   useEffect(() => {
     if (technicianId) {
@@ -44,8 +43,8 @@ export default function TechnicianDashboard() {
     setLoading(true);
     try {
       const [assignedData, statsData] = await Promise.all([
-        technicianAssignmentService.getAssignedMaintenances(technicianId, companyId, headquarterId),
-        technicianAssignmentService.getTechnicianProductivityStats(technicianId, companyId, headquarterId)
+        technicianAssignmentService.getAssignedMaintenances(technicianId),
+        technicianAssignmentService.getTechnicianProductivityStats(technicianId)
       ]);
 
       setAssignedMaintenances(assignedData);
@@ -57,10 +56,10 @@ export default function TechnicianDashboard() {
     }
   };
 
-  const handleStatusUpdate = async (maintenanceId: number, newStatus: string) => {
+  const handleStatusUpdate = async (maintenanceId: number, newStatus: 'PROGRAMADO' | 'EN_PROCESO' | 'COMPLETADO' | 'CANCELADO') => {
     setUpdatingStatus(maintenanceId);
     try {
-      await maintenanceService.updateMaintenanceStatus(maintenanceId, newStatus);
+      await maintenanceService.updateMaintenance(maintenanceId, { status: newStatus });
       await loadData(); // Recargar datos para reflejar cambios
     } catch (error) {
       console.error('Error actualizando estado:', error);
@@ -134,7 +133,7 @@ export default function TechnicianDashboard() {
 
   const filteredMaintenances = assignedMaintenances.filter(maintenance => {
     const matchesSearch = maintenance.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         maintenance.assetName?.toLowerCase().includes(searchTerm.toLowerCase());
+                         maintenance.inventoryItemSerial?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = filterStatus === 'all' || maintenance.status === filterStatus;
     
@@ -196,15 +195,15 @@ export default function TechnicianDashboard() {
               <div className="text-sm text-gray-600">Total Asignados</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{productivityStats.totalCompleted}</div>
+              <div className="text-2xl font-bold text-green-600">{productivityStats.completed}</div>
               <div className="text-sm text-gray-600">Completados</div>
             </div>
             <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">{productivityStats.totalInProgress}</div>
+              <div className="text-2xl font-bold text-yellow-600">{productivityStats.inProgress}</div>
               <div className="text-sm text-gray-600">En Proceso</div>
             </div>
             <div className="text-center p-4 bg-red-50 rounded-lg">
-              <div className="text-2xl font-bold text-red-600">{productivityStats.totalOverdue}</div>
+              <div className="text-2xl font-bold text-red-600">{productivityStats.overdue}</div>
               <div className="text-sm text-gray-600">Vencidos</div>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
@@ -228,7 +227,7 @@ export default function TechnicianDashboard() {
                 <div>
                   <div className="font-medium text-gray-900">#{maintenance.id} - {maintenance.description}</div>
                   <div className="text-sm text-gray-600">
-                    {maintenance.assetName} • {new Date(maintenance.scheduledDate).toLocaleDateString()}
+                    {maintenance.inventoryItemSerial} • {new Date(maintenance.scheduledDate).toLocaleDateString()}
                   </div>
                 </div>
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(maintenance.type)}`}>
@@ -323,7 +322,7 @@ export default function TechnicianDashboard() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div>
                           <div className="text-sm text-gray-500">Activo</div>
-                          <div className="font-medium">{maintenance.assetName || 'No especificado'}</div>
+                          <div className="font-medium">{maintenance.inventoryItemSerial || 'No especificado'}</div>
                         </div>
                         <div>
                           <div className="text-sm text-gray-500">Fecha Programada</div>
@@ -334,8 +333,8 @@ export default function TechnicianDashboard() {
                         </div>
                         <div>
                           <div className="text-sm text-gray-500">Prioridad</div>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(maintenance.priority || 'MEDIA')}`}>
-                            {maintenance.priority || 'MEDIA'}
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor('MEDIA')}`}>
+                            {'MEDIA'}
                           </span>
                         </div>
                       </div>
@@ -349,11 +348,11 @@ export default function TechnicianDashboard() {
                         </span>
                       </div>
 
-                      {maintenance.notes && (
+                      {maintenance.description && (
                         <div className="mb-4">
                           <div className="text-sm text-gray-500 mb-1">Notas</div>
                           <div className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
-                            {maintenance.notes}
+                            {maintenance.description}
                           </div>
                         </div>
                       )}
@@ -364,7 +363,7 @@ export default function TechnicianDashboard() {
                       {availableTransitions.map((transition) => (
                         <button
                           key={transition.value}
-                          onClick={() => handleStatusUpdate(maintenance.id, transition.value)}
+                          onClick={() => handleStatusUpdate(maintenance.id, transition.value as 'PROGRAMADO' | 'EN_PROCESO' | 'COMPLETADO' | 'CANCELADO')}
                           disabled={updatingStatus === maintenance.id}
                           className={`${transition.color} text-white px-3 py-1 rounded text-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1`}
                         >

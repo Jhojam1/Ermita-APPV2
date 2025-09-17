@@ -8,45 +8,6 @@ import {
 } from '@heroicons/react/24/outline';
 import maintenanceService, { MaintenanceItem, MaintenanceItemUI } from '../services/maintenanceService';
 
-const mantenimientosData = [
-  {
-    id: '0001',
-    equipo: 'Computadora 1',
-    estado: 'Pendiente',
-    fechaProgramada: '2024-04-11',
-    tecnico: 'Juan Pérez',
-    tipo: 'Preventivo',
-    prioridad: 'Alta',
-    descripcion: 'Mantenimiento preventivo programado incluyendo limpieza de hardware y actualización de software.',
-    area: 'Informática',
-    responsable: 'Carlos Gómez'
-  },
-  {
-    id: '0002',
-    equipo: 'Impresora 2',
-    estado: 'En Proceso',
-    fechaProgramada: '2024-04-12',
-    tecnico: 'María López',
-    tipo: 'Correctivo',
-    prioridad: 'Media',
-    descripcion: 'Reparación de sistema de alimentación de papel',
-    area: 'Impresión',
-    responsable: 'Ana Rodríguez'
-  },
-  {
-    id: '0003',
-    equipo: 'Servidor 1',
-    estado: 'Pendiente',
-    fechaProgramada: '2024-04-13',
-    tecnico: 'Carlos Ruiz',
-    tipo: 'Preventivo',
-    prioridad: 'Alta',
-    descripcion: 'Actualización de sistema operativo y respaldo de datos',
-    area: 'Servidores',
-    responsable: 'Pedro García'
-  }
-];
-
 export default function Maintenance() {
   const [mantenimientosData, setMantenimientosData] = useState<MaintenanceItemUI[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -111,7 +72,7 @@ export default function Maintenance() {
         img.onload = () => {
           const ctx = sigCanvas.current?.getCanvas().getContext('2d');
           if (ctx) {
-            ctx.drawImage(img, 0, 0, sigCanvas.current.getCanvas().width, sigCanvas.current.getCanvas().height);
+            ctx.drawImage(img, 0, 0, sigCanvas.current!.getCanvas().width, sigCanvas.current!.getCanvas().height);
           }
         };
         img.src = fullScreenSignature;
@@ -151,9 +112,8 @@ export default function Maintenance() {
       
       // Filtrar solo los mantenimientos pendientes y en proceso
       const filteredData = data.filter(item => 
-        item.status === 'PROGRAMADO' || item.status === 'EN_PROCESO'
+        item.status === 'PROGRAMADO' || item.status === 'EN_PROCESO' || item.status === 'COMPLETADO'
       );
-      
       const mappedData = filteredData.map(item => maintenanceService.mapToUI(item));
       setMantenimientosData(mappedData);
       
@@ -173,7 +133,7 @@ export default function Maintenance() {
       setIsLoading(true);
       
       // Obtener usuario actual para obtener datos del técnico
-      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      // const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       
       // Mapear el estado seleccionado al formato del backend
       const estadoBackend = formData.estado === 'completado' ? 'COMPLETADO' : 
@@ -227,14 +187,14 @@ export default function Maintenance() {
         
         // Guardar la firma del responsable
         const firmaResponsable = getSignatureImage();
-        updateData.signature = firmaResponsable;
+        updateData.signature = firmaResponsable || undefined;
         updateData.signerName = formData.nombreFirmante;
         console.log('[DEBUG] Firma del responsable asignada:', firmaResponsable ? 'Sí (longitud: ' + firmaResponsable.length + ')' : 'No');
         
         // Guardar la firma del técnico también (la misma firma se usa para ambos)
         // En un caso real, se podrían capturar firmas separadas para técnico y responsable
         const firmaTecnico = getSignatureImage();
-        updateData.technicianSignature = firmaTecnico;
+        updateData.technicianSignature = firmaTecnico || undefined;
         console.log('[DEBUG] Firma del técnico asignada:', firmaTecnico ? 'Sí (longitud: ' + firmaTecnico.length + ')' : 'No');
       }
       
@@ -462,19 +422,17 @@ export default function Maintenance() {
                       </button>
                       <button
                         onClick={() => {
-                          // Obtener usuario actual para auto-asignar el técnico
-                          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-                          
                           setSelectedMantenimiento(mantenimiento);
                           setFormData({
-                            tecnico: currentUser.fullName || '', // Auto-asignar nombre del técnico logueado
-                            tipoMantenimiento: mantenimiento.tipo.toLowerCase(),
-                            observaciones: mantenimiento.observaciones || '',
-                            estado: mantenimiento.estado.toLowerCase().replace(' ', '_')
+                            tecnico: mantenimiento.tecnico,
+                            tipoMantenimiento: mantenimiento.tipo,
+                            observaciones: '',
+                            estado: 'completado',
+                            nombreFirmante: ''
                           });
                           setShowActualizarEstado(true);
                         }}
-                        className="text-green-600 hover:text-green-900"
+                        className="text-green-600 hover:text-green-900 ml-2"
                       >
                         Actualizar
                       </button>

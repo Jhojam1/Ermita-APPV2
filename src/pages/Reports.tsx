@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -15,10 +15,7 @@ import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import AnimatedContainer from '../components/ui/AnimatedContainer';
-import reportService, { MaintenanceSummary, MonthlyReport, DashboardData, TechnicianReport } from '../services/reportService';
-import inventoryService from '../services/inventoryService';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import reportService, { DashboardData } from '../services/reportService';
 
 ChartJS.register(
   CategoryScale,
@@ -32,10 +29,6 @@ ChartJS.register(
   Legend
 );
 
-// Formatear fecha para mostrarla de manera amigable
-const formatDate = (dateString: string) => {
-  return format(new Date(dateString), "d 'de' MMMM 'de' yyyy", { locale: es });
-};
 
 export default function Reports() {
   // Referencias para los gráficos (para exportar a PDF)
@@ -65,6 +58,8 @@ export default function Reports() {
   
   // Estado para el mensaje de error
   const [error, setError] = useState<string | null>(null);
+  // const [selectedHeadquarter, setSelectedHeadquarter] = useState<number>(0);
+  // const [selectedTechnician, setSelectedTechnician] = useState<number>(0);
 
   // Cargar datos para el dashboard
   const fetchData = useCallback(async (startDate: string, endDate: string) => {
@@ -269,7 +264,7 @@ export default function Reports() {
       
       // Capturar cada gráfico en mayor calidad
       console.log('Capturando gráfico de mantenimientos por mes...');
-      const maintenanceCanvas = await html2canvas(maintenanceChartRef.current, captureOptions);
+      const maintenanceCanvas = await html2canvas(maintenanceChartRef.current!, captureOptions);
       const maintenanceImgData = maintenanceCanvas.toDataURL('image/png', 1.0);
       pdf.addImage(maintenanceImgData, 'PNG', margin, chartsStartY + 5, halfWidth, chartHeight);
       
@@ -277,7 +272,7 @@ export default function Reports() {
       pdf.text('Tipos de Mantenimiento', margin + halfWidth + 5, chartsStartY);
       
       console.log('Capturando gráfico de tipos de mantenimiento...');
-      const typeCanvas = await html2canvas(maintenanceTypeChartRef.current, captureOptions);
+      const typeCanvas = await html2canvas(maintenanceTypeChartRef.current!, captureOptions);
       const typeImgData = typeCanvas.toDataURL('image/png', 1.0);
       pdf.addImage(typeImgData, 'PNG', margin + halfWidth + 5, chartsStartY + 5, halfWidth - 10, chartHeight);
       
@@ -285,7 +280,7 @@ export default function Reports() {
       pdf.text('Tiempo Promedio de Mantenimiento', margin, chartsStartY + chartHeight + 10);
       
       console.log('Capturando gráfico de tiempo promedio...');
-      const timeCanvas = await html2canvas(avgTimeChartRef.current, captureOptions);
+      const timeCanvas = await html2canvas(avgTimeChartRef.current!, captureOptions);
       const timeImgData = timeCanvas.toDataURL('image/png', 1.0);
       pdf.addImage(timeImgData, 'PNG', margin, chartsStartY + chartHeight + 15, halfWidth, chartHeight);
       
@@ -293,7 +288,7 @@ export default function Reports() {
       pdf.text('Mantenimientos por Técnico', margin + halfWidth + 5, chartsStartY + chartHeight + 10);
       
       console.log('Capturando gráfico de mantenimientos por técnico...');
-      const technicianCanvas = await html2canvas(technicianChartRef.current, captureOptions);
+      const technicianCanvas = await html2canvas(technicianChartRef.current!, captureOptions);
       const technicianImgData = technicianCanvas.toDataURL('image/png', 1.0);
       pdf.addImage(technicianImgData, 'PNG', margin + halfWidth + 5, chartsStartY + chartHeight + 15, halfWidth - 10, chartHeight);
       
@@ -447,7 +442,7 @@ export default function Reports() {
 
   // Opciones del gráfico de técnicos
   const technicianOptions = {
-    indexAxis: 'x',
+    indexAxis: 'x' as const,
     responsive: true,
     maintainAspectRatio: false,
     animation: {
@@ -460,7 +455,7 @@ export default function Reports() {
       tooltip: {
         enabled: hasTechnicianData,
         callbacks: {
-          label: function(context) {
+          label: function(context: any) {
             return `Mantenimientos: ${context.raw}`;
           }
         }
@@ -470,7 +465,7 @@ export default function Reports() {
         color: '#000',
         anchor: 'end',
         align: 'top',
-        formatter: function(value) {
+        formatter: function(value: any) {
           return value;
         }
       },
@@ -500,7 +495,7 @@ export default function Reports() {
           display: hasTechnicianData,
           text: 'Técnicos',
           font: {
-            weight: 'bold'
+            weight: 'bold' as const
           }
         },
         grid: {
@@ -513,7 +508,7 @@ export default function Reports() {
           display: hasTechnicianData,
           text: 'Cantidad de Mantenimientos',
           font: {
-            weight: 'bold'
+            weight: 'bold' as const
           }
         },
         beginAtZero: true,
@@ -662,7 +657,7 @@ export default function Reports() {
                                       const label = context.label || '';
                                       const value = context.raw || 0;
                                       const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                      const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                      const percentage = total > 0 ? Math.round(((value as number) / total) * 100) : 0;
                                       return `${label}: ${value} (${percentage}%)`;
                                     }
                                   }

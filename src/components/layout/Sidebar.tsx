@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions } from '../PermissionWrapper';
@@ -9,7 +9,6 @@ import {
   WrenchScrewdriverIcon,
   ChartBarIcon,
   Bars3Icon,
-  XMarkIcon,
   ArrowRightOnRectangleIcon,
   Cog6ToothIcon,
   UserGroupIcon,
@@ -19,6 +18,22 @@ import {
   PrinterIcon,
   Squares2X2Icon,
 } from '@heroicons/react/24/outline';
+
+// Definir tipos para los elementos del menú
+interface SubMenuItem {
+  name: string;
+  href: string;
+  icon: React.ForwardRefExoticComponent<any>;
+}
+
+interface MenuItem {
+  name: string;
+  href?: string;
+  icon: React.ForwardRefExoticComponent<any>;
+  isOpen?: boolean;
+  onToggle?: () => void;
+  subItems?: SubMenuItem[];
+}
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,10 +45,9 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
-  const { hasModuleAccess, hasPermission } = usePermissions();
+  const { hasPermission } = usePermissions();
   
   // Obtener el rol del usuario actual
-  const userRole = user?.role || '';
 
   // Detectar si es dispositivo móvil
   useEffect(() => {
@@ -82,9 +96,9 @@ const Sidebar = () => {
 
 
   // Definir los elementos del menú base
-  const homeItem = { name: 'Inicio', href: '/', icon: HomeIcon };
+  const homeItem: MenuItem = { name: 'Inicio', href: '/', icon: HomeIcon };
   
-  const inventoryItem = { 
+  const inventoryItem: MenuItem = { 
     name: 'Inventario',
     icon: Squares2X2Icon,
     isOpen: inventoryOpen,
@@ -96,7 +110,7 @@ const Sidebar = () => {
     ]
   };
 
-  const maintenanceItem = { 
+  const maintenanceItem: MenuItem = { 
     name: 'Mantenimientos',
     icon: WrenchScrewdriverIcon,
     isOpen: maintenanceOpen,
@@ -111,7 +125,7 @@ const Sidebar = () => {
     ]
   };
   
-  const reportsItem = { 
+  const reportsItem: MenuItem = { 
     name: 'Reportes',
     icon: ChartBarIcon,
     isOpen: reportsOpen,
@@ -132,7 +146,7 @@ const Sidebar = () => {
   ];
   
   // Filtrar los elementos del menú según los permisos del usuario
-  let menuItems = [homeItem]; // Todos tienen acceso al inicio
+  let menuItems: MenuItem[] = [homeItem]; // Todos tienen acceso al inicio
   
   // Agregar módulos basados en permisos específicos
   if (hasPermission('INVENTORY_VIEW')) {
@@ -149,7 +163,7 @@ const Sidebar = () => {
 
   // Agregar menú de Configuración si tiene acceso a alguna configuración
   if (hasPermission('CONFIGURATION_VIEW') || hasPermission('USERS_VIEW') || hasPermission('COMPANIES_VIEW')) {
-    const configurationItem = {
+    const configurationItem: MenuItem = {
       name: 'Configuración',
       href: '/configuracion',
       icon: Cog6ToothIcon,
@@ -227,7 +241,7 @@ const Sidebar = () => {
                       onClick={item.onToggle}
                       className={`
                         flex items-center w-full px-4 py-2.5 rounded-lg transition-all duration-200
-                        ${location.pathname?.startsWith(item.href)
+                        ${item.href && location.pathname?.startsWith(item.href)
                           ? 'bg-blue-50/80 text-blue-600 shadow-sm'
                           : 'text-gray-600 hover:bg-gray-50/80'}
                         group
@@ -241,7 +255,7 @@ const Sidebar = () => {
                     </button>
                   ) : (
                     <Link
-                      to={item.href}
+                      to={item.href || '#'}
                       className={`
                         flex items-center px-4 py-2.5 rounded-lg transition-all duration-200
                         ${location.pathname === item.href 

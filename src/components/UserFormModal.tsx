@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import userService, { UserItem } from '../services/userService';
+import { UserItem } from '../services/userService';
 import companyService, { Company, Headquarter } from '../services/companyService';
 import { roleService, Role } from '../services/roleService';
 import SignaturePad from './SignatureCanvas';

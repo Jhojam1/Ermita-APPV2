@@ -1,9 +1,14 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import {
+  ReactNode,
+  createContext,
+  useContext,
+  useState,
+  useEffect
+} from 'react';
 import { 
   authLogin as loginService, 
   authLogout as logoutService, 
   getCurrentUser,
-  User,
   LoginCredentials
 } from '../services/authService';
 

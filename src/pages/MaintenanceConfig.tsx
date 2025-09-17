@@ -17,7 +17,6 @@ export default function MaintenanceConfig() {
   const [editingConfig, setEditingConfig] = useState<AutoMaintenanceConfigUI | null>(null);
   const [equipmentTypes, setEquipmentTypes] = useState<{id: number, name: string}[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [headquarters, setHeadquarters] = useState<Headquarter[]>([]);
   const [filteredHeadquarters, setFilteredHeadquarters] = useState<Headquarter[]>([]);
   
   // Formulario para nueva configuración
@@ -63,7 +62,7 @@ export default function MaintenanceConfig() {
   const fetchEquipmentTypes = async () => {
     try {
       const types = await inventoryService.getAllTypes();
-      setEquipmentTypes(types);
+      setEquipmentTypes(types.map(type => ({ id: type.id || 0, name: type.name })));
     } catch (err) {
       console.error('Error al cargar tipos de equipo:', err);
     }
@@ -87,14 +86,14 @@ export default function MaintenanceConfig() {
     }
   };
 
-  const fetchAllHeadquarters = async () => {
-    try {
-      const data = await companyService.getAllHeadquarters();
-      setHeadquarters(data);
-    } catch (err) {
-      console.error('Error al cargar todas las sedes:', err);
-    }
-  };
+  // const fetchAllHeadquarters = async () => {
+  //   try {
+  //     const data = await companyService.getAllHeadquarters();
+  //     setHeadquarters(data);
+  //   } catch (err) {
+  //     console.error('Error al cargar todas las sedes:', err);
+  //   }
+  // };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,7 +195,7 @@ export default function MaintenanceConfig() {
     setFormData({
       ...formData,
       tipoEquipo: selectedTypeName,
-      equipmentTypeId: isNaN(selectedType?.id) ? 0 : selectedType?.id
+      equipmentTypeId: isNaN(selectedType?.id || 0) ? 0 : (selectedType?.id || 0)
     });
   };
 

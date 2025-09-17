@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import inventoryTransferService from '../../services/InventoryTransferService';
-import companyService from '../../services/CompanyService';
+import companyService from '../../services/companyService';
 
 interface Props {
   equipmentId: number;
@@ -50,7 +50,7 @@ const EquipmentTransferFormModal: React.FC<Props> = ({
       try {
         const response = await companyService.getAllCompanies();
         // El método getAllCompanies ya retorna directamente los datos, no response.data
-        setCompanies(response || []);
+        setCompanies((response || []).map(company => ({ ...company, headquarters: company.headquarters || [] })));
       } catch (error) {
         console.error('Error al cargar las empresas:', error);
         setErrorMsg('Error al cargar las empresas.');

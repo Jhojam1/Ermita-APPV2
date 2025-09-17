@@ -30,6 +30,8 @@ technicianAssignmentApi.interceptors.request.use(
 export interface MaintenanceAssignment {
   id: number;
   inventoryItemId: number;
+  inventoryItemSerial?: string;
+  inventoryItemName?: string;
   companyId: number;
   headquarterId: number;
   serviceArea?: string;
@@ -161,8 +163,33 @@ const technicianAssignmentService = {
   /**
    * Alias para getMaintenancesByTechnician (usado por algunos componentes)
    */
-  getAssignedMaintenances(technicianId: number, companyId: number, headquarterId: number): Promise<MaintenanceAssignment[]> {
-    return this.getMaintenancesByTechnician(technicianId);
+  async assignTechnicianToMaintenance(maintenanceId: number, technicianId: number): Promise<void> {
+    try {
+      await this.assignTechnician(maintenanceId, technicianId, '');
+    } catch (error) {
+      console.error('Error asignando técnico:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener mantenimientos asignados a un técnico específico
+   */
+  async getAssignedMaintenances(technicianId: number): Promise<MaintenanceAssignment[]> {
+    try {
+      const response = await technicianAssignmentApi.get(
+        `${TECHNICIAN_ASSIGNMENT_URL}/assigned`,
+        {
+          params: {
+            technicianId
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error obteniendo mantenimientos asignados:', error);
+      throw error;
+    }
   },
 
   /**

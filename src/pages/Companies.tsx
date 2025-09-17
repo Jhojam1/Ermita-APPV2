@@ -3,10 +3,8 @@ import {
   MagnifyingGlassIcon,
   ChevronUpDownIcon,
   FunnelIcon,
-  EyeIcon,
   PencilSquareIcon,
   PlusCircleIcon,
-  BuildingOfficeIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   XMarkIcon,
@@ -341,7 +339,6 @@ export default function Companies() {
   const uniqueStatuses = [...new Set(empresasData.map(empresa => empresa.estado))];
 
   // Obtener todas las sedes de todas las empresas
-  const allHeadquarters = empresasData.flatMap(empresa => empresa.sedes);
 
   return (
     <div className="max-w-[1400px] mx-auto p-6">

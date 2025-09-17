@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import AnimatedContainer from "../components/ui/AnimatedContainer";
@@ -11,13 +11,10 @@ import {
   UserGroupIcon,
   ChevronRightIcon,
   InformationCircleIcon,
-  BellAlertIcon,
   BuildingOfficeIcon,
   ChartBarIcon,
-  ArrowPathIcon,
   BookOpenIcon,
   LifebuoyIcon,
-  CheckCircleIcon,
   Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 
@@ -26,6 +23,7 @@ const Home = () => {
   const [currentDate] = useState(new Date());
 
   // Noticias o actualizaciones recientes del sistema según el rol del usuario
+  /*
   const getSystemUpdates = () => {
     // Actualizaciones para administradores
     if (user?.role === 'Administrador') {
@@ -97,9 +95,9 @@ const Home = () => {
       }
     ];
   };
+  */
   
   // Obtener las actualizaciones según el rol del usuario
-  const systemUpdates = getSystemUpdates();
 
   // Accesos rápidos según rol del usuario
   const getQuickAccessItems = () => {
@@ -204,15 +202,15 @@ const Home = () => {
           <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-                ¡{getGreeting()}, {user?.name || 'Bienvenido'}!
+                ¡{getGreeting()}, {user?.fullName || 'Bienvenido'}!
               </h1>
               <p className="text-blue-100 text-lg">
                 {formattedDate}
               </p>
-              {user?.company && (
+              {user?.companyId && (
                 <div className="mt-3 flex items-center">
                   <BuildingOfficeIcon className="w-5 h-5 text-blue-200" />
-                  <span className="ml-2 text-blue-100">{user.company}</span>
+                  <span className="ml-2 text-blue-100">Empresa ID: {user.companyId}</span>
                 </div>
               )}
             </div>

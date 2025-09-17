@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { requestPasswordReset, resetPassword } from '../services/authService';
 import AnimatedBackground from '../components/ui/AnimatedBackground';
