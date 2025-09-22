@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configuración base de axios
-const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:8080' : window.location.origin;
+const API_URL = window.location.hostname === 'localhost' ? 'http://192.168.14.99:8080' : window.location.origin;
 
 // Crear una instancia de axios con la URL base
 const metricsApi = axios.create({

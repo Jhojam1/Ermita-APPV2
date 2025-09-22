@@ -37,7 +37,7 @@ function HomeRedirect() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router basename="/ErmitaApp">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />

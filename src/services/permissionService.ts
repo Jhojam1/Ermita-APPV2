@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+const API_BASE_URL = 'http://192.168.14.99:8080/api/v1';
 
 // Configurar axios para incluir el token en todas las peticiones
 const axiosInstance = axios.create({

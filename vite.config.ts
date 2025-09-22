@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './', // Rutas relativas para despliegue en subdirectorios
+  base: '/ErmitaApp/', // Base path para despliegue en Tomcat
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
