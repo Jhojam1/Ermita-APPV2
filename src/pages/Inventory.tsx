@@ -18,6 +18,7 @@ import EquipmentTransferFormModal from '../components/inventory/EquipmentTransfe
 const mapInventoryItemToUI = (item: InventoryItem) => {
   return {
     id: item.id,
+    ciudad: item.cityName || 'No especificada',
     empresa: item.companyName || 'Desconocida',
     sede: item.sedeName || 'Desconocida',
     serial: item.serial,
@@ -51,6 +52,7 @@ export default function Inventory() {
   
   // Filtros
   const [filters, setFilters] = useState({
+    ciudad: '',
     empresa: '',
     sede: '',
     tipo: '',
@@ -58,6 +60,7 @@ export default function Inventory() {
   });
   
   // Listas para los filtros
+  const [ciudades, setCiudades] = useState<{id: number, name: string}[]>([]);
   const [empresas, setEmpresas] = useState<{id: number, name: string}[]>([]);
   const [sedes, setSedes] = useState<{id: number, name: string, companyId: number}[]>([]);
   const [tipos, setTipos] = useState<{id: number, name: string}[]>([]);

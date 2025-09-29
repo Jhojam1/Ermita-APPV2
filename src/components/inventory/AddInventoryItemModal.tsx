@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { XMarkIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 import inventoryService, { InventoryItem, Brand, TypeInventoryItem } from '../../services/inventoryService';
-import companyService, { Company, Headquarter } from '../../services/companyService';
+import companyService, { City, Company, Headquarter } from '../../services/companyService';
 import ManageBrandsModal from './ManageBrandsModal';
 import ManageTypesModal from './ManageTypesModal';
 
@@ -13,12 +13,14 @@ interface AddInventoryItemModalProps {
 export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryItemModalProps) {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [types, setTypes] = useState<TypeInventoryItem[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [headquarters, setHeadquarters] = useState<Headquarter[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showBrandsModal, setShowBrandsModal] = useState(false);
   const [showTypesModal, setShowTypesModal] = useState(false);
   const [formData, setFormData] = useState<Partial<InventoryItem>>({
+    cityId: undefined,
     companyId: undefined,
     sedeId: undefined,
     responsible: '',
@@ -39,13 +41,15 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [brandsData, typesData, companiesData] = await Promise.all([
+        const [brandsData, typesData, citiesData, companiesData] = await Promise.all([
           inventoryService.getAllBrands(),
           inventoryService.getAllTypes(),
+          companyService.getAllCities(),
           companyService.getAllCompanies()
         ]);
         setBrands(brandsData);
         setTypes(typesData);
+        setCities(citiesData);
         setCompanies(companiesData);
       } catch (error) {
         console.error('Error al cargar datos para el formulario:', error);
@@ -72,6 +76,42 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
 
     fetchData();
   }, []);
+
+  // Actualizar empresas cuando cambia la ciudad
+  useEffect(() => {
+    const fetchCompaniesByCity = async () => {
+      if (formData.cityId) {
+        try {
+          setIsLoading(true);
+          const companiesData = await companyService.getCompaniesByCity(formData.cityId);
+          setCompanies(companiesData);
+          
+          // Si la empresa actual no pertenece a la ciudad seleccionada, resetearla
+          if (formData.companyId && !companiesData.some(comp => comp.id === formData.companyId)) {
+            setFormData(prev => ({ 
+              ...prev, 
+              companyId: undefined,
+              sedeId: undefined 
+            }));
+          }
+        } catch (error) {
+          console.error(`Error al obtener empresas para la ciudad ${formData.cityId}:`, error);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        // Si no hay ciudad seleccionada, mostrar todas las empresas
+        companyService.getAllCompanies().then(setCompanies).catch(console.error);
+        setFormData(prev => ({ 
+          ...prev, 
+          companyId: undefined,
+          sedeId: undefined 
+        }));
+      }
+    };
+
+    fetchCompaniesByCity();
+  }, [formData.cityId]);
 
   // Actualizar sedes cuando cambia la empresa
   useEffect(() => {
@@ -206,11 +246,32 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Empresa y Sede */}
+            {/* Ciudad, Empresa y Sede */}
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-gray-500">Ubicación</h4>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label htmlFor="cityId" className="block text-sm font-medium text-gray-700 mb-1">
+                    Ciudad <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="cityId"
+                    name="cityId"
+                    value={formData.cityId || ''}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Seleccionar ciudad</option>
+                    {cities.map(city => (
+                      <option key={city.id} value={city.id}>
+                        {city.name} - {city.department}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div>
                   <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-1">
                     Empresa <span className="text-red-500">*</span>

@@ -4,19 +4,39 @@ import axios from 'axios';
 const API_BASE_URL = 'http://192.168.14.99:8080';
 const COMPANY_API_URL = `${API_BASE_URL}/api/v1`;
 
-// Interfaces para los datos de empresas y sedes
+// Interfaces para los datos de ciudades, empresas y sedes
+export interface City {
+  id: number;
+  name: string;
+  department: string;
+  country: string;
+  active: boolean;
+}
+
 export interface Company {
   id: number;
   name: string;
+  nit?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
   active: boolean;
+  cityId: number;
+  cityName?: string;
+  cityDepartment?: string;
   headquarters?: Headquarter[];
 }
 
 export interface Headquarter {
   id: number;
   name: string;
+  address?: string;
+  phone?: string;
   active: boolean;
   companyId: number;
+  companyName?: string;
+  cityId?: number;
+  cityName?: string;
 }
 
 // Servicio para manejar las operaciones relacionadas con empresas y sedes
@@ -161,6 +181,104 @@ const companyService = {
       return response.data;
     } catch (error) {
       console.error(`Error al actualizar la sede con ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // ===== MÉTODOS PARA CIUDADES =====
+  
+  // Obtener todas las ciudades
+  getAllCities: async (): Promise<City[]> => {
+    try {
+      const response = await axios.get(`${COMPANY_API_URL}/cities`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener ciudades:', error);
+      throw error;
+    }
+  },
+
+  // Obtener una ciudad por su ID
+  getCityById: async (id: number): Promise<City> => {
+    try {
+      const response = await axios.get(`${COMPANY_API_URL}/cities/${id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error al obtener la ciudad con ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Crear una nueva ciudad
+  createCity: async (city: Omit<City, 'id'>): Promise<City> => {
+    try {
+      const response = await axios.post(`${COMPANY_API_URL}/cities`, city, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al crear ciudad:', error);
+      throw error;
+    }
+  },
+
+  // Actualizar una ciudad existente
+  updateCity: async (id: number, city: Partial<City>): Promise<City> => {
+    try {
+      const response = await axios.put(`${COMPANY_API_URL}/cities/${id}`, city, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error al actualizar la ciudad con ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Obtener ciudades por departamento
+  getCitiesByDepartment: async (department: string): Promise<City[]> => {
+    try {
+      const response = await axios.get(`${COMPANY_API_URL}/cities/department/${department}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error al obtener ciudades del departamento ${department}:`, error);
+      throw error;
+    }
+  },
+
+  // Obtener empresas por ciudad
+  getCompaniesByCity: async (cityId: number): Promise<Company[]> => {
+    try {
+      const response = await axios.get(`${COMPANY_API_URL}/companies/city/${cityId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error al obtener empresas de la ciudad ${cityId}:`, error);
       throw error;
     }
   }

@@ -39,6 +39,8 @@ export interface TypeInventoryItem {
 
 export interface InventoryItem {
   id?: number;
+  cityId: number;
+  cityName?: string;
   companyId: number;
   companyName?: string;
   sedeId: number;
