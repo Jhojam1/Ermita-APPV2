@@ -60,7 +60,6 @@ export default function Inventory() {
   });
   
   // Listas para los filtros
-  const [ciudades, setCiudades] = useState<{id: number, name: string}[]>([]);
   const [empresas, setEmpresas] = useState<{id: number, name: string}[]>([]);
   const [sedes, setSedes] = useState<{id: number, name: string, companyId: number}[]>([]);
   const [tipos, setTipos] = useState<{id: number, name: string}[]>([]);
@@ -125,44 +124,7 @@ export default function Inventory() {
     } catch (error) {
       console.error('Error al obtener datos de inventario:', error);
       setError('Error al cargar los datos. Por favor, intente nuevamente.');
-      
-      // Datos de ejemplo en caso de error
-      setInventarioData([
-        {
-          id: 1,
-          empresa: 'TechCorp',
-          sede: 'Sede Principal',
-          serial: 'SN2024001',
-          codigoInterno: 'PC-001',
-          marca: 'Dell',
-          modelo: 'Latitude 5520',
-          procesador: 'Intel i7',
-          ram: '16GB',
-          disco: '512GB',
-          tipo: 'Laptop',
-          estado: 'Activo',
-          fechaCreacion: '2024-01-15',
-          responsable: 'Juan Pérez',
-          servicio: 'Desarrollo'
-        },
-        {
-          id: 2,
-          empresa: 'TechCorp',
-          sede: 'Sede Norte',
-          serial: 'SN2024002',
-          codigoInterno: 'PC-002',
-          marca: 'HP',
-          modelo: 'ProDesk 600',
-          procesador: 'Intel i5',
-          ram: '8GB',
-          disco: '1TB',
-          tipo: 'Desktop',
-          estado: 'Inactivo',
-          fechaCreacion: '2024-01-20',
-          responsable: 'María López',
-          servicio: 'Diseño'
-        },
-      ]);
+      setInventarioData([]);
     } finally {
       setIsLoading(false);
     }

@@ -167,14 +167,7 @@ const inventoryService = {
       return response.data;
     } catch (error) {
       console.error('Error al obtener marcas:', error);
-      // En caso de error, devuelve datos de ejemplo
-      return [
-        { id: 1, name: 'Dell' },
-        { id: 2, name: 'HP' },
-        { id: 3, name: 'Lenovo' },
-        { id: 4, name: 'Apple' },
-        { id: 5, name: 'Asus' }
-      ];
+      throw error;
     }
   },
 
@@ -185,8 +178,7 @@ const inventoryService = {
       return response.data;
     } catch (error) {
       console.error('Error al crear marca:', error);
-      // Simulación de respuesta para desarrollo
-      return { id: Math.floor(Math.random() * 1000), name: brand.name };
+      throw error;
     }
   },
 
@@ -207,14 +199,7 @@ const inventoryService = {
       return response.data;
     } catch (error) {
       console.error('Error al obtener tipos de elementos:', error);
-      // En caso de error, devuelve datos de ejemplo
-      return [
-        { id: 1, name: 'Laptop' },
-        { id: 2, name: 'Desktop' },
-        { id: 3, name: 'Servidor' },
-        { id: 4, name: 'Impresora' },
-        { id: 5, name: 'Monitor' }
-      ];
+      throw error;
     }
   },
 
@@ -225,8 +210,7 @@ const inventoryService = {
       return response.data;
     } catch (error) {
       console.error('Error al crear tipo:', error);
-      // Simulación de respuesta para desarrollo
-      return { id: Math.floor(Math.random() * 1000), name: type.name };
+      throw error;
     }
   },
 

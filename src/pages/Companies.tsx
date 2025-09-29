@@ -16,6 +16,7 @@ interface CompanyUI {
   id: string;
   nombre: string;
   estado: string;
+  cityId: number;
   sedes: HeadquarterUI[];
 }
 
@@ -35,6 +36,7 @@ interface SortConfig {
 interface CompanyFormData {
   name: string;
   active: boolean;
+  cityId: number;
 }
 
 interface HeadquarterFormData {
@@ -63,7 +65,8 @@ export default function Companies() {
   // Estados para formularios
   const [companyFormData, setCompanyFormData] = useState<CompanyFormData>({
     name: '',
-    active: true
+    active: true,
+    cityId: 1 // Default city ID
   });
   
   const [headquarterFormData, setHeadquarterFormData] = useState<HeadquarterFormData>({
@@ -120,6 +123,7 @@ export default function Companies() {
       id: company.id.toString(),
       nombre: company.name,
       estado: company.active ? 'Activo' : 'Inactivo',
+      cityId: company.cityId,
       sedes: company.headquarters ? company.headquarters.map(mapHeadquarterToUI) : [],
     };
   };
@@ -195,7 +199,8 @@ export default function Companies() {
     setIsEditing(false);
     setCompanyFormData({
       name: '',
-      active: true
+      active: true,
+      cityId: 1 // Default city ID
     });
     setShowCompanyModal(true);
   };
@@ -210,7 +215,8 @@ export default function Companies() {
     if (company) {
       setCompanyFormData({
         name: company.nombre,
-        active: company.estado === 'Activo'
+        active: company.estado === 'Activo',
+        cityId: company.cityId || 1 // Use existing cityId or default
       });
     }
     
@@ -233,13 +239,15 @@ export default function Companies() {
         // Actualizar empresa existente
         await companyService.updateCompany(parseInt(selectedCompanyId), {
           name: companyFormData.name,
-          active: companyFormData.active
+          active: companyFormData.active,
+          cityId: companyFormData.cityId
         });
       } else {
         // Crear nueva empresa
         await companyService.createCompany({
           name: companyFormData.name,
-          active: companyFormData.active
+          active: companyFormData.active,
+          cityId: companyFormData.cityId
         });
       }
       

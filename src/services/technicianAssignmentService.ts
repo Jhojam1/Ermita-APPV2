@@ -293,13 +293,7 @@ const technicianAssignmentService = {
       }));
     } catch (error) {
       console.error('Error obteniendo lista de técnicos:', error);
-      // Retornar datos mock si el endpoint no existe aún
-      return [
-        { id: 1, fullName: 'Juan Pérez', mail: 'juan.perez@empresa.com', role: 'Tecnico' },
-        { id: 2, fullName: 'María López', mail: 'maria.lopez@empresa.com', role: 'Tecnico' },
-        { id: 3, fullName: 'Carlos Ruiz', mail: 'carlos.ruiz@empresa.com', role: 'Tecnico' },
-        { id: 4, fullName: 'Ana García', mail: 'ana.garcia@empresa.com', role: 'Tecnico' }
-      ];
+      throw error;
     }
   }
 };

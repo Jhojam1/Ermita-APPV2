@@ -53,22 +53,8 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
         setCompanies(companiesData);
       } catch (error) {
         console.error('Error al cargar datos para el formulario:', error);
-        // Si falla la carga de datos reales, usar datos de ejemplo
-        setBrands([
-          { id: 1, name: 'Dell' },
-          { id: 2, name: 'HP' },
-          { id: 3, name: 'Lenovo' }
-        ]);
-        setTypes([
-          { id: 1, name: 'Laptop' },
-          { id: 2, name: 'Desktop' },
-          { id: 3, name: 'Servidor' }
-        ]);
-        setCompanies([
-          { id: 1, name: 'TechCorp', active: true },
-          { id: 2, name: 'MediSalud', active: true },
-          { id: 3, name: 'EducaPlus', active: true }
-        ]);
+        alert('Error al cargar los datos necesarios para el formulario. Por favor, recargue la página e intente nuevamente.');
+        onClose(); // Cerrar el modal si no se pueden cargar los datos
       } finally {
         setIsLoading(false);
       }
@@ -128,11 +114,7 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
           }
         } catch (error) {
           console.error(`Error al obtener sedes para la empresa ${formData.companyId}:`, error);
-          // Datos de ejemplo en caso de error
-          setHeadquarters([
-            { id: 1, name: 'Sede Principal', companyId: formData.companyId, active: true },
-            { id: 2, name: 'Sede Norte', companyId: formData.companyId, active: true }
-          ]);
+          setHeadquarters([]);
         } finally {
           setIsLoading(false);
         }
@@ -190,7 +172,7 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
     try {
       // Validar campos requeridos
       if (!formData.serial || !formData.brand?.name || !formData.typeInventoryItem?.name || 
-          !formData.companyId || !formData.sedeId) {
+          !formData.cityId || !formData.companyId || !formData.sedeId) {
         alert('Por favor complete todos los campos requeridos');
         setIsLoading(false);
         return;
@@ -198,6 +180,7 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
 
       // Preparar el objeto para enviar al API
       const newItem: InventoryItem = {
+        cityId: formData.cityId!,
         companyId: formData.companyId!,
         sedeId: formData.sedeId!,
         responsible: formData.responsible || '',
