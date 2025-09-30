@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 
 // Definir la URL base del API
-const API_BASE_URL = 'http://192.168.14.99:8080';
+const API_BASE_URL = 'http://192.168.2.64:8080';
 
 // Crear una instancia de axios con la URL base
 const transferApi = axios.create({

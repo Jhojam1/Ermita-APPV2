@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configuración base de axios
-const API_BASE_URL = 'http://192.168.14.99:8080';
+const API_BASE_URL = 'http://192.168.2.64:8080';
 const REPORTS_URL = `${API_BASE_URL}/api/reports`;
 
 // Flag para cambiar entre datos reales (cuando el backend funcione) y datos simulados

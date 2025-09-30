@@ -9,14 +9,20 @@ import {
   ChevronRightIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import companyService, { Company, Headquarter } from '../services/companyService';
+import companyService, { Company, Headquarter, City } from '../services/companyService';
 
 // Interfaz para los datos que se muestran en la UI
 interface CompanyUI {
   id: string;
   nombre: string;
+  nit?: string;
+  direccion?: string;
+  telefono?: string;
+  email?: string;
   estado: string;
   cityId: number;
+  cityName?: string;
+  cityDepartment?: string;
   sedes: HeadquarterUI[];
 }
 
@@ -35,6 +41,10 @@ interface SortConfig {
 // Interfaces para los formularios
 interface CompanyFormData {
   name: string;
+  nit?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
   active: boolean;
   cityId: number;
 }
@@ -49,6 +59,7 @@ export default function Companies() {
   const [showFilters, setShowFilters] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: '', direction: '' });
   const [empresasData, setEmpresasData] = useState<CompanyUI[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,6 +76,10 @@ export default function Companies() {
   // Estados para formularios
   const [companyFormData, setCompanyFormData] = useState<CompanyFormData>({
     name: '',
+    nit: '',
+    address: '',
+    phone: '',
+    email: '',
     active: true,
     cityId: 1 // Default city ID
   });
@@ -80,7 +95,17 @@ export default function Companies() {
 
   useEffect(() => {
     fetchCompanies();
+    fetchCities();
   }, []);
+
+  const fetchCities = async () => {
+    try {
+      const data = await companyService.getAllCities();
+      setCities(data);
+    } catch (err) {
+      console.error('Error al cargar ciudades:', err);
+    }
+  };
 
   const fetchCompanies = async () => {
     try {
@@ -122,8 +147,14 @@ export default function Companies() {
     return {
       id: company.id.toString(),
       nombre: company.name,
+      nit: company.nit,
+      direccion: company.address,
+      telefono: company.phone,
+      email: company.email,
       estado: company.active ? 'Activo' : 'Inactivo',
       cityId: company.cityId,
+      cityName: company.cityName,
+      cityDepartment: company.cityDepartment,
       sedes: company.headquarters ? company.headquarters.map(mapHeadquarterToUI) : [],
     };
   };
@@ -199,8 +230,12 @@ export default function Companies() {
     setIsEditing(false);
     setCompanyFormData({
       name: '',
+      nit: '',
+      address: '',
+      phone: '',
+      email: '',
       active: true,
-      cityId: 1 // Default city ID
+      cityId: cities.length > 0 ? cities[0].id : 1
     });
     setShowCompanyModal(true);
   };
@@ -215,8 +250,12 @@ export default function Companies() {
     if (company) {
       setCompanyFormData({
         name: company.nombre,
+        nit: company.nit || '',
+        address: company.direccion || '',
+        phone: company.telefono || '',
+        email: company.email || '',
         active: company.estado === 'Activo',
-        cityId: company.cityId || 1 // Use existing cityId or default
+        cityId: company.cityId || (cities.length > 0 ? cities[0].id : 1)
       });
     }
     
@@ -239,6 +278,10 @@ export default function Companies() {
         // Actualizar empresa existente
         await companyService.updateCompany(parseInt(selectedCompanyId), {
           name: companyFormData.name,
+          nit: companyFormData.nit,
+          address: companyFormData.address,
+          phone: companyFormData.phone,
+          email: companyFormData.email,
           active: companyFormData.active,
           cityId: companyFormData.cityId
         });
@@ -246,6 +289,10 @@ export default function Companies() {
         // Crear nueva empresa
         await companyService.createCompany({
           name: companyFormData.name,
+          nit: companyFormData.nit,
+          address: companyFormData.address,
+          phone: companyFormData.phone,
+          email: companyFormData.email,
           active: companyFormData.active,
           cityId: companyFormData.cityId
         });
@@ -423,6 +470,12 @@ export default function Companies() {
                   {renderSortableHeader('nombre', 'Nombre')}
                 </th>
                 <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">
+                  NIT
+                </th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">
+                  Ciudad
+                </th>
+                <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">
                   {renderSortableHeader('estado', 'Estado')}
                 </th>
                 <th className="py-3 px-4 text-left text-sm font-medium text-gray-500">
@@ -436,11 +489,11 @@ export default function Companies() {
             <tbody className="divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-gray-500">Cargando empresas...</td>
+                  <td colSpan={7} className="p-4 text-center text-gray-500">Cargando empresas...</td>
                 </tr>
               ) : filteredAndSortedEmpresas.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-gray-500">No se encontraron empresas</td>
+                  <td colSpan={7} className="p-4 text-center text-gray-500">No se encontraron empresas</td>
                 </tr>
               ) : (
                 filteredAndSortedEmpresas.map((empresa) => (
@@ -458,6 +511,15 @@ export default function Companies() {
                         </button>
                       </td>
                       <td className="p-4 text-sm font-medium text-gray-700">{empresa.nombre}</td>
+                      <td className="p-4 text-sm text-gray-600">{empresa.nit || '-'}</td>
+                      <td className="p-4 text-sm text-gray-600">
+                        <div className="flex flex-col">
+                          <span className="font-medium">{empresa.cityName || '-'}</span>
+                          {empresa.cityDepartment && (
+                            <span className="text-xs text-gray-500">{empresa.cityDepartment}</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-4">
                         <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium
                           ${empresa.estado === 'Activo'
@@ -494,7 +556,7 @@ export default function Companies() {
                     </tr>
                     {expandedCompanyId === empresa.id && (
                       <tr>
-                        <td colSpan={5} className="p-0 bg-gray-50/50">
+                        <td colSpan={7} className="p-0 bg-gray-50/50">
                           <div className="p-4">
                             <div className="flex items-center justify-between mb-3">
                               <h4 className="text-sm font-medium text-gray-700">Sedes de {empresa.nombre}</h4>
@@ -610,7 +672,7 @@ export default function Companies() {
             <div className="p-4">
               <form className="space-y-4" onSubmit={handleCompanySubmit}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                   <input 
                     type="text" 
                     value={companyFormData.name}
@@ -618,6 +680,67 @@ export default function Companies() {
                     className="w-full px-4 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-600
                               focus:ring-2 focus:ring-blue-500"
                     placeholder="Nombre de la empresa"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">NIT</label>
+                  <input 
+                    type="text" 
+                    value={companyFormData.nit}
+                    onChange={(e) => setCompanyFormData({ ...companyFormData, nit: e.target.value })}
+                    className="w-full px-4 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-600
+                              focus:ring-2 focus:ring-blue-500"
+                    placeholder="NIT de la empresa"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad *</label>
+                  <select 
+                    value={companyFormData.cityId}
+                    onChange={(e) => setCompanyFormData({ ...companyFormData, cityId: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-600
+                              focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    {cities.map(city => (
+                      <option key={city.id} value={city.id}>
+                        {city.name} - {city.department}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                  <input 
+                    type="text" 
+                    value={companyFormData.address}
+                    onChange={(e) => setCompanyFormData({ ...companyFormData, address: e.target.value })}
+                    className="w-full px-4 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-600
+                              focus:ring-2 focus:ring-blue-500"
+                    placeholder="Dirección principal"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                  <input 
+                    type="tel" 
+                    value={companyFormData.phone}
+                    onChange={(e) => setCompanyFormData({ ...companyFormData, phone: e.target.value })}
+                    className="w-full px-4 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-600
+                              focus:ring-2 focus:ring-blue-500"
+                    placeholder="Teléfono de contacto"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input 
+                    type="email" 
+                    value={companyFormData.email}
+                    onChange={(e) => setCompanyFormData({ ...companyFormData, email: e.target.value })}
+                    className="w-full px-4 py-2 bg-gray-50 border-0 rounded-lg text-sm text-gray-600
+                              focus:ring-2 focus:ring-blue-500"
+                    placeholder="Email de contacto"
                   />
                 </div>
                 <div>

@@ -213,33 +213,38 @@ const RoleManagement: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <Card>
-        <div className="flex justify-between items-center mb-6">
-          <Title level={2}>Gestión de Roles</Title>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <Title level={2} className="!mb-0">Gestión de Roles</Title>
           <PermissionWrapper permission="USERS_CREATE">
             <Button
               type="primary"
               icon={<PlusOutlined />}
               onClick={handleCreate}
               style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
+              className="w-full sm:w-auto"
             >
               Nuevo Rol
             </Button>
           </PermissionWrapper>
         </div>
 
-        <Table
-          columns={columns}
-          dataSource={roles}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-          }}
-        />
+        <div className="overflow-x-auto">
+          <Table
+            columns={columns}
+            dataSource={roles}
+            rowKey="id"
+            loading={loading}
+            scroll={{ x: 800 }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              responsive: true,
+            }}
+          />
+        </div>
       </Card>
 
       <Modal
@@ -298,9 +303,10 @@ const RoleManagement: React.FC = () => {
         title={`Gestionar Permisos - ${selectedRole?.name}`}
         open={permissionModalVisible}
         onCancel={() => setPermissionModalVisible(false)}
-        width={800}
+        width="90%"
+        style={{ maxWidth: 900 }}
         footer={[
-          <Button key="cancel" onClick={() => setPermissionModalVisible(false)}>
+          <Button key="cancel" onClick={() => setPermissionModalVisible(false)} className="w-full sm:w-auto">
             Cancelar
           </Button>,
           <Button 
@@ -308,6 +314,7 @@ const RoleManagement: React.FC = () => {
             type="primary" 
             onClick={handleSavePermissions}
             style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
+            className="w-full sm:w-auto mt-2 sm:mt-0"
           >
             Guardar Permisos
           </Button>,
@@ -330,10 +337,12 @@ const RoleManagement: React.FC = () => {
               onChange={handlePermissionChange}
               render={item => `${item.title} - ${item.description}`}
               listStyle={{
-                width: 350,
+                width: '100%',
+                minWidth: 250,
                 height: 400,
               }}
               showSearch
+              oneWay={false}
               style={{
                 '--ant-transfer-operation-btn-cursor': 'pointer'
               } as React.CSSProperties}
@@ -392,6 +401,19 @@ const RoleManagement: React.FC = () => {
               
               .permission-transfer-container :global(.ant-transfer-list-content-item.ant-transfer-list-content-item-checked:hover) {
                 background-color: #096dd9;
+              }
+              @media (max-width: 768px) {
+                .permission-transfer-container .ant-transfer {
+                  flex-direction: column !important;
+                }
+                .permission-transfer-container .ant-transfer-list {
+                  width: 100% !important;
+                  margin-bottom: 16px;
+                }
+                .permission-transfer-container .ant-transfer-operation {
+                  flex-direction: row !important;
+                  margin: 16px 0 !important;
+                }
               }
             `}</style>
           </div>

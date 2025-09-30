@@ -12,6 +12,7 @@ import History from './pages/History';
 import Configuration from './pages/Configuration';
 import Users from './pages/Users';
 import Companies from './pages/Companies';
+import Cities from './pages/Cities';
 import Locations from './pages/Locations';
 import ResetPassword from './pages/ResetPassword';
 import TechnicianAssignmentManager from './components/maintenance/TechnicianAssignmentManager';
@@ -89,6 +90,11 @@ function App() {
           <Route path="/configuracion/empresas" element={
             <Layout>
               <Companies />
+            </Layout>
+          } />
+          <Route path="/configuracion/ciudades" element={
+            <Layout>
+              <Cities />
             </Layout>
           } />
           <Route path="/configuracion/mantenimientos" element={

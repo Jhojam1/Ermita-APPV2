@@ -17,6 +17,7 @@ import {
   CameraIcon,
   PrinterIcon,
   Squares2X2Icon,
+  MapPinIcon,
 } from '@heroicons/react/24/outline';
 
 // Definir tipos para los elementos del menú
@@ -142,6 +143,7 @@ const Sidebar = () => {
   const configItems = [
     { name: 'Usuarios', href: '/configuracion/usuarios', icon: UserGroupIcon },
     { name: 'Empresas Y Sedes', href: '/configuracion/empresas', icon: BuildingOfficeIcon },
+    { name: 'Ciudades', href: '/configuracion/ciudades', icon: MapPinIcon },
     { name: 'Programación de Mantenimientos', href: '/configuracion/mantenimientos', icon: WrenchScrewdriverIcon },
   ];
   
@@ -174,6 +176,7 @@ const Sidebar = () => {
           // Filtrar elementos de configuración por permisos
           if (item.href.includes('/usuarios')) return hasPermission('USERS_VIEW');
           if (item.href.includes('/empresas')) return hasPermission('COMPANIES_VIEW');
+          if (item.href.includes('/ciudades')) return hasPermission('COMPANIES_MANAGE_CITIES');
           if (item.href.includes('/mantenimientos')) return hasPermission('CONFIGURATION_VIEW');
           return true;
         })

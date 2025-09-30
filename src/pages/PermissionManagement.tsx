@@ -161,43 +161,53 @@ const PermissionManagement: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <Card>
-        <div className="flex justify-between items-center mb-6">
-          <Title level={2}>Gestión de Permisos</Title>
-          <Space>
-            <PermissionWrapper permission="CONFIG_EDIT">
-              <Button
-                type="default"
-                icon={<SettingOutlined />}
-                onClick={handleAssignPermissions}
-              >
-                Asignar Permisos
-              </Button>
-            </PermissionWrapper>
-            <PermissionWrapper permission="CONFIG_EDIT">
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleCreate}
-              >
-                Nuevo Permiso
-              </Button>
-            </PermissionWrapper>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <Title level={2} className="!mb-0">Gestión de Permisos</Title>
+          <Space direction="vertical" className="w-full sm:w-auto" size="small">
+            <Space className="w-full">
+              <PermissionWrapper permission="CONFIG_EDIT">
+                <Button
+                  type="default"
+                  icon={<SettingOutlined />}
+                  onClick={handleAssignPermissions}
+                  className="flex-1 sm:flex-none"
+                >
+                  <span className="hidden sm:inline">Asignar Permisos</span>
+                  <span className="sm:hidden">Asignar</span>
+                </Button>
+              </PermissionWrapper>
+              <PermissionWrapper permission="CONFIG_EDIT">
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleCreate}
+                  className="flex-1 sm:flex-none"
+                >
+                  <span className="hidden sm:inline">Nuevo Permiso</span>
+                  <span className="sm:hidden">Nuevo</span>
+                </Button>
+              </PermissionWrapper>
+            </Space>
           </Space>
         </div>
 
-        <Table
-          columns={columns}
-          dataSource={permissions}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            pageSize: 15,
-            showSizeChanger: true,
-            showQuickJumper: true,
-          }}
-        />
+        <div className="overflow-x-auto">
+          <Table
+            columns={columns}
+            dataSource={permissions}
+            rowKey="id"
+            loading={loading}
+            scroll={{ x: 900 }}
+            pagination={{
+              pageSize: 15,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              responsive: true,
+            }}
+          />
+        </div>
       </Card>
 
       {/* Modal para crear/editar permisos */}
@@ -206,6 +216,8 @@ const PermissionManagement: React.FC = () => {
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
+        width="90%"
+        style={{ maxWidth: 600 }}
       >
         <Form
           form={form}
@@ -271,11 +283,11 @@ const PermissionManagement: React.FC = () => {
           </Form.Item>
 
           <Form.Item className="mb-0">
-            <Space>
-              <Button onClick={() => setModalVisible(false)}>
+            <Space className="w-full flex-col sm:flex-row">
+              <Button onClick={() => setModalVisible(false)} className="w-full sm:w-auto">
                 Cancelar
               </Button>
-              <Button type="primary" htmlType="submit">
+              <Button type="primary" htmlType="submit" className="w-full sm:w-auto">
                 {editingPermission ? 'Actualizar' : 'Crear'}
               </Button>
             </Space>
@@ -289,6 +301,8 @@ const PermissionManagement: React.FC = () => {
         open={assignModalVisible}
         onCancel={() => setAssignModalVisible(false)}
         footer={null}
+        width="90%"
+        style={{ maxWidth: 600 }}
       >
         <Form
           form={assignForm}
@@ -328,11 +342,11 @@ const PermissionManagement: React.FC = () => {
           </Form.Item>
 
           <Form.Item className="mb-0">
-            <Space>
-              <Button onClick={() => setAssignModalVisible(false)}>
+            <Space className="w-full flex-col sm:flex-row">
+              <Button onClick={() => setAssignModalVisible(false)} className="w-full sm:w-auto">
                 Cancelar
               </Button>
-              <Button type="primary" htmlType="submit">
+              <Button type="primary" htmlType="submit" className="w-full sm:w-auto">
                 Asignar
               </Button>
             </Space>
