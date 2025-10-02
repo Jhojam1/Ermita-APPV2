@@ -161,20 +161,30 @@ export default function Maintenance() {
         }
       }
       
-      // Preparar datos para actualización - incluir todos los datos necesarios
+      // Obtener los datos del equipo de inventario para usar sus valores reales
+      let equipmentData = null;
+      try {
+        // Importar el servicio de inventario para obtener los datos del equipo
+        const inventoryService = await import('../services/inventoryService');
+        equipmentData = await inventoryService.default.getItemById(selectedMantenimiento.inventoryItemId);
+      } catch (error) {
+        console.error('Error al obtener datos del equipo:', error);
+      }
+
+      // Preparar datos para actualización - usar datos reales del equipo
       const updateData: MaintenanceItem = {
         // Mantener los datos originales del mantenimiento
         id: parseInt(selectedMantenimiento.id),
         inventoryItemId: selectedMantenimiento.inventoryItemId,
         inventoryItemName: selectedMantenimiento.equipo,
-        // Usar valores fijos para companyId y headquarterId (estos deben coincidir con los valores en la base de datos)
-        companyId: 1,  // Valor fijo que sabemos que existe en la base de datos
-        headquarterId: 1, // Valor fijo que sabemos que existe en la base de datos
+        // Usar los valores reales del equipo de inventario
+        companyId: equipmentData?.companyId || 1,  // Usar companyId real del equipo
+        headquarterId: equipmentData?.sedeId || 1, // Usar sedeId real del equipo
         serviceArea: selectedMantenimiento.area,
         responsible: selectedMantenimiento.responsable,
         description: selectedMantenimiento.descripcion,
         scheduledDate: maintenanceService.parseDate(selectedMantenimiento.fechaProgramada),
-        type: maintenanceService.mapTypeToBackend(selectedMantenimiento.tipo), // ¡CAMPO FALTANTE!
+        type: maintenanceService.mapTypeToBackend(selectedMantenimiento.tipo),
         status: estadoBackend,
         observations: formData.observaciones,
         technicianName: formData.tecnico,

@@ -207,10 +207,10 @@ const Home = () => {
               <p className="text-blue-100 text-lg">
                 {formattedDate}
               </p>
-              {user?.companyId && (
+              {user?.companyName && (
                 <div className="mt-3 flex items-center">
                   <BuildingOfficeIcon className="w-5 h-5 text-blue-200" />
-                  <span className="ml-2 text-blue-100">Empresa ID: {user.companyId}</span>
+                  <span className="ml-2 text-blue-100">{user.companyName}</span>
                 </div>
               )}
             </div>

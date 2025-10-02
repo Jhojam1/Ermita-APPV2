@@ -36,10 +36,14 @@ export interface InventoryTransfer {
   userName: string;
   description: string;
   reason: string;
+  destinationCityId: number;
+  destinationCityName: string;
   destinationCompanyId: number;
   destinationCompanyName: string;
   destinationHeadquarterId: number;
   destinationHeadquarterName: string;
+  sourceCityId: number;
+  sourceCityName: string;
   sourceCompanyId: number;
   sourceCompanyName: string;
   sourceHeadquarterId: number;
@@ -54,12 +58,16 @@ export interface CreateInventoryTransferDTO {
   description?: string;
   
   // Datos de origen
+  sourceCityId: number;
+  sourceCityName: string;
   sourceCompanyId: number;
   sourceCompanyName: string;
   sourceHeadquarterId: number;
   sourceHeadquarterName: string;
   
   // Datos de destino
+  destinationCityId: number;
+  destinationCityName: string;
   destinationCompanyId: number;
   destinationCompanyName: string;
   destinationHeadquarterId: number;

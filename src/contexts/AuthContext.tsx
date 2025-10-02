@@ -22,7 +22,9 @@ export interface User {
   roleId: number;
   roleName: string;
   companyId: number;
+  companyName?: string;
   headquarterId: number;
+  headquarterName?: string;
   permissions: string[];
 }
 

@@ -33,7 +33,6 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
     ramMemory: '',
     hardDrive: '',
     typeInventoryItem: { name: '' },
-    quantity: 1,
     status: 'Activo'
   });
 
@@ -129,6 +128,7 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    console.log(`🔄 handleChange - Campo: ${name}, Valor: ${value}`);
     
     if (name === 'brandId') {
       const selectedBrand = brands.find(brand => brand.id === parseInt(value));
@@ -142,20 +142,34 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
         ...prev,
         typeInventoryItem: selectedType || { name: '' }
       }));
-    } else if (name === 'companyId' || name === 'sedeId') {
+    } else if (name === 'cityId') {
+      const cityId = value ? parseInt(value) : undefined;
+      console.log(`🏙️ Seleccionando ciudad - ID: ${cityId}`);
       setFormData(prev => ({
         ...prev,
-        [name]: value ? parseInt(value) : undefined
+        cityId: cityId,
+        companyId: undefined, // Reset company when city changes
+        sedeId: undefined // Reset headquarter when city changes
+      }));
+    } else if (name === 'companyId') {
+      const companyId = value ? parseInt(value) : undefined;
+      console.log(`🏢 Seleccionando empresa - ID: ${companyId}`);
+      setFormData(prev => ({
+        ...prev,
+        companyId: companyId,
+        sedeId: undefined // Reset headquarter when company changes
+      }));
+    } else if (name === 'sedeId') {
+      const sedeId = value ? parseInt(value) : undefined;
+      console.log(`🏥 Seleccionando sede - ID: ${sedeId}`);
+      setFormData(prev => ({
+        ...prev,
+        sedeId: sedeId
       }));
     } else if (name === 'internalCode') {
       setFormData(prev => ({
         ...prev,
         [name]: value ? parseInt(value) : undefined
-      }));
-    } else if (name === 'quantity') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value ? parseFloat(value) : 1
       }));
     } else {
       setFormData(prev => ({
@@ -170,19 +184,39 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
     setIsLoading(true);
 
     try {
+      console.log('📝 Estado del formulario antes de enviar:', formData);
+      console.log('🔍 Validando campos requeridos...');
+      console.log('  - cityId:', formData.cityId);
+      console.log('  - companyId:', formData.companyId);
+      console.log('  - sedeId:', formData.sedeId);
+      
       // Validar campos requeridos
       if (!formData.serial || !formData.brand?.name || !formData.typeInventoryItem?.name || 
           !formData.cityId || !formData.companyId || !formData.sedeId) {
+        console.log('❌ Validación fallida - campos faltantes');
         alert('Por favor complete todos los campos requeridos');
         setIsLoading(false);
         return;
       }
 
+      // Obtener los nombres de ciudad, empresa y sede
+      const selectedCity = cities.find(city => city.id === formData.cityId);
+      const selectedCompany = companies.find(company => company.id === formData.companyId);
+      const selectedHeadquarter = headquarters.find(hq => hq.id === formData.sedeId);
+
+      console.log('🔍 Objetos encontrados:');
+      console.log('  - selectedCity:', selectedCity);
+      console.log('  - selectedCompany:', selectedCompany);
+      console.log('  - selectedHeadquarter:', selectedHeadquarter);
+
       // Preparar el objeto para enviar al API
       const newItem: InventoryItem = {
         cityId: formData.cityId!,
+        cityName: selectedCity?.name || '',
         companyId: formData.companyId!,
+        companyName: selectedCompany?.name || '',
         sedeId: formData.sedeId!,
+        sedeName: selectedHeadquarter?.name || '',
         responsible: formData.responsible || '',
         service: formData.service || '',
         serial: formData.serial || '',
@@ -193,12 +227,15 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
         ramMemory: formData.ramMemory || '',
         hardDrive: formData.hardDrive || '',
         typeInventoryItem: formData.typeInventoryItem as TypeInventoryItem,
-        quantity: formData.quantity || 1,
+        quantity: 1, // Siempre será 1
         status: formData.status || 'Activo'
       };
 
+      console.log('📤 Objeto que se enviará al API:', newItem);
+
       // Enviar los datos al API
       const savedItem = await inventoryService.createItem(newItem);
+      console.log('✅ Respuesta del API:', savedItem);
       onSave(savedItem);
       onClose();
     } catch (error) {
@@ -408,21 +445,6 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
                   </select>
                 </div>
 
-                <div>
-                  <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
-                    Cantidad
-                  </label>
-                  <input
-                    type="number"
-                    id="quantity"
-                    name="quantity"
-                    value={formData.quantity || 1}
-                    min="1"
-                    step="1"
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
               </div>
 
               {/* Especificaciones */}

@@ -15,6 +15,7 @@ import Companies from './pages/Companies';
 import Cities from './pages/Cities';
 import Locations from './pages/Locations';
 import ResetPassword from './pages/ResetPassword';
+import ActivateAccount from './pages/ActivateAccount';
 import TechnicianAssignmentManager from './components/maintenance/TechnicianAssignmentManager';
 import TechnicianProductivityReport from './components/maintenance/TechnicianProductivityReport';
 import TechnicianDashboard from './components/maintenance/TechnicianDashboard';
@@ -38,10 +39,11 @@ function HomeRedirect() {
 function App() {
   return (
     <AuthProvider>
-      <Router basename="/ErmitaApp">
+      <Router basename="/Simax">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/activate" element={<ActivateAccount />} />
           <Route path="/" element={
             <Layout>
               <HomeRedirect />
@@ -95,11 +97,6 @@ function App() {
           <Route path="/configuracion/ciudades" element={
             <Layout>
               <Cities />
-            </Layout>
-          } />
-          <Route path="/configuracion/mantenimientos" element={
-            <Layout>
-              <MaintenanceConfig />
             </Layout>
           } />
           <Route path="/configuracion/roles" element={

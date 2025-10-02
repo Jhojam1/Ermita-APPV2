@@ -6,7 +6,7 @@ import {
 } from '@heroicons/react/24/outline';
 import maintenanceConfigService, { AutoMaintenanceConfigItem, AutoMaintenanceConfigUI } from '../services/maintenanceConfigService';
 import inventoryService from '../services/inventoryService';
-import companyService, { Company, Headquarter } from '../services/companyService';
+import companyService, { City, Company, Headquarter } from '../services/companyService';
 
 export default function MaintenanceConfig() {
   const [configs, setConfigs] = useState<AutoMaintenanceConfigUI[]>([]);
@@ -16,7 +16,8 @@ export default function MaintenanceConfig() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingConfig, setEditingConfig] = useState<AutoMaintenanceConfigUI | null>(null);
   const [equipmentTypes, setEquipmentTypes] = useState<{id: number, name: string}[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [filteredHeadquarters, setFilteredHeadquarters] = useState<Headquarter[]>([]);
   
   // Formulario para nueva configuración
@@ -25,6 +26,7 @@ export default function MaintenanceConfig() {
     equipmentTypeId: 0,
     intervaloMeses: 3,
     activo: true,
+    cityId: 0,
     companyId: 0,
     headquarterId: 0
   });
@@ -32,8 +34,18 @@ export default function MaintenanceConfig() {
   useEffect(() => {
     fetchConfigs();
     fetchEquipmentTypes();
-    fetchCompanies();
+    fetchCities();
   }, []);
+
+  // Cargar empresas cuando cambia la ciudad seleccionada
+  useEffect(() => {
+    if (formData.cityId > 0) {
+      fetchCompaniesByCity(formData.cityId);
+    } else {
+      setFilteredCompanies([]);
+      setFormData(prev => ({ ...prev, companyId: 0, headquarterId: 0 }));
+    }
+  }, [formData.cityId]);
 
   // Cargar sedes cuando cambia la empresa seleccionada
   useEffect(() => {
@@ -41,6 +53,7 @@ export default function MaintenanceConfig() {
       fetchHeadquartersByCompany(formData.companyId);
     } else {
       setFilteredHeadquarters([]);
+      setFormData(prev => ({ ...prev, headquarterId: 0 }));
     }
   }, [formData.companyId]);
 
@@ -68,12 +81,21 @@ export default function MaintenanceConfig() {
     }
   };
 
-  const fetchCompanies = async () => {
+  const fetchCities = async () => {
     try {
-      const data = await companyService.getAllCompanies();
-      setCompanies(data);
+      const data = await companyService.getAllCities();
+      setCities(data);
     } catch (err) {
-      console.error('Error al cargar empresas:', err);
+      console.error('Error al cargar ciudades:', err);
+    }
+  };
+
+  const fetchCompaniesByCity = async (cityId: number) => {
+    try {
+      const data = await companyService.getCompaniesByCity(cityId);
+      setFilteredCompanies(data);
+    } catch (err) {
+      console.error(`Error al cargar empresas para la ciudad ${cityId}:`, err);
     }
   };
 
@@ -98,8 +120,8 @@ export default function MaintenanceConfig() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.companyId === 0 || formData.headquarterId === 0) {
-      setError('Debe seleccionar una empresa y una sede');
+    if (formData.cityId === 0 || formData.companyId === 0 || formData.headquarterId === 0) {
+      setError('Debe seleccionar una ciudad, empresa y sede');
       return;
     }
     
@@ -111,6 +133,7 @@ export default function MaintenanceConfig() {
         equipmentTypeName: formData.tipoEquipo,
         monthsInterval: formData.intervaloMeses,
         isActive: formData.activo,
+        cityId: formData.cityId,
         companyId: formData.companyId,
         headquarterId: formData.headquarterId
       };
@@ -139,6 +162,7 @@ export default function MaintenanceConfig() {
         equipmentTypeId: 0,
         intervaloMeses: 3,
         activo: true,
+        cityId: 0,
         companyId: 0,
         headquarterId: 0
       });
@@ -175,6 +199,7 @@ export default function MaintenanceConfig() {
       equipmentTypeId: config.equipmentTypeId || 0,
       intervaloMeses: config.intervaloMeses,
       activo: config.activo,
+      cityId: 0, // Por ahora, hasta que tengamos cityId en la config
       companyId: config.companyId || 0,
       headquarterId: config.headquarterId || 0
     });
@@ -196,6 +221,17 @@ export default function MaintenanceConfig() {
       ...formData,
       tipoEquipo: selectedTypeName,
       equipmentTypeId: isNaN(selectedType?.id || 0) ? 0 : (selectedType?.id || 0)
+    });
+  };
+
+  // Manejar cambio de ciudad
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const cityId = parseInt(e.target.value);
+    setFormData({
+      ...formData,
+      cityId,
+      companyId: 0, // Resetear empresa al cambiar de ciudad
+      headquarterId: 0 // Resetear sede al cambiar de ciudad
     });
   };
 
@@ -252,6 +288,7 @@ export default function MaintenanceConfig() {
                 equipmentTypeId: 0,
                 intervaloMeses: 3,
                 activo: true,
+                cityId: 0,
                 companyId: 0,
                 headquarterId: 0
               });
@@ -361,6 +398,29 @@ export default function MaintenanceConfig() {
               
               <form onSubmit={handleSubmit}>
                 <div className="space-y-4">
+                  {/* Selección de Ciudad */}
+                  <div>
+                    <label htmlFor="cityId" className="block text-sm font-medium text-gray-700 mb-1">
+                      Ciudad
+                    </label>
+                    <select
+                      id="cityId"
+                      name="cityId"
+                      value={formData.cityId}
+                      onChange={handleCityChange}
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900
+                             focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="0">Seleccione una ciudad</option>
+                      {cities.map(city => (
+                        <option key={city.id} value={city.id}>
+                          {city.name} - {city.department}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
                   {/* Selección de Empresa */}
                   <div>
                     <label htmlFor="companyId" className="block text-sm font-medium text-gray-700 mb-1">
@@ -374,9 +434,10 @@ export default function MaintenanceConfig() {
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900
                              focus:ring-2 focus:ring-blue-500"
                       required
+                      disabled={formData.cityId === 0}
                     >
                       <option value="0">Seleccione una empresa</option>
-                      {companies.map(company => (
+                      {filteredCompanies.map(company => (
                         <option key={company.id} value={company.id}>
                           {company.name}
                         </option>

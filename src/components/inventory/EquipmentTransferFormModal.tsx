@@ -6,12 +6,22 @@ import companyService from '../../services/companyService';
 interface Props {
   equipmentId: number;
   equipmentName: string;
+  sourceCityId?: number;
+  sourceCityName?: string;
   sourceCompanyId: number;
   sourceCompanyName: string;
   sourceHeadquarterId: number;
   sourceHeadquarterName: string;
   onClose: () => void;
   onSaveSuccess: () => void;
+}
+
+interface City {
+  id: number;
+  name: string;
+  department: string;
+  country: string;
+  active: boolean;
 }
 
 interface Company {
@@ -28,6 +38,8 @@ interface Headquarter {
 const EquipmentTransferFormModal: React.FC<Props> = ({
   equipmentId,
   equipmentName,
+  sourceCityId,
+  sourceCityName,
   sourceCompanyId,
   sourceCompanyName,
   sourceHeadquarterId,
@@ -36,9 +48,11 @@ const EquipmentTransferFormModal: React.FC<Props> = ({
   onSaveSuccess
 }) => {
   const [loading, setLoading] = useState(false);
+  const [cities, setCities] = useState<City[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [headquarters, setHeadquarters] = useState<Headquarter[]>([]);
   const [formData, setFormData] = useState({
+    destinationCityId: '',
     destinationCompanyId: '',
     destinationHeadquarterId: '',
     reason: ''
@@ -46,6 +60,17 @@ const EquipmentTransferFormModal: React.FC<Props> = ({
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await companyService.getAllCities();
+        setCities(response || []);
+      } catch (error) {
+        console.error('Error al cargar las ciudades:', error);
+        setErrorMsg('Error al cargar las ciudades.');
+        setCities([]);
+      }
+    };
+
     const fetchCompanies = async () => {
       try {
         const response = await companyService.getAllCompanies();
@@ -58,6 +83,7 @@ const EquipmentTransferFormModal: React.FC<Props> = ({
       }
     };
 
+    fetchCities();
     fetchCompanies();
   }, []);
 
@@ -109,46 +135,36 @@ const EquipmentTransferFormModal: React.FC<Props> = ({
     setErrorMsg('');
     
     // Validación básica
-    if (!formData.destinationCompanyId || !formData.destinationHeadquarterId || !formData.reason) {
+    if (!formData.destinationCityId || !formData.destinationCompanyId || !formData.destinationHeadquarterId || !formData.reason) {
       setErrorMsg('Por favor, complete todos los campos obligatorios.');
       setLoading(false);
       return;
     }
     
-    // Obtener los nombres de la empresa y sede de destino
+    // Obtener los nombres de ciudad, empresa y sede de destino
+    const destinationCity = cities.find(c => c.id.toString() === formData.destinationCityId);
     const destinationCompany = companies.find(c => c.id.toString() === formData.destinationCompanyId);
     const destinationHeadquarter = headquarters.find(h => h.id.toString() === formData.destinationHeadquarterId);
 
     try {
-      // Usar los datos de origen que vienen como props
-      const sourceCompId = parseInt(String(sourceCompanyId)) || 0;
-      const sourceHeadId = parseInt(String(sourceHeadquarterId)) || 0;
-      const sourceCmpName = sourceCompanyName || "Empresa desconocida";
-      const sourceHeadName = sourceHeadquarterName || "Sede desconocida";
-      
-      // Log para depuración
-      console.log('Datos de origen:', {
-        sourceCompId, 
-        sourceCmpName,
-        sourceHeadId,
-        sourceHeadName
-      });
-      
       const transferData = {
         // Datos de movimiento general
         inventoryItemId: equipmentId,
         quantity: 1, // Para equipos individuales
         reason: formData.reason,
         description: formData.reason, // Usar el motivo como descripción
-        type: "Traslado", // Especificar explícitamente el tipo de movimiento
         
         // Datos de origen con valores por defecto si faltan
-        sourceCompanyId: sourceCompId,
-        sourceCompanyName: sourceCmpName,
-        sourceHeadquarterId: sourceHeadId,
-        sourceHeadquarterName: sourceHeadName,
+        sourceCityId: sourceCityId || 0,
+        sourceCityName: sourceCityName || "Ciudad origen",
+        sourceCompanyId: sourceCompanyId || 0,
+        sourceCompanyName: sourceCompanyName || "Empresa origen",
+        sourceHeadquarterId: sourceHeadquarterId || 0,
+        sourceHeadquarterName: sourceHeadquarterName || "Sede origen",
         
         // Datos de destino
+        destinationCityId: parseInt(formData.destinationCityId),
+        destinationCityName: destinationCity?.name || "Ciudad destino",
         destinationCompanyId: parseInt(formData.destinationCompanyId),
         destinationCompanyName: destinationCompany?.name || "Empresa destino",
         destinationHeadquarterId: parseInt(formData.destinationHeadquarterId),
@@ -205,11 +221,31 @@ const EquipmentTransferFormModal: React.FC<Props> = ({
               <div className="bg-gray-50 p-3 rounded-md mb-4">
                 <h4 className="font-medium text-gray-800 mb-2">Ubicación Actual</h4>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div className="text-gray-500">Ciudad:</div>
+                  <div className="text-gray-900">{sourceCityName || 'No especificada'}</div>
                   <div className="text-gray-500">Empresa:</div>
                   <div className="text-gray-900">{sourceCompanyName}</div>
                   <div className="text-gray-500">Sede:</div>
                   <div className="text-gray-900">{sourceHeadquarterName}</div>
                 </div>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Ciudad de Destino<span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="destinationCityId"
+                  value={formData.destinationCityId}
+                  onChange={handleChange}
+                  className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="">Seleccione ciudad de destino</option>
+                  {cities.map(city => (
+                    <option key={city.id} value={city.id}>{city.name}</option>
+                  ))}
+                </select>
               </div>
               
               <div className="mb-4">

@@ -18,7 +18,12 @@ import EquipmentTransferFormModal from '../components/inventory/EquipmentTransfe
 const mapInventoryItemToUI = (item: InventoryItem) => {
   return {
     id: item.id,
-    ciudad: item.cityName || 'No especificada',
+    // IDs para traslados y edición
+    cityId: item.cityId,
+    companyId: item.companyId,
+    sedeId: item.sedeId,
+    // Nombres para visualización
+    ciudad: item.cityName || 'Ciudad no especificada',
     empresa: item.companyName || 'Desconocida',
     sede: item.sedeName || 'Desconocida',
     serial: item.serial,
@@ -550,15 +555,17 @@ export default function Inventory() {
         {/* Modal para Trasladar Equipo */}
         {transferEquipo && (
           <EquipmentTransferFormModal
-            equipmentId={transferEquipo.id}
-            equipmentName={`${transferEquipo.serial} - ${transferEquipo.modelo}`}
-            sourceCompanyId={transferEquipo.companyId}
-            sourceCompanyName={transferEquipo.empresa}
-            sourceHeadquarterId={transferEquipo.sedeId}
-            sourceHeadquarterName={transferEquipo.sede}
-            onClose={() => setTransferEquipo(null)}
-            onSaveSuccess={handleTransferSuccess}
-          />
+              equipmentId={transferEquipo.id}
+              equipmentName={`${transferEquipo.serial} - ${transferEquipo.modelo}`}
+              sourceCityId={transferEquipo.cityId}
+              sourceCityName={transferEquipo.ciudad}
+              sourceCompanyId={transferEquipo.companyId}
+              sourceCompanyName={transferEquipo.empresa}
+              sourceHeadquarterId={transferEquipo.sedeId}
+              sourceHeadquarterName={transferEquipo.sede}
+              onClose={() => setTransferEquipo(null)}
+              onSaveSuccess={handleTransferSuccess}
+            />
         )}
       </div>
     </div>

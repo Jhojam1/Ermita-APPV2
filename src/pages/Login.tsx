@@ -101,7 +101,7 @@ const Login = () => {
           
           <div className="text-center mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent animate-pulse">
-              Sistema Ermita
+              Inicio De Sesion
             </h1>
             <p className="mt-3 text-sm sm:text-base text-gray-600">
               Ingresa tus credenciales para acceder al sistema

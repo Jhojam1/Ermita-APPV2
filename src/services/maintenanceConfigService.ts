@@ -27,6 +27,7 @@ maintenanceConfigApi.interceptors.request.use(
 
 export interface AutoMaintenanceConfigItem {
   id?: number;
+  cityId?: number;
   companyId?: number;
   headquarterId?: number;
   equipmentTypeId?: number;
@@ -73,10 +74,14 @@ const maintenanceConfigService = {
   // Obtener todas las configuraciones
   getAllConfigs: async (): Promise<AutoMaintenanceConfigItem[]> => {
     try {
+      console.log('🔍 Llamando a getAllConfigs...');
+      console.log('🔍 URL:', API_URL);
       const response = await maintenanceConfigApi.get('');
+      console.log('✅ Respuesta recibida:', response.data);
+      console.log('✅ Cantidad de configuraciones:', response.data?.length || 0);
       return response.data;
     } catch (error) {
-      console.error('Error al obtener configuraciones de mantenimiento:', error);
+      console.error('❌ Error al obtener configuraciones de mantenimiento:', error);
       throw error;
     }
   },
@@ -95,16 +100,15 @@ const maintenanceConfigService = {
   // Crear una nueva configuración
   createConfig: async (config: AutoMaintenanceConfigItem): Promise<AutoMaintenanceConfigItem> => {
     try {
-      // Asegurarse de que companyId y headquarterId estén establecidos
+      // Obtener el ID del usuario para createdBy
       const userData = getUserData();
       
       if (!userData) {
         throw new Error('No se encontraron datos del usuario. Por favor, inicie sesión nuevamente.');
       }
       
-      // Asegurarse de que los valores sean números
-      config.companyId = userData.idcompany ? Number(userData.idcompany) : undefined;
-      config.headquarterId = userData.idheadquarter ? Number(userData.idheadquarter) : undefined;
+      // Solo agregar createdBy, mantener companyId y headquarterId del formulario
+      config.createdBy = userData.id ? Number(userData.id) : undefined;
       
       console.log('Enviando configuración al backend:', config);
       
@@ -120,17 +124,6 @@ const maintenanceConfigService = {
   // Actualizar una configuración existente
   updateConfig: async (id: number, config: Partial<AutoMaintenanceConfigItem>): Promise<AutoMaintenanceConfigItem> => {
     try {
-      // Asegurarse de que companyId y headquarterId estén establecidos
-      const userData = getUserData();
-      
-      if (!userData) {
-        throw new Error('No se encontraron datos del usuario. Por favor, inicie sesión nuevamente.');
-      }
-      
-      // Asegurarse de que los valores sean números
-      config.companyId = userData.idcompany ? Number(userData.idcompany) : undefined;
-      config.headquarterId = userData.idheadquarter ? Number(userData.idheadquarter) : undefined;
-      
       console.log('Actualizando configuración en el backend:', config);
       
       const response = await maintenanceConfigApi.put(`/${id}`, config);

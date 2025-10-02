@@ -204,7 +204,11 @@ const Sidebar = () => {
           >
             <Bars3Icon className="h-6 w-6 transition-transform group-hover:scale-110" />
           </button>
-          <h1 className="text-gray-800 text-lg font-semibold tracking-tight">Sistema Ermita</h1>
+          <img 
+            src="/Simax/Logo.png" 
+            alt="SIMAX Logo" 
+            className="h-8 w-auto object-contain"
+          />
           <button
             onClick={handleLogout}
             className="p-2 rounded-lg text-gray-600 hover:bg-gray-100/80 transition-all duration-200 group"
@@ -231,8 +235,12 @@ const Sidebar = () => {
         `}
       >
         <div className="flex flex-col h-full">
-          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-white">
-            <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Sistema Ermita</h2>
+          <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-white flex items-center justify-center">
+            <img 
+              src="/Simax/Logo.png" 
+              alt="SIMAX Logo" 
+              className="h-12 w-auto max-w-full object-contain"
+            />
           </div>
 
           <nav className="flex-1 overflow-y-auto py-6 px-3">

@@ -40,7 +40,9 @@ export interface User {
   roleId: number;
   roleName: string;
   companyId: number;
+  companyName?: string;
   headquarterId: number;
+  headquarterName?: string;
   permissions: string[];
   token: string;
 }
@@ -106,11 +108,25 @@ export const resetPassword = async (token: string, newPassword: string): Promise
   }
 };
 
+export const activateAccount = async (token: string): Promise<void> => {
+  try {
+    // Llamar al endpoint de users-service, no auth
+    const response = await axios.post(`http://192.168.2.64:8080/api/v1/users/activate?token=${token}`);
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      throw error.response.data.message || 'Error al activar la cuenta';
+    }
+    throw 'Error de conexión con el servidor';
+  }
+};
+
 export default {
   authLogin,
   authLogout,
   getCurrentUser,
   isAuthenticated,
   requestPasswordReset,
-  resetPassword
+  resetPassword,
+  activateAccount
 };

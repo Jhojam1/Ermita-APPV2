@@ -19,6 +19,14 @@ const { Title } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
+interface City {
+  id: number;
+  name: string;
+  department: string;
+  country: string;
+  active: boolean;
+}
+
 interface Company {
   id: number;
   name: string;
@@ -37,12 +45,25 @@ const EquipmentTransferForm: React.FC = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [cities, setCities] = useState<City[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [headquarters, setHeadquarters] = useState<Headquarter[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
   useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        console.log('🏙️ Cargando ciudades...');
+        const response = await companyService.getAllCities();
+        console.log('🏙️ Ciudades cargadas:', response);
+        setCities(response || []);
+      } catch (error) {
+        console.error('❌ Error al cargar las ciudades:', error);
+        message.error('Error al cargar las ciudades.');
+      }
+    };
+
     const fetchCompanies = async () => {
       try {
         const response = await companyService.getAllCompanies();
@@ -70,6 +91,7 @@ const EquipmentTransferForm: React.FC = () => {
       }
     };
 
+    fetchCities();
     fetchCompanies();
     fetchInventoryItems();
   }, []);
@@ -103,7 +125,8 @@ const EquipmentTransferForm: React.FC = () => {
 
     setLoading(true);
     
-    // Obtener los nombres de la empresa y sede de destino
+    // Obtener los nombres de ciudad, empresa y sede de destino
+    const destinationCity = cities.find(c => c.id === values.destinationCityId);
     const destinationCompany = companies.find(c => c.id === values.destinationCompanyId);
     const destinationHeadquarter = headquarters.find(h => h.id === values.destinationHeadquarterId);
 
@@ -116,10 +139,14 @@ const EquipmentTransferForm: React.FC = () => {
     const transferData = {
       inventoryItemId: selectedItem.id,
       quantity: parseInt(form.getFieldValue('quantity')),
+      sourceCityId: selectedItem.cityId || 0,
+      sourceCityName: selectedItem.cityName || '',
       sourceCompanyId: selectedItem.companyId || 0,
       sourceCompanyName: selectedItem.companyName || '',
       sourceHeadquarterId: selectedItem.sedeId || 0,
       sourceHeadquarterName: selectedItem.sedeName || '',
+      destinationCityId: form.getFieldValue('destinationCityId'),
+      destinationCityName: destinationCity?.name || '',
       destinationCompanyId: form.getFieldValue('destinationCompanyId'),
       destinationCompanyName: destinationCompany?.name || '',
       destinationHeadquarterId: form.getFieldValue('destinationHeadquarterId'),
@@ -183,6 +210,18 @@ const EquipmentTransferForm: React.FC = () => {
         </Space>
 
         <Divider>Información de Destino</Divider>
+
+        <Form.Item
+          name="destinationCityId"
+          label="Ciudad de Destino"
+          rules={[{ required: true, message: 'Por favor seleccione la ciudad de destino' }]}
+        >
+          <Select placeholder="Seleccione ciudad de destino">
+            {cities.map(city => (
+              <Option key={city.id} value={city.id}>{city.name}</Option>
+            ))}
+          </Select>
+        </Form.Item>
 
         <Form.Item
           name="destinationCompanyId"
