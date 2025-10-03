@@ -121,6 +121,30 @@ export const activateAccount = async (token: string): Promise<void> => {
   }
 };
 
+export const refreshToken = async (): Promise<User> => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw 'No hay token para refrescar';
+    }
+
+    const response = await authApi.post('/refresh-permissions');
+    
+    // Actualizar el token en localStorage
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data));
+    }
+    
+    return response.data;
+  } catch (error: any) {
+    if (error.response) {
+      throw error.response.data.message || 'Error al refrescar token';
+    }
+    throw 'Error de conexión con el servidor';
+  }
+};
+
 export default {
   authLogin,
   authLogout,
@@ -128,5 +152,6 @@ export default {
   isAuthenticated,
   requestPasswordReset,
   resetPassword,
-  activateAccount
+  activateAccount,
+  refreshToken
 };

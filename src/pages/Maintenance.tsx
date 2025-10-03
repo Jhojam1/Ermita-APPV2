@@ -187,6 +187,7 @@ export default function Maintenance() {
         type: maintenanceService.mapTypeToBackend(selectedMantenimiento.tipo),
         status: estadoBackend,
         observations: formData.observaciones,
+        technicianId: selectedMantenimiento.technicianId,  // ✅ AGREGADO: Enviar technicianId
         technicianName: formData.tecnico,
       };
       

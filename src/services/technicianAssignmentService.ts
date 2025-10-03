@@ -90,6 +90,7 @@ const technicianAssignmentService = {
    * Asignar técnico a un mantenimiento específico
    */
   async assignTechnician(maintenanceId: number, technicianId: number, technicianName: string): Promise<MaintenanceAssignment> {
+    console.log(`[DEBUG] Asignando técnico...`, { maintenanceId, technicianId, technicianName });
     try {
       const response = await technicianAssignmentApi.post(
         `${TECHNICIAN_ASSIGNMENT_URL}/${maintenanceId}/assign`,
@@ -101,9 +102,10 @@ const technicianAssignmentService = {
           }
         }
       );
+      console.log('[DEBUG] Respuesta de asignación:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error asignando técnico:', error);
+      console.error('[ERROR] Error asignando técnico:', error);
       throw error;
     }
   },

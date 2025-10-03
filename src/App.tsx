@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { TokenRefreshManager } from './components/auth/TokenRefreshManager';
 import Layout from './components/layout/Layout';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -39,8 +40,9 @@ function HomeRedirect() {
 function App() {
   return (
     <AuthProvider>
-      <Router basename="/Simax">
-        <Routes>
+      <TokenRefreshManager>
+        <Router basename="/Simax">
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/activate" element={<ActivateAccount />} />
@@ -132,6 +134,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
+      </TokenRefreshManager>
     </AuthProvider>
   );
 }

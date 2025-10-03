@@ -255,6 +255,12 @@ export default function TechnicianAssignmentManager() {
                   Mantenimiento
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Equipo
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Área de Servicio
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Estado
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -288,6 +294,19 @@ export default function TechnicianAssignmentManager() {
                     </div>
                     <div className="text-sm text-gray-500">
                       {maintenance.description || 'Sin descripción'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {maintenance.inventoryItemSerial || 'N/A'}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {maintenance.inventoryItemName || 'Sin nombre'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-700">
+                      {maintenance.serviceArea || 'No especificada'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

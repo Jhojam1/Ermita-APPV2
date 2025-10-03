@@ -7,7 +7,6 @@ import {
 import maintenanceService from '../services/maintenanceService';
 import userService from '../services/userService';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 export default function History() {
   const [mantenimientosData, setMantenimientosData] = useState<any[]>([]);
@@ -182,15 +181,6 @@ export default function History() {
         console.log('[DEBUG] Firma del técnico preparada para el PDF');
       }
 
-      // Crear un elemento temporal para renderizar el informe
-      const reporteContainer = document.createElement('div');
-      reporteContainer.style.position = 'absolute';
-      reporteContainer.style.left = '-9999px';
-      reporteContainer.style.top = '-9999px';
-      reporteContainer.style.width = '794px'; // Ancho A4 en px
-      reporteContainer.style.backgroundColor = 'white';
-      reporteContainer.style.fontFamily = 'Arial, sans-serif';
-      
       // Fecha actual formateada
       const fechaActual = new Date().toLocaleDateString('es-ES', {
         day: '2-digit',
@@ -198,144 +188,153 @@ export default function History() {
         year: 'numeric'
       });
       
-      // Crear el contenido del informe con un diseño que ocupe toda la hoja
-      reporteContainer.innerHTML = `
-        <div style="padding: 15px; font-family: Arial, sans-serif; line-height: 1.3; max-width: 750px; margin: 0 auto; height: 1056px; display: flex; flex-direction: column; box-sizing: border-box;">
-          <!-- Contenido principal - distribuido con mejor espaciado -->
-          <div style="flex: 0 0 auto;">
-            <!-- Encabezado -->
-            <div style="text-align: center; margin-bottom: 25px; padding-top: 15px;">
-              <h1 style="font-size: 22px; margin: 0 0 8px 0; text-transform: uppercase; color: #000;">Informe de Mantenimiento</h1>
-              <p style="margin: 0; font-size: 14px; color: #000;">ID: ${mantenimiento.id.padStart(4, '0')} | Fecha: ${fechaActual}</p>
-            </div>
-          
-            <!-- Datos principales sin tablas -->
-            <div style="margin-bottom: 25px; font-size: 14px; color: #000;">
-              <div style="border-bottom: 1px solid #ddd; padding-bottom: 15px; margin-bottom: 15px;">
-              <div style="display: flex; margin-bottom: 15px;">
-                <div style="width: 50%; padding-right: 15px;">
-                  <div style="margin-bottom: 10px;">
-                    <strong style="display: inline-block; width: 130px;">Equipo:</strong>
-                    <span>${mantenimiento.equipo}</span>
-                  </div>
-                  <div style="margin-bottom: 10px;">
-                    <strong style="display: inline-block; width: 130px;">Tipo:</strong>
-                    <span>${mantenimiento.tipo}</span>
-                  </div>
-                  <div>
-                    <strong style="display: inline-block; width: 130px;">Estado:</strong>
-                    <span>${mantenimiento.estado}</span>
-                  </div>
-                </div>
-                <div style="width: 50%; padding-left: 15px;">
-                  <div style="margin-bottom: 10px;">
-                    <strong style="display: inline-block; width: 130px;">Técnico:</strong>
-                    <span>${mantenimiento.tecnico}</span>
-                  </div>
-                  <div style="margin-bottom: 10px;">
-                    <strong style="display: inline-block; width: 130px;">Área:</strong>
-                    <span>${mantenimiento.area || 'No especificada'}</span>
-                  </div>
-                  <div>
-                    <strong style="display: inline-block; width: 130px;">Fecha programada:</strong>
-                    <span>${mantenimiento.fechaProgramada}</span>
-                  </div>
-                  ${mantenimiento.fechaCompletado ? `
-                  <div style="margin-top: 10px;">
-                    <strong style="display: inline-block; width: 130px;">Fecha completado:</strong>
-                    <span>${mantenimiento.fechaCompletado}</span>
-                  </div>` : ''}
-                </div>
-              </div>
-            </div>
-          </div>
-          
-            <!-- Descripción con línea separadora superior -->
-            <div style="margin-bottom: 25px; border-top: 1px solid #ddd; padding-top: 15px;">
-              <h2 style="font-size: 18px; margin: 0 0 10px 0; color: #000; font-weight: bold;">Descripción</h2>
-              <div style="font-size: 14px; min-height: 60px; padding: 0 10px; color: #000;">${mantenimiento.descripcion}</div>
-            </div>
-          
-            <!-- Observaciones - con espacio considerable sin cuadro -->
-            <div style="margin-bottom: 30px;">
-              <h2 style="font-size: 18px; margin: 0 0 10px 0; color: #000; font-weight: bold;">Observaciones Técnicas</h2>
-              <div style="font-size: 14px; min-height: 100px; padding: 0 10px; color: #000;">${mantenimiento.observaciones || 'Sin observaciones'}</div>
-            </div>
-          
-            <!-- Texto de conformidad mejorado -->
-            <div style="margin-bottom: 30px;">
-              <h2 style="font-size: 18px; margin: 0 0 10px 0; color: #000; font-weight: bold;">Certificación de Conformidad</h2>
-              <p style="font-size: 14px; line-height: 1.5; margin: 0; color: #000; text-align: justify; padding: 0 15px;">
-                Por medio del presente documento, se certifica que el servicio de mantenimiento ${mantenimiento.tipo.toLowerCase()} identificado con el código ${mantenimiento.id.padStart(4, '0')} ha sido ejecutado satisfactoriamente en la fecha ${mantenimiento.fechaCompletado || 'no especificada'}, cumpliendo con todos los protocolos técnicos establecidos y dentro del cronograma previsto. Este documento tiene validez como constancia de la realización y aprobación del servicio.
-              </p>
-            </div>
-          </div>
-          
-          <!-- Espaciador que empuja las firmas hacia abajo -->
-          <div style="flex: 1 0 auto;"></div>
-          
-          <!-- Sección de firmas y pie de página - posición fija en la parte inferior -->
-          <div style="flex: 0 0 auto; margin-top: auto;">
-            <!-- Firmas -->
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-              <div style="width: 45%; text-align: center;">
-                <div style="min-height: 60px; margin-bottom: 5px;">
-                  ${firmaTecnicoUrl ? 
-                    `<img src="${firmaTecnicoUrl}" style="max-width: 80%; max-height: 60px; display: block; margin: 0 auto;">` : 
-                    `<p style="font-style: italic; color: #000; font-size: 12px; margin-top: 20px;">Sin firma</p>`
-                  }
-                </div>
-                <div style="border-top: 1px solid #000; padding-top: 5px;">
-                  <p style="margin: 0; font-size: 13px; color: #000;">${mantenimiento.tecnico}</p>
-                  <p style="margin: 2px 0 0; font-size: 11px; color: #000;">Técnico</p>
-                </div>
-              </div>
-              
-              <div style="width: 45%; text-align: center;">
-                <div style="min-height: 60px; margin-bottom: 5px;">
-                  ${firmaValida ? 
-                    `<img src="${firmaUrl}" style="max-width: 80%; max-height: 60px; display: block; margin: 0 auto;">` : 
-                    `<p style="font-style: italic; color: #000; font-size: 12px; margin-top: 20px;">Sin firma</p>`
-                  }
-                </div>
-                <div style="border-top: 1px solid #000; padding-top: 5px;">
-                  <p style="margin: 0; font-size: 13px; color: #000;">${mantenimiento.nombreFirmante || mantenimiento.responsable || 'No especificado'}</p>
-                  <p style="margin: 2px 0 0; font-size: 11px; color: #000;">Responsable del Área</p>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Pie de página -->
-            <div style="text-align: center; font-size: 11px; color: #000; border-top: 1px solid #ddd; padding-top: 8px;">
-              <p style="margin: 0;">ErmitaAPP - Sistema de Gestión de Mantenimiento</p>
-              <p style="margin: 3px 0 0;">Documento generado el ${fechaActual}</p>
-            </div>
-          </div>
-        </div>
-      `;
-      
-      // Añadir el elemento al documento
-      document.body.appendChild(reporteContainer);
-      
-      // Convertir el HTML a un canvas
-      const canvas = await html2canvas(reporteContainer, {
-        scale: 2, // Mayor calidad
-        useCORS: true, // Permitir imágenes de otros dominios
-        logging: false,
-        allowTaint: true,
-      });
-      
-      // Eliminar el elemento temporal
-      document.body.removeChild(reporteContainer);
-      
-      // Crear el PDF - siempre una sola página
+      // Crear el PDF con texto seleccionable
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
-      const imgWidth = 210; // A4 width in mm
-      const imgHeight = Math.min((canvas.height * imgWidth) / canvas.width, 297); // Limitar a altura A4
+      let yPosition = 20;
       
-      // Añadir imagen centrada en la primera y única página
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      // Configurar fuentes
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(18);
+      
+      // Encabezado
+      pdf.text('INFORME DE MANTENIMIENTO', 105, yPosition, { align: 'center' });
+      yPosition += 10;
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(12);
+      pdf.text(`ID: ${mantenimiento.id.padStart(4, '0')} | Fecha: ${fechaActual}`, 105, yPosition, { align: 'center' });
+      yPosition += 20;
+      
+      // Línea separadora
+      pdf.line(20, yPosition, 190, yPosition);
+      yPosition += 15;
+      
+      // Datos principales - Columna izquierda
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      
+      pdf.text('Equipo:', 20, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(mantenimiento.equipo, 50, yPosition);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Técnico:', 110, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(mantenimiento.tecnico, 140, yPosition);
+      yPosition += 8;
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Tipo:', 20, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(mantenimiento.tipo, 50, yPosition);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Área:', 110, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(mantenimiento.area || 'No especificada', 140, yPosition);
+      yPosition += 8;
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Estado:', 20, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(mantenimiento.estado, 50, yPosition);
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Fecha programada:', 110, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(mantenimiento.fechaProgramada, 160, yPosition);
+      yPosition += 8;
+      
+      if (mantenimiento.fechaCompletado) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Fecha completado:', 110, yPosition);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(mantenimiento.fechaCompletado, 160, yPosition);
+        yPosition += 8;
+      }
+      
+      yPosition += 10;
+      
+      // Línea separadora
+      pdf.line(20, yPosition, 190, yPosition);
+      yPosition += 15;
+      
+      // Descripción
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.text('Descripción', 20, yPosition);
+      yPosition += 8;
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      const descripcionLines = pdf.splitTextToSize(mantenimiento.descripcion, 170);
+      pdf.text(descripcionLines, 20, yPosition);
+      yPosition += descripcionLines.length * 5 + 10;
+      
+      // Observaciones
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.text('Observaciones Técnicas', 20, yPosition);
+      yPosition += 8;
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      const observaciones = mantenimiento.observaciones || 'Sin observaciones';
+      const observacionesLines = pdf.splitTextToSize(observaciones, 170);
+      pdf.text(observacionesLines, 20, yPosition);
+      yPosition += observacionesLines.length * 5 + 15;
+      
+      // Certificación de Conformidad
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.text('Certificación de Conformidad', 20, yPosition);
+      yPosition += 8;
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      const certificacionText = `Por medio del presente documento, se certifica que el servicio de mantenimiento ${mantenimiento.tipo.toLowerCase()} identificado con el código ${mantenimiento.id.padStart(4, '0')} ha sido ejecutado satisfactoriamente en la fecha ${mantenimiento.fechaCompletado || 'no especificada'}, cumpliendo con todos los protocolos técnicos establecidos y dentro del cronograma previsto. Este documento tiene validez como constancia de la realización y aprobación del servicio.`;
+      const certificacionLines = pdf.splitTextToSize(certificacionText, 170);
+      pdf.text(certificacionLines, 20, yPosition);
+      yPosition += certificacionLines.length * 5 + 20;
+      
+      // Firmas - posicionar en la parte inferior
+      const firmasY = Math.max(yPosition, 240); // Mínimo en posición 240mm
+      
+      // Agregar firmas como imágenes si existen
+      if (firmaTecnicoUrl) {
+        try {
+          pdf.addImage(firmaTecnicoUrl, 'PNG', 30, firmasY - 20, 40, 15);
+        } catch (e) {
+          console.log('Error al agregar firma del técnico:', e);
+        }
+      }
+      
+      if (firmaValida && firmaUrl) {
+        try {
+          pdf.addImage(firmaUrl, 'PNG', 130, firmasY - 20, 40, 15);
+        } catch (e) {
+          console.log('Error al agregar firma del responsable:', e);
+        }
+      }
+      
+      // Líneas para firmas
+      pdf.line(25, firmasY, 75, firmasY);
+      pdf.line(125, firmasY, 175, firmasY);
+      
+      // Nombres bajo las líneas
+      pdf.text(mantenimiento.tecnico, 50, firmasY + 5, { align: 'center' });
+      pdf.text(mantenimiento.nombreFirmante || mantenimiento.responsable || 'No especificado', 150, firmasY + 5, { align: 'center' });
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.text('Técnico', 50, firmasY + 10, { align: 'center' });
+      pdf.text('Responsable del Área', 150, firmasY + 10, { align: 'center' });
+      
+      // Pie de página
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.text('SIMAX - Sistema de Gestión de Mantenimiento', 105, 285, { align: 'center' });
+      pdf.text(`Documento generado el ${fechaActual}`, 105, 290, { align: 'center' });
       
       // Guardar el PDF
       pdf.save(`Informe_Mantenimiento_${mantenimiento.equipo.replace(/\s+/g, '_')}_${id}.pdf`);
