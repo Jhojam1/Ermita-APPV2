@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Definir la URL base del API
-const API_BASE_URL = 'http://192.168.2.64:8080';
+const API_BASE_URL = 'http://192.168.2.20:8080';
 const COMPANY_API_URL = `${API_BASE_URL}/api/v1`;
 
 // Interfaces para los datos de ciudades, empresas y sedes

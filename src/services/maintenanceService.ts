@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configuración base de axios
-const API_URL = 'http://192.168.2.64:8080/api/maintenance/maintenances';
+const API_URL = 'http://192.168.2.20:8080/api/maintenance/maintenances';
 
 // Crear una instancia de axios con la URL base
 const maintenanceApi = axios.create({

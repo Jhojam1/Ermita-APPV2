@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configuración base de axios
-const API_URL = 'http://192.168.2.64:8080/api/v1/auth';
+const API_URL = 'http://192.168.2.20:8080/api/v1/auth';
 
 // Crear una instancia de axios con la URL base
 const authApi = axios.create({
@@ -111,7 +111,7 @@ export const resetPassword = async (token: string, newPassword: string): Promise
 export const activateAccount = async (token: string): Promise<void> => {
   try {
     // Llamar al endpoint de users-service, no auth
-    const response = await axios.post(`http://192.168.2.64:8080/api/v1/users/activate?token=${token}`);
+    const response = await axios.post(`http://192.168.2.20:8080/api/v1/users/activate?token=${token}`);
     return response.data;
   } catch (error: any) {
     if (error.response) {

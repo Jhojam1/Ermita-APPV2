@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configuración base de axios
-const API_BASE_URL = 'http://192.168.2.64:8080';
+const API_BASE_URL = 'http://192.168.2.20:8080';
 const TECHNICIAN_ASSIGNMENT_URL = `${API_BASE_URL}/api/v1/maintenance/assignments`;
 
 // Crear una instancia de axios con la URL base

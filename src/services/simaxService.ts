@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const SIMAX_API_BASE_URL = 'http://localhost:8089/api/v1/backup';
+const SIMAX_API_BASE_URL = 'http://192.168.2.20:8080/api/v1/backup';
 
 // Interfaces para SIMAX
 export interface BackupConfiguration {
