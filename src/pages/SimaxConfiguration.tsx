@@ -16,11 +16,9 @@ import {
 } from 'antd';
 import { 
   SaveOutlined, 
-  TestOutlined, 
   PlusOutlined, 
-  DeleteOutlined,
   EditOutlined,
-  ServerOutlined
+  CheckCircleOutlined
 } from '@ant-design/icons';
 import simaxService, { BackupConfiguration } from '../services/simaxService';
 
@@ -190,7 +188,7 @@ const SimaxConfiguration: React.FC = () => {
             Editar
           </Button>
           <Button 
-            icon={<TestOutlined />} 
+            icon={<CheckCircleOutlined />} 
             size="small"
             onClick={() => simaxService.testSshConnection(record.clientId)}
           >
@@ -361,7 +359,7 @@ const SimaxConfiguration: React.FC = () => {
 
           <div className="flex justify-end space-x-4 pt-4">
             <Button 
-              icon={<TestOutlined />}
+              icon={<CheckCircleOutlined />}
               onClick={testSshConnection}
               loading={testingConnection}
             >

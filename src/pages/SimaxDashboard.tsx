@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Statistic, Table, Button, Badge, Space, message, Modal, Progress } from 'antd';
-import { 
-  CloudUploadOutlined, 
-  ServerOutlined, 
-  ClockCircleOutlined, 
-  CheckCircleOutlined,
-  ExclamationCircleOutlined,
-  PlayCircleOutlined,
+import {
+  CloudUploadOutlined,
+  ClockCircleOutlined,
+  SettingOutlined,
   ReloadOutlined,
-  SettingOutlined
+  PlayCircleOutlined,
+  DatabaseOutlined
 } from '@ant-design/icons';
 import simaxService, { BackupConfiguration, BackupJob } from '../services/simaxService';
 import SimaxWebSocketService, { BackupProgressData } from '../services/simaxWebSocketService';
@@ -196,7 +194,7 @@ const SimaxDashboard: React.FC = () => {
             Backup
           </Button>
           <Button 
-            icon={<ServerOutlined />}
+            icon={<DatabaseOutlined />}
             size="small"
             onClick={() => testSshConnection(record.clientId)}
           >
@@ -317,7 +315,7 @@ const SimaxDashboard: React.FC = () => {
             <Statistic
               title="Total Configuraciones"
               value={configurations.length}
-              prefix={<ServerOutlined />}
+              prefix={<DatabaseOutlined />}
             />
           </Card>
         </Col>

@@ -3,15 +3,14 @@ import {
   Card, 
   Table, 
   Button, 
-  Badge, 
   Space, 
-  message, 
+  Tag, 
+  Modal, 
+  Descriptions, 
+  Progress, 
   Select, 
-  DatePicker, 
-  Progress,
-  Modal,
-  Descriptions,
-  Tag
+  DatePicker,
+  Badge
 } from 'antd';
 import { 
   ReloadOutlined, 
@@ -24,6 +23,9 @@ import {
 } from '@ant-design/icons';
 import simaxService, { BackupJob, BackupConfiguration } from '../services/simaxService';
 import dayjs from 'dayjs';
+import isBetween from 'dayjs/plugin/isBetween';
+
+dayjs.extend(isBetween);
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
@@ -82,15 +84,16 @@ const SimaxJobs: React.FC = () => {
     setJobs(allJobs);
   };
 
-  const startBackup = async (clientId: string) => {
-    const response = await simaxService.startBackup(clientId);
-    if (response.success) {
-      message.success('Backup iniciado exitosamente');
-      loadAllJobs();
-    } else {
-      message.error(response.error || 'Error iniciando backup');
-    }
-  };
+  // Función para iniciar backup (comentada por ahora)
+  // const startBackup = async (clientId: string) => {
+  //   const response = await simaxService.startBackup(clientId);
+  //   if (response.success) {
+  //     message.success('Backup iniciado exitosamente');
+  //     loadAllJobs();
+  //   } else {
+  //     message.error(response.error || 'Error iniciando backup');
+  //   }
+  // };
 
   const showJobDetails = (job: BackupJob) => {
     setSelectedJob(job);
@@ -150,7 +153,7 @@ const SimaxJobs: React.FC = () => {
     if (selectedClient !== 'all' && job.clientId !== selectedClient) return false;
     if (selectedStatus !== 'all' && job.status !== selectedStatus) return false;
     
-    if (dateRange) {
+    if (dateRange && dateRange[0] && dateRange[1]) {
       const jobDate = dayjs(job.startedAt);
       if (!jobDate.isBetween(dateRange[0], dateRange[1], 'day', '[]')) return false;
     }
@@ -324,7 +327,7 @@ const SimaxJobs: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Rango de Fechas</label>
             <RangePicker
               value={dateRange}
-              onChange={setDateRange}
+              onChange={(dates) => setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs] | null)}
               className="w-full"
               format="DD/MM/YYYY"
             />
