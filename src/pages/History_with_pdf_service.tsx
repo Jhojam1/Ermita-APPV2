@@ -140,17 +140,8 @@ export default function History() {
           : `data:image/png;base64,${mantenimiento.firma}`;
       }
       
-<<<<<<< HEAD
       // Generar PDF directamente
       generatePDF(mantenimiento, firmaTecnicoUrl, firmaResponsableUrl);
-=======
-      // Generar PDF usando el servicio
-      pdfService.generateReport({
-        mantenimiento,
-        firmaTecnicoUrl,
-        firmaResponsableUrl
-      });
->>>>>>> 7fa4b5a957b2d1e0b1c4c1da6a950c4fe5671b4a
       
     } catch (error) {
       console.error('Error al generar el informe:', error);
