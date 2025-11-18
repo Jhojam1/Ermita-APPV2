@@ -6,7 +6,7 @@ import {
 } from '@heroicons/react/24/outline';
 import maintenanceService from '../services/maintenanceService';
 import userService from '../services/userService';
-import pdfService from '../services/pdfService';
+import jsPDF from 'jspdf';
 
 export default function History() {
   const [mantenimientosData, setMantenimientosData] = useState<any[]>([]);
@@ -140,17 +140,110 @@ export default function History() {
           : `data:image/png;base64,${mantenimiento.firma}`;
       }
       
-      // Generar PDF usando el servicio
-      pdfService.generateMaintenanceReport(
-        mantenimiento,
-        firmaTecnicoUrl,
-        firmaResponsableUrl
-      );
+      // Generar PDF directamente
+      generatePDF(mantenimiento, firmaTecnicoUrl, firmaResponsableUrl);
       
     } catch (error) {
       console.error('Error al generar el informe:', error);
       alert('Error al generar el informe. Por favor, intente nuevamente.');
     }
+  };
+
+  // Función para generar PDF
+  const generatePDF = (mantenimiento: any, firmaTecnicoUrl: string | null, firmaResponsableUrl: string | null) => {
+    // Fecha actual en formato largo para el certificado
+    const fechaLarga = new Date().toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+    
+    // Fecha actual formateada
+    const fechaActual = new Date().toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    
+    // Crear el PDF
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    let yPosition = 20;
+    
+    // Configurar fuentes
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(18);
+    
+    // Encabezado
+    pdf.text('INFORME DE MANTENIMIENTO', 105, yPosition, { align: 'center' });
+    yPosition += 10;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(12);
+    pdf.text(`ID: ${mantenimiento.id.padStart(4, '0')} | Fecha: ${fechaActual}`, 105, yPosition, { align: 'center' });
+    yPosition += 20;
+    
+    // Línea separadora
+    pdf.line(20, yPosition, 190, yPosition);
+    yPosition += 15;
+    
+    // Datos principales
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    
+    pdf.text('Equipo:', 20, yPosition);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(mantenimiento.equipo, 50, yPosition);
+    
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Técnico:', 110, yPosition);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(mantenimiento.tecnico, 140, yPosition);
+    yPosition += 8;
+    
+    // Certificación de Conformidad
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
+    pdf.text('Certificación de Conformidad', 20, yPosition + 50);
+    yPosition += 58;
+    
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    const certificacionText = `Mediante el presente documento se certifica que el mantenimiento preventivo identificado con el código ${mantenimiento.id} fue ejecutado de manera satisfactoria el día ${fechaLarga}.
+La intervención se realizó conforme a los procedimientos técnicos establecidos por el área de Sistemas, cumpliendo con los estándares de calidad, seguridad y las buenas prácticas definidas en el plan de trabajo.
+Este informe constituye evidencia formal de la correcta ejecución del servicio, dentro del plazo previsto y con resultados plenamente alineados con los objetivos del mantenimiento programado.`;
+    const certificacionLines = pdf.splitTextToSize(certificacionText, 170);
+    pdf.text(certificacionLines, 20, yPosition);
+    yPosition += certificacionLines.length * 5 + 20;
+    
+    // Firmas
+    const firmasY = Math.max(yPosition, 240);
+    
+    if (firmaTecnicoUrl) {
+      try {
+        pdf.addImage(firmaTecnicoUrl, 'PNG', 30, firmasY - 20, 40, 15);
+      } catch (e) {
+        console.log('Error al agregar firma del técnico:', e);
+      }
+    }
+    
+    if (firmaResponsableUrl) {
+      try {
+        pdf.addImage(firmaResponsableUrl, 'PNG', 130, firmasY - 20, 40, 15);
+      } catch (e) {
+        console.log('Error al agregar firma del responsable:', e);
+      }
+    }
+    
+    // Líneas para firmas
+    pdf.line(25, firmasY, 75, firmasY);
+    pdf.line(125, firmasY, 175, firmasY);
+    
+    // Nombres bajo las líneas
+    pdf.text(mantenimiento.tecnico, 50, firmasY + 5, { align: 'center' });
+    pdf.text(mantenimiento.responsable || 'No especificado', 150, firmasY + 5, { align: 'center' });
+    
+    // Guardar el PDF
+    pdf.save(`Informe_Mantenimiento_${mantenimiento.equipo.replace(/\s+/g, '_')}_${mantenimiento.id}.pdf`);
   };
 
   // Filtrar mantenimientos según los criterios de búsqueda y filtros
@@ -477,6 +570,18 @@ export default function History() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="10">10 por página</option>
+                    <option value="20">20 por página</option>
+                    <option value="50">50 por página</option>
+                  </select>
                   <button
                     onClick={() => paginate(currentPage - 1)}
                     disabled={currentPage === 1}
@@ -590,6 +695,22 @@ export default function History() {
                       <p className="text-sm text-gray-700">{selectedMantenimiento.observaciones}</p>
                     </div>
                   )}
+                  
+                  {/* Sección de firmas */}
+                  <div>
+                    <p className="text-sm text-gray-500 mb-2">Firma del Técnico:</p>
+                    <div className="border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50 h-24">
+                      {technicianSignature ? (
+                        <img 
+                          src={technicianSignature} 
+                          alt="Firma del técnico" 
+                          className="max-h-20 max-w-full object-contain"
+                        />
+                      ) : (
+                        <span className="text-gray-400 text-sm">Sin firma disponible</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
               

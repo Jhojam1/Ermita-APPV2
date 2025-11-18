@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { XMarkIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
-import inventoryService, { InventoryItem, Brand, TypeInventoryItem } from '../../services/inventoryService';
+import inventoryService, { InventoryItem, Brand, TypeInventoryItem, EquipmentStatus } from '../../services/inventoryService';
 import companyService, { City, Company, Headquarter } from '../../services/companyService';
+import { getCurrentUser } from '../../services/authService';
 import ManageBrandsModal from './ManageBrandsModal';
 import ManageTypesModal from './ManageTypesModal';
+import ManageEquipmentStatusModal from './ManageEquipmentStatusModal';
 
 interface AddInventoryItemModalProps {
   onClose: () => void;
@@ -13,41 +15,53 @@ interface AddInventoryItemModalProps {
 export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryItemModalProps) {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [types, setTypes] = useState<TypeInventoryItem[]>([]);
+  const [equipmentStatuses, setEquipmentStatuses] = useState<EquipmentStatus[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [headquarters, setHeadquarters] = useState<Headquarter[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showBrandsModal, setShowBrandsModal] = useState(false);
   const [showTypesModal, setShowTypesModal] = useState(false);
+  const [showEquipmentStatusModal, setShowEquipmentStatusModal] = useState(false);
   const [formData, setFormData] = useState<Partial<InventoryItem>>({
     cityId: undefined,
     companyId: undefined,
     sedeId: undefined,
     responsible: '',
     service: '',
+    program: '',
+    equipmentName: '',
     serial: '',
-    internalCode: undefined,
+    internalCode: '',
     brand: { name: '' },
     model: '',
     processor: '',
     ramMemory: '',
     hardDrive: '',
+    monitor: '',
     typeInventoryItem: { name: '' },
-    status: 'Activo'
+    status: 'Activo',
+    equipmentStatus: undefined,
+    purchaseDate: '',
+    anyDeskId: '',
+    email: '',
+    observations: ''
   });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [brandsData, typesData, citiesData, companiesData] = await Promise.all([
+        const [brandsData, typesData, equipmentStatusesData, citiesData, companiesData] = await Promise.all([
           inventoryService.getAllBrands(),
           inventoryService.getAllTypes(),
+          inventoryService.getAllEquipmentStatuses(),
           companyService.getAllCities(),
           companyService.getAllCompanies()
         ]);
         setBrands(brandsData);
         setTypes(typesData);
+        setEquipmentStatuses(equipmentStatusesData);
         setCities(citiesData);
         setCompanies(companiesData);
       } catch (error) {
@@ -126,7 +140,7 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
     fetchHeadquarters();
   }, [formData.companyId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     console.log(`🔄 handleChange - Campo: ${name}, Valor: ${value}`);
     
@@ -141,6 +155,12 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
       setFormData(prev => ({
         ...prev,
         typeInventoryItem: selectedType || { name: '' }
+      }));
+    } else if (name === 'equipmentStatusId') {
+      const selectedStatus = equipmentStatuses.find(status => status.id === parseInt(value));
+      setFormData(prev => ({
+        ...prev,
+        equipmentStatus: selectedStatus || undefined
       }));
     } else if (name === 'cityId') {
       const cityId = value ? parseInt(value) : undefined;
@@ -169,7 +189,7 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
     } else if (name === 'internalCode') {
       setFormData(prev => ({
         ...prev,
-        [name]: value ? parseInt(value) : undefined
+        [name]: value || ''
       }));
     } else {
       setFormData(prev => ({
@@ -209,6 +229,15 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
       console.log('  - selectedCompany:', selectedCompany);
       console.log('  - selectedHeadquarter:', selectedHeadquarter);
 
+      // Obtener el usuario actual para guardar quién creó el equipo
+      const currentUser = getCurrentUser();
+      
+      // Convertir purchaseDate a formato LocalDateTime si existe
+      let purchaseDateFormatted = undefined;
+      if (formData.purchaseDate) {
+        purchaseDateFormatted = `${formData.purchaseDate}T00:00:00`;
+      }
+      
       // Preparar el objeto para enviar al API
       const newItem: InventoryItem = {
         cityId: formData.cityId!,
@@ -219,6 +248,8 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
         sedeName: selectedHeadquarter?.name || '',
         responsible: formData.responsible || '',
         service: formData.service || '',
+        program: formData.program,
+        equipmentName: formData.equipmentName,
         serial: formData.serial || '',
         internalCode: formData.internalCode,
         brand: formData.brand as Brand,
@@ -226,9 +257,16 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
         processor: formData.processor || '',
         ramMemory: formData.ramMemory || '',
         hardDrive: formData.hardDrive || '',
+        monitor: formData.monitor,
         typeInventoryItem: formData.typeInventoryItem as TypeInventoryItem,
         quantity: 1, // Siempre será 1
-        status: formData.status || 'Activo'
+        status: formData.status || 'Activo',
+        equipmentStatus: formData.equipmentStatus,
+        purchaseDate: purchaseDateFormatted,
+        anyDeskId: formData.anyDeskId,
+        email: formData.email,
+        observations: formData.observations,
+        createdByUserId: currentUser?.id
       };
 
       console.log('📤 Objeto que se enviará al API:', newItem);
@@ -252,6 +290,10 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
 
   const handleTypeAdded = (newType: TypeInventoryItem) => {
     setTypes(prev => [...prev, newType]);
+  };
+
+  const handleEquipmentStatusAdded = (newStatus: EquipmentStatus) => {
+    setEquipmentStatuses(prev => [...prev, newStatus]);
   };
 
   return (
@@ -362,7 +404,7 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
                     Código Activo Fijo
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     id="internalCode"
                     name="internalCode"
                     value={formData.internalCode || ''}
@@ -445,6 +487,35 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
                   </select>
                 </div>
 
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label htmlFor="equipmentStatusId" className="block text-sm font-medium text-gray-700">
+                      Estado del Equipo
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowEquipmentStatusModal(true)}
+                      className="text-xs text-blue-600 hover:text-blue-700 flex items-center"
+                    >
+                      <PlusCircleIcon className="h-4 w-4 mr-1" />
+                      Gestionar estados
+                    </button>
+                  </div>
+                  <select
+                    id="equipmentStatusId"
+                    name="equipmentStatusId"
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Seleccionar estado</option>
+                    {equipmentStatuses.map(status => (
+                      <option key={status.id} value={status.id}>
+                        {status.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
               </div>
 
               {/* Especificaciones */}
@@ -489,6 +560,21 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
                     name="hardDrive"
                     value={formData.hardDrive || ''}
                     onChange={handleChange}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="monitor" className="block text-sm font-medium text-gray-700 mb-1">
+                    Monitor / Pantalla
+                  </label>
+                  <input
+                    type="text"
+                    id="monitor"
+                    name="monitor"
+                    value={formData.monitor || ''}
+                    onChange={handleChange}
+                    placeholder="Ej: 15 pulgadas"
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -543,6 +629,90 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+
+                <div>
+                  <label htmlFor="program" className="block text-sm font-medium text-gray-700 mb-1">
+                    Programa
+                  </label>
+                  <input
+                    type="text"
+                    id="program"
+                    name="program"
+                    value={formData.program || ''}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="equipmentName" className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre del Equipo
+                  </label>
+                  <input
+                    type="text"
+                    id="equipmentName"
+                    name="equipmentName"
+                    value={formData.equipmentName || ''}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="purchaseDate" className="block text-sm font-medium text-gray-700 mb-1">
+                    Fecha de Compra
+                  </label>
+                  <input
+                    type="date"
+                    id="purchaseDate"
+                    name="purchaseDate"
+                    value={formData.purchaseDate || ''}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="anyDeskId" className="block text-sm font-medium text-gray-700 mb-1">
+                    ID AnyDesk
+                  </label>
+                  <input
+                    type="text"
+                    id="anyDeskId"
+                    name="anyDeskId"
+                    value={formData.anyDeskId || ''}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    Correo Electrónico
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email || ''}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label htmlFor="observations" className="block text-sm font-medium text-gray-700 mb-1">
+                    Observaciones
+                  </label>
+                  <textarea
+                    id="observations"
+                    name="observations"
+                    value={formData.observations || ''}
+                    onChange={handleChange}
+                    rows={3}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
             </div>
 
@@ -577,6 +747,13 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
         <ManageTypesModal
           onClose={() => setShowTypesModal(false)}
           onTypeAdded={handleTypeAdded}
+        />
+      )}
+
+      {showEquipmentStatusModal && (
+        <ManageEquipmentStatusModal
+          onClose={() => setShowEquipmentStatusModal(false)}
+          onStatusAdded={handleEquipmentStatusAdded}
         />
       )}
     </div>

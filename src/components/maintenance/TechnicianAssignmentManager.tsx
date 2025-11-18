@@ -288,12 +288,16 @@ export default function TechnicianAssignmentManager() {
                       className="rounded"
                     />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-900">
                       #{maintenance.id}
                     </div>
-                    <div className="text-sm text-gray-500">
-                      {maintenance.description || 'Sin descripción'}
+                    <div className="text-sm text-gray-500 max-w-xs truncate">
+                      {maintenance.description 
+                        ? (maintenance.description.length > 60 
+                            ? maintenance.description.substring(0, 60) + '...' 
+                            : maintenance.description)
+                        : 'Sin descripción'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

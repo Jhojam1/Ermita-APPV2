@@ -110,9 +110,9 @@ export default function Maintenance() {
         data = await maintenanceService.getAllMaintenances();
       }
       
-      // Filtrar solo los mantenimientos pendientes y en proceso
+      // Filtrar solo los mantenimientos pendientes y en proceso (NO completados)
       const filteredData = data.filter(item => 
-        item.status === 'PROGRAMADO' || item.status === 'EN_PROCESO' || item.status === 'COMPLETADO'
+        item.status === 'PROGRAMADO' || item.status === 'EN_PROCESO'
       );
       const mappedData = filteredData.map(item => maintenanceService.mapToUI(item));
       setMantenimientosData(mappedData);
@@ -161,25 +161,30 @@ export default function Maintenance() {
         }
       }
       
-      // Obtener los datos del equipo de inventario para usar sus valores reales
-      let equipmentData = null;
+      // Obtener el mantenimiento completo del backend para tener todos los datos
+      let maintenanceData = null;
       try {
-        // Importar el servicio de inventario para obtener los datos del equipo
-        const inventoryService = await import('../services/inventoryService');
-        equipmentData = await inventoryService.default.getItemById(selectedMantenimiento.inventoryItemId);
+        maintenanceData = await maintenanceService.getMaintenanceById(parseInt(selectedMantenimiento.id));
+        console.log('[DEBUG] Datos del mantenimiento obtenidos del backend:', {
+          id: maintenanceData.id,
+          companyId: maintenanceData.companyId,
+          headquarterId: maintenanceData.headquarterId
+        });
       } catch (error) {
-        console.error('Error al obtener datos del equipo:', error);
+        console.error('Error al obtener datos del mantenimiento:', error);
+        alert('Error al obtener los datos del mantenimiento');
+        return;
       }
 
-      // Preparar datos para actualización - usar datos reales del equipo
+      // Preparar datos para actualización - mantener los IDs originales del mantenimiento
       const updateData: MaintenanceItem = {
         // Mantener los datos originales del mantenimiento
         id: parseInt(selectedMantenimiento.id),
         inventoryItemId: selectedMantenimiento.inventoryItemId,
         inventoryItemName: selectedMantenimiento.equipo,
-        // Usar los valores reales del equipo de inventario
-        companyId: equipmentData?.companyId || 1,  // Usar companyId real del equipo
-        headquarterId: equipmentData?.sedeId || 1, // Usar sedeId real del equipo
+        // IMPORTANTE: Usar los IDs del mantenimiento original del backend
+        companyId: maintenanceData.companyId,
+        headquarterId: maintenanceData.headquarterId,
         serviceArea: selectedMantenimiento.area,
         responsible: selectedMantenimiento.responsable,
         description: selectedMantenimiento.descripcion,
@@ -210,14 +215,16 @@ export default function Maintenance() {
       }
       
       // Enviar la actualización al backend
-      console.log('[DEBUG] Enviando datos al backend:', JSON.stringify({
-        id: parseInt(selectedMantenimiento.id),
-        estado: updateData.status,
+      console.log('[DEBUG] Datos COMPLETOS que se enviarán al backend:', {
+        id: updateData.id,
+        companyId: updateData.companyId,
+        headquarterId: updateData.headquarterId,
+        status: updateData.status,
         tieneFirmaResponsable: !!updateData.signature,
         tieneFirmaTecnico: !!updateData.technicianSignature,
         nombreFirmante: updateData.signerName,
         nombreTecnico: updateData.technicianName
-      }));
+      });
       
       try {
         const respuesta = await maintenanceService.updateMaintenance(

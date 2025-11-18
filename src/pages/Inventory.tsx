@@ -27,7 +27,7 @@ const mapInventoryItemToUI = (item: InventoryItem) => {
     empresa: item.companyName || 'Desconocida',
     sede: item.sedeName || 'Desconocida',
     serial: item.serial,
-    codigoInterno: item.internalCode ?? 'N/A',
+    codigoInterno: item.internalCode || 'N/A',
     marca: item.brand.name,
     modelo: item.model,
     procesador: item.processor,

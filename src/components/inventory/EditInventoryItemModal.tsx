@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import inventoryService, { InventoryItem } from '../../services/inventoryService';
+import { getCurrentUser } from '../../services/authService';
 
 interface EditInventoryItemModalProps {
   item: any; // El item a editar (ya mapeado a la UI)
@@ -34,13 +35,17 @@ export default function EditInventoryItemModal({ item, originalItem, onClose, on
     setError(null);
 
     try {
+      // Obtener el usuario actual para guardar quién actualizó el equipo
+      const currentUser = getCurrentUser();
+      
       // Crear objeto con solo los campos que se pueden editar
       const updateData: Partial<InventoryItem> = {
         responsible: formData.responsible,
         service: formData.service,
         ramMemory: formData.ramMemory,
         hardDrive: formData.hardDrive,
-        status: formData.status
+        status: formData.status,
+        updatedByUserId: currentUser?.id
       };
 
       console.log('Enviando datos para actualizar:', updateData);

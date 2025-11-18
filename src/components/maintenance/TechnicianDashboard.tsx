@@ -310,7 +310,11 @@ export default function TechnicianDashboard() {
                       <div className="flex items-center gap-3 mb-2">
                         <StatusIcon className="h-5 w-5 text-gray-400" />
                         <div className="font-medium text-gray-900">
-                          #{maintenance.id} - {maintenance.description || 'Sin descripción'}
+                          #{maintenance.id} - {maintenance.description 
+                            ? (maintenance.description.length > 50 
+                                ? maintenance.description.substring(0, 50) + '...' 
+                                : maintenance.description)
+                            : 'Sin descripción'}
                         </div>
                         {overdue && (
                           <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">

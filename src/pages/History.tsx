@@ -181,161 +181,358 @@ export default function History() {
         console.log('[DEBUG] Firma del técnico preparada para el PDF');
       }
 
-      // Fecha actual formateada
-      const fechaActual = new Date().toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
+      // Variables de fecha removidas (no se usan actualmente)
+      
+      // Cargar el logo antes de crear el PDF
+      let logoImg: HTMLImageElement | null = null;
+      let logoLoaded = false;
+      
+      try {
+        logoImg = new Image();
+        logoImg.crossOrigin = 'anonymous';
+        
+        logoLoaded = await new Promise<boolean>((resolve) => {
+          logoImg!.onload = () => {
+            console.log('Logo cargado exitosamente');
+            resolve(true);
+          };
+          logoImg!.onerror = (error) => {
+            console.error('Error al cargar logo:', error);
+            resolve(false);
+          };
+          // Intentar diferentes rutas
+          logoImg!.src = `${window.location.origin}/Simax/Logo_Ermita.png`;
+          
+          // Timeout de 5 segundos
+          setTimeout(() => {
+            console.warn('Timeout al cargar logo');
+            resolve(false);
+          }, 5000);
+        });
+      } catch (error) {
+        console.error('Excepción al cargar logo:', error);
+        logoLoaded = false;
+      }
       
       // Crear el PDF con texto seleccionable
       const pdf = new jsPDF('p', 'mm', 'a4');
-      let yPosition = 20;
+      let yPosition = 15;
+
+      // ===== CUADRO EXTERIOR QUE ENVUELVE TODO EL DOCUMENTO =====
+      // Variables para el cuadro exterior
+      const marginTop = 8;
+      // marginBottom removido (no se usa)
+      const marginLeft = 15;
+      const marginRight = 15;
+      const pageWidth = 210; // Ancho de A4 en mm
+      // pageHeight removido (no se usa)
+      const boxWidth = pageWidth - marginLeft - marginRight;
+
+      // Dibujar el cuadro exterior (se ajustará dinámicamente al final)
+      // Lo dibujaremos al final después de conocer la altura total del contenido
+
+      // ===== HEADER CON TABLA =====
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.5);
+
+      // Líneas divisorias del header (sin el rectángulo exterior del header)
+      pdf.line(70, 10, 70, 35); // Línea vertical izquierda
+      pdf.line(140, 10, 140, 35); // Línea vertical derecha
+      pdf.line(15, 35, 195, 35); // Línea horizontal inferior del header
       
-      // Configurar fuentes
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(18);
-      
-      // Encabezado
-      pdf.text('INFORME DE MANTENIMIENTO', 105, yPosition, { align: 'center' });
-      yPosition += 10;
-      
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(12);
-      pdf.text(`ID: ${mantenimiento.id.padStart(4, '0')} | Fecha: ${fechaActual}`, 105, yPosition, { align: 'center' });
-      yPosition += 20;
-      
-      // Línea separadora
-      pdf.line(20, yPosition, 190, yPosition);
-      yPosition += 15;
-      
-      // Datos principales - Columna izquierda
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(11);
-      
-      pdf.text('Equipo:', 20, yPosition);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(mantenimiento.equipo, 50, yPosition);
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Técnico:', 110, yPosition);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(mantenimiento.tecnico, 140, yPosition);
-      yPosition += 8;
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Tipo:', 20, yPosition);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(mantenimiento.tipo, 50, yPosition);
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Área:', 110, yPosition);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(mantenimiento.area || 'No especificada', 140, yPosition);
-      yPosition += 8;
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Estado:', 20, yPosition);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(mantenimiento.estado, 50, yPosition);
-      
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Fecha programada:', 110, yPosition);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(mantenimiento.fechaProgramada, 160, yPosition);
-      yPosition += 8;
-      
-      if (mantenimiento.fechaCompletado) {
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Fecha completado:', 110, yPosition);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(mantenimiento.fechaCompletado, 160, yPosition);
-        yPosition += 8;
+      // Logo
+      if (logoLoaded && logoImg) {
+        try {
+          pdf.addImage(logoImg, 'PNG', 18, 13, 48, 18);
+          console.log('Logo agregado al PDF exitosamente');
+        } catch (error) {
+          console.error('Error al agregar logo al PDF:', error);
+        }
+      } else {
+        console.warn('Logo no disponible, se omitirá en el PDF');
       }
       
-      yPosition += 10;
-      
-      // Línea separadora
-      pdf.line(20, yPosition, 190, yPosition);
-      yPosition += 15;
-      
-      // Descripción
+      // Título central
+      pdf.setFontSize(11);
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(12);
-      pdf.text('Descripción', 20, yPosition);
-      yPosition += 8;
-      
-      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('INFORME DE MANTENIMIENTO', 105, 18, { align: 'center' });
+      pdf.line(70, 22, 140, 22); // Línea horizontal debajo del título (solo en la columna central)
       pdf.setFontSize(10);
-      const descripcionLines = pdf.splitTextToSize(mantenimiento.descripcion, 170);
-      pdf.text(descripcionLines, 20, yPosition);
-      yPosition += descripcionLines.length * 5 + 10;
+      pdf.text('SISTEMAS', 105, 30, { align: 'center' });
       
-      // Observaciones
+      // Código y versión (columna derecha)
+      pdf.setFontSize(8);
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(12);
-      pdf.text('Observaciones Técnicas', 20, yPosition);
-      yPosition += 8;
-      
+      pdf.text(`CODIGO: R-INF-${mantenimiento.id}`, 167, 14, { align: 'center' });
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(10);
-      const observaciones = mantenimiento.observaciones || 'Sin observaciones';
-      const observacionesLines = pdf.splitTextToSize(observaciones, 170);
-      pdf.text(observacionesLines, 20, yPosition);
-      yPosition += observacionesLines.length * 5 + 15;
+      pdf.text('Versión: 01', 167, 18, { align: 'center' });
+      const fechaVigencia = new Date();
+      pdf.text(`Vigente desde: ${fechaVigencia.getFullYear()}.xx.xx`, 167, 22, { align: 'center' });
+      pdf.text(`Vigente hasta: ${fechaVigencia.getFullYear() + 3}.xx.xx`, 167, 26, { align: 'center' });
       
-      // Certificación de Conformidad
+      yPosition = 45;
+
+      // ===== TABLA PRINCIPAL DE DATOS (TODO EN UNA SOLA TABLA) =====
+      const tableStartY = yPosition;
+      const rowHeight = 7;
+
+      // Dibujar el rectángulo exterior de toda la tabla (3 filas en izquierda x 7mm)
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.5);
+      pdf.rect(15, tableStartY, 180, rowHeight * 3);
+
+      // Línea vertical central que divide en dos columnas principales
+      pdf.line(105, tableStartY, 105, tableStartY + (rowHeight * 3));
+
+      // ===== COLUMNA IZQUIERDA (3 filas) =====
+      let leftY = tableStartY;
+
+      // Fila 1: EQUIPO (celda azul) | valor
+      pdf.line(15, leftY + rowHeight, 105, leftY + rowHeight);
+      pdf.line(60, leftY, 60, leftY + rowHeight);
+      pdf.setFillColor(0, 51, 102);
+      pdf.rect(15, leftY, 45, rowHeight, 'F');
+      pdf.setTextColor(255, 255, 255);
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(12);
-      pdf.text('Certificación de Conformidad', 20, yPosition);
-      yPosition += 8;
-      
+      pdf.setFontSize(9);
+      pdf.text('EQUIPO', 37.5, leftY + 4.5, { align: 'center' });
+      pdf.setTextColor(0, 0, 0);
       pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.text(mantenimiento.equipo || 'N/A', 65, leftY + 4.5);
+      leftY += rowHeight;
+
+      // Fila 2: TIPO (celda azul) | valor
+      pdf.line(15, leftY + rowHeight, 105, leftY + rowHeight);
+      pdf.line(60, leftY, 60, leftY + rowHeight);
+      pdf.setFillColor(0, 51, 102);
+      pdf.rect(15, leftY, 45, rowHeight, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('TIPO', 37.5, leftY + 4.5, { align: 'center' });
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(mantenimiento.tipo || 'N/A', 65, leftY + 4.5);
+      leftY += rowHeight;
+
+      // Fila 3: ESTADO (celda azul) | valor
+      pdf.line(60, leftY, 60, leftY + rowHeight);
+      pdf.setFillColor(0, 51, 102);
+      pdf.rect(15, leftY, 45, rowHeight, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('ESTADO', 37.5, leftY + 4.5, { align: 'center' });
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(mantenimiento.estado || 'N/A', 65, leftY + 4.5);
+
+      // ===== COLUMNA DERECHA (4 filas - más pequeñas proporcionalmente) =====
+      let rightY = tableStartY;
+      const rightRowHeight = (rowHeight * 3) / 4; // Dividir la altura total en 4 partes iguales
+
+      // Fila 1: TECNICO (celda azul) | valor
+      pdf.line(105, rightY + rightRowHeight, 195, rightY + rightRowHeight);
+      pdf.line(160, rightY, 160, rightY + rightRowHeight);
+      pdf.setFillColor(0, 51, 102);
+      pdf.rect(105, rightY, 55, rightRowHeight, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.text('TECNICO', 132.5, rightY + (rightRowHeight / 2) + 1, { align: 'center' });
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.text(mantenimiento.tecnico || 'Sin asignar', 165, rightY + (rightRowHeight / 2) + 1);
+      rightY += rightRowHeight;
+
+      // Fila 2: ÁREA (celda azul) | valor
+      pdf.line(105, rightY + rightRowHeight, 195, rightY + rightRowHeight);
+      pdf.line(160, rightY, 160, rightY + rightRowHeight);
+      pdf.setFillColor(0, 51, 102);
+      pdf.rect(105, rightY, 55, rightRowHeight, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('AREA', 132.5, rightY + (rightRowHeight / 2) + 1, { align: 'center' });
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(mantenimiento.area || 'No especificada', 165, rightY + (rightRowHeight / 2) + 1);
+      rightY += rightRowHeight;
+
+      // Fila 3: FECHA PROGRAMADA (celda azul) | valor
+      pdf.line(105, rightY + rightRowHeight, 195, rightY + rightRowHeight);
+      pdf.line(160, rightY, 160, rightY + rightRowHeight);
+      pdf.setFillColor(0, 51, 102);
+      pdf.rect(105, rightY, 55, rightRowHeight, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7);
+      pdf.text('FECHA PROGRAMADA', 132.5, rightY + (rightRowHeight / 2) + 1, { align: 'center' });
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.text(mantenimiento.fechaProgramada || 'N/A', 165, rightY + (rightRowHeight / 2) + 1);
+      rightY += rightRowHeight;
+
+      // Fila 4: FECHA COMPLETADO (celda azul) | valor
+      pdf.line(160, rightY, 160, rightY + rightRowHeight);
+      pdf.setFillColor(0, 51, 102);
+      pdf.rect(105, rightY, 55, rightRowHeight, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7);
+      pdf.text('FECHA COMPLETADO', 132.5, rightY + (rightRowHeight / 2) + 1, { align: 'center' });
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.text(mantenimiento.fechaCompletado || 'N/A', 165, rightY + (rightRowHeight / 2) + 1);
+
+      yPosition = tableStartY + (rowHeight * 3) + 5;
+
+      // ===== SECCIÓN DESCRIPCIÓN =====
+      pdf.setFillColor(0, 51, 102);
+      pdf.rect(15, yPosition, 180, 7, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(10);
-      const certificacionText = `Por medio del presente documento, se certifica que el servicio de mantenimiento ${mantenimiento.tipo.toLowerCase()} identificado con el código ${mantenimiento.id.padStart(4, '0')} ha sido ejecutado satisfactoriamente en la fecha ${mantenimiento.fechaCompletado || 'no especificada'}, cumpliendo con todos los protocolos técnicos establecidos y dentro del cronograma previsto. Este documento tiene validez como constancia de la realización y aprobación del servicio.`;
+      pdf.text('DESCRIPCION', 105, yPosition + 4.5, { align: 'center' });
+      yPosition += 7;
+
+      // Contenido de la descripción con título "Descripción"
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.3);
+
+      // Preparar texto de descripción con justificación
+      const descripcionTexto = mantenimiento.descripcion || 'Mantenimiento preventivo programado automáticamente. Se efectuó limpieza física interna del equipo, retirando el polvo acumulado en componentes como ventiladores, disipadores y módulos de memoria RAM. Se aplicó nueva pasta térmica al procesador para mejorar la disipación de calor. Además, se eliminaron archivos temporales del sistema, se revisaron procesos en segundo plano y se realizó una optimización general del sistema para asegurar un funcionamiento eficiente y estable.';
+
+      // Calcular altura necesaria
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      const descripcionSoloTexto = pdf.splitTextToSize(descripcionTexto, 170);
+      const descripcionHeight = Math.max(descripcionSoloTexto.length * 5 + 15, 35);
+
+      pdf.rect(15, yPosition, 180, descripcionHeight);
+
+      // Escribir "Descripción" en negrita
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('Descripción', 20, yPosition + 6);
+
+      // Escribir el texto de la descripción en normal con justificación
+      pdf.setFont('helvetica', 'normal');
+      // Renderizar texto justificado manualmente
+      let currentY = yPosition + 11;
+      for (let i = 0; i < descripcionSoloTexto.length; i++) {
+        pdf.text(descripcionSoloTexto[i], 20, currentY, { align: 'justify', maxWidth: 170 });
+        currentY += 5;
+      }
+
+      yPosition += descripcionHeight + 5;
+      
+      // ===== SECCIÓN OBSERVACIONES TÉCNICAS =====
+      pdf.setFillColor(0, 51, 102);
+      pdf.rect(15, yPosition, 180, 7, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.text('OBSERVACIONES TECNICAS', 105, yPosition + 4.5, { align: 'center' });
+      yPosition += 7;
+
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      const observaciones = mantenimiento.observaciones || '';
+      const observacionesLines = observaciones ? pdf.splitTextToSize(observaciones, 170) : [];
+      const observacionesHeight = Math.max(observacionesLines.length * 5 + 10, 25);
+      pdf.rect(15, yPosition, 180, observacionesHeight);
+      if (observacionesLines.length > 0) {
+        pdf.text(observacionesLines, 20, yPosition + 6);
+      }
+      yPosition += observacionesHeight + 5;
+      
+      // ===== CERTIFICADO DE CONFORMIDAD =====
+      pdf.setFillColor(0, 51, 102);
+      pdf.rect(15, yPosition, 180, 7, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.text('CERTIFICADO DE CONFORMIDAD', 105, yPosition + 4.5, { align: 'center' });
+      yPosition += 7;
+
+      // Obtener partes de la fecha para el certificado
+      const fechaCompletado = mantenimiento.fechaCompletado ? new Date(mantenimiento.fechaCompletado.split('/').reverse().join('-')) : new Date();
+      const dia = fechaCompletado.getDate();
+      const mes = fechaCompletado.toLocaleDateString('es-ES', { month: 'long' });
+      const anio = fechaCompletado.getFullYear();
+
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      const certificacionText = `Mediante el presente documento se certifica que el mantenimiento preventivo identificado con el código ${mantenimiento.id} fue ejecutado de manera satisfactoria el día ${dia} del mes ${mes} del año ${anio}. La intervención se realizó conforme a los procedimientos técnicos establecidos por el área de Sistemas, cumpliendo con los estándares de calidad, seguridad y las buenas prácticas definidas en el plan de trabajo. Este informe constituye evidencia formal de la correcta ejecución del servicio, dentro del plazo previsto y con resultados plenamente alineados con los objetivos del mantenimiento programado.`;
       const certificacionLines = pdf.splitTextToSize(certificacionText, 170);
-      pdf.text(certificacionLines, 20, yPosition);
-      yPosition += certificacionLines.length * 5 + 20;
-      
-      // Firmas - posicionar en la parte inferior
-      const firmasY = Math.max(yPosition, 240); // Mínimo en posición 240mm
-      
-      // Agregar firmas como imágenes si existen
+      const certificacionHeight = Math.max(certificacionLines.length * 5 + 10, 35);
+      pdf.rect(15, yPosition, 180, certificacionHeight);
+      pdf.text(certificacionLines, 20, yPosition + 6);
+      yPosition += certificacionHeight + 5;
+
+      // Calcular posición de las firmas - deben estar dentro de la misma página
+      const espacioRestante = 297 - yPosition - 15; // 297mm es la altura de A4, dejando 15mm para margen inferior
+      const espacioParaFirmas = 35; // Espacio necesario para las firmas
+
+      if (espacioRestante < espacioParaFirmas) {
+        // Si no hay suficiente espacio, agregar una nueva página
+        pdf.addPage();
+        yPosition = 20;
+      }
+
+      // Espacio adicional antes de las firmas
+      yPosition += 10;
+
+      // Agregar firmas como imágenes si existen (centradas arriba de las líneas)
+      const firmasY = yPosition + 20;
+
       if (firmaTecnicoUrl) {
         try {
-          pdf.addImage(firmaTecnicoUrl, 'PNG', 30, firmasY - 20, 40, 15);
+          pdf.addImage(firmaTecnicoUrl, 'PNG', 30, yPosition, 40, 15);
         } catch (e) {
           console.log('Error al agregar firma del técnico:', e);
         }
       }
-      
+
       if (firmaValida && firmaUrl) {
         try {
-          pdf.addImage(firmaUrl, 'PNG', 130, firmasY - 20, 40, 15);
+          pdf.addImage(firmaUrl, 'PNG', 130, yPosition, 40, 15);
         } catch (e) {
           console.log('Error al agregar firma del responsable:', e);
         }
       }
-      
+
       // Líneas para firmas
+      pdf.setLineWidth(0.3);
       pdf.line(25, firmasY, 75, firmasY);
       pdf.line(125, firmasY, 175, firmasY);
-      
-      // Nombres bajo las líneas
-      pdf.text(mantenimiento.tecnico, 50, firmasY + 5, { align: 'center' });
-      pdf.text(mantenimiento.nombreFirmante || mantenimiento.responsable || 'No especificado', 150, firmasY + 5, { align: 'center' });
-      
+
+      // Etiquetas bajo las líneas
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(8);
-      pdf.text('Técnico', 50, firmasY + 10, { align: 'center' });
-      pdf.text('Responsable del Área', 150, firmasY + 10, { align: 'center' });
+      pdf.text('Firma Tecnico', 50, firmasY + 4, { align: 'center' });
+      pdf.text('Responsable del área', 150, firmasY + 4, { align: 'center' });
       
-      // Pie de página
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(8);
-      pdf.text('SIMAX - Sistema de Gestión de Mantenimiento', 105, 285, { align: 'center' });
-      pdf.text(`Documento generado el ${fechaActual}`, 105, 290, { align: 'center' });
-      
+      // Nombres bajo las etiquetas
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(mantenimiento.tecnico || 'Sin asignar', 50, firmasY + 8, { align: 'center' });
+      pdf.text(mantenimiento.responsable || 'No asignado', 150, firmasY + 8, { align: 'center' });
+
+      // ===== DIBUJAR EL CUADRO EXTERIOR QUE ENVUELVE TODO =====
+      // Calcular la altura final del contenido (ajustado para incluir los nombres)
+      const finalContentHeight = firmasY + 12;
+
+      // Dibujar el cuadro exterior
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.5);
+      pdf.rect(marginLeft, marginTop, boxWidth, finalContentHeight - marginTop + 5);
+
       // Guardar el PDF
       pdf.save(`Informe_Mantenimiento_${mantenimiento.equipo.replace(/\s+/g, '_')}_${id}.pdf`);
       

@@ -37,6 +37,11 @@ export interface TypeInventoryItem {
   name: string;
 }
 
+export interface EquipmentStatus {
+  id?: number;
+  name: string;
+}
+
 export interface InventoryItem {
   id?: number;
   cityId: number;
@@ -47,17 +52,28 @@ export interface InventoryItem {
   sedeName?: string;
   responsible: string;
   service: string;
+  program?: string;
+  equipmentName?: string;
   serial: string;
-  internalCode?: number;
+  internalCode?: string;
   brand: Brand;
   model: string;
   processor: string;
   ramMemory: string;
   hardDrive: string;
+  monitor?: string;
   typeInventoryItem: TypeInventoryItem;
   quantity: number;
   status: string;
+  equipmentStatus?: EquipmentStatus;
+  purchaseDate?: string;
+  anyDeskId?: string;
+  email?: string;
+  observations?: string;
+  createdByUserId?: number;
   createdAt?: string;
+  updatedByUserId?: number;
+  updatedAt?: string;
 }
 
 // Servicio para manejar las operaciones de inventario
@@ -99,10 +115,18 @@ const inventoryService = {
   // Crear un nuevo elemento de inventario
   createItem: async (item: InventoryItem): Promise<InventoryItem> => {
     try {
+      console.log('📤 [FRONTEND] Enviando petición POST a /api/inventory/items');
+      console.log('📦 [FRONTEND] Datos a enviar:', JSON.stringify(item, null, 2));
       const response = await inventoryApi.post(`/api/inventory/items`, item);
+      console.log('✅ [FRONTEND] Respuesta recibida:', response.data);
       return response.data;
-    } catch (error) {
-      console.error('Error al crear elemento de inventario:', error);
+    } catch (error: any) {
+      console.error('❌ [FRONTEND] Error al crear elemento de inventario:', error);
+      console.error('❌ [FRONTEND] Detalles del error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       throw error;
     }
   },
@@ -220,6 +244,38 @@ const inventoryService = {
       await inventoryApi.delete(`/api/inventory/types/${id}`);
     } catch (error) {
       console.error(`Error al eliminar el tipo con ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Obtener todos los estados de equipo
+  getAllEquipmentStatuses: async (): Promise<EquipmentStatus[]> => {
+    try {
+      const response = await inventoryApi.get(`/api/inventory/equipment-statuses`);
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener estados de equipo:', error);
+      throw error;
+    }
+  },
+
+  // Crear un nuevo estado de equipo
+  createEquipmentStatus: async (status: { name: string }): Promise<EquipmentStatus> => {
+    try {
+      const response = await inventoryApi.post(`/api/inventory/equipment-statuses`, status);
+      return response.data;
+    } catch (error) {
+      console.error('Error al crear estado de equipo:', error);
+      throw error;
+    }
+  },
+
+  // Eliminar un estado de equipo
+  deleteEquipmentStatus: async (id: number): Promise<void> => {
+    try {
+      await inventoryApi.delete(`/api/inventory/equipment-statuses/${id}`);
+    } catch (error) {
+      console.error(`Error al eliminar el estado de equipo con ID ${id}:`, error);
       throw error;
     }
   },
