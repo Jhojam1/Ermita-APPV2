@@ -13,13 +13,13 @@ export default function History() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMantenimiento, setSelectedMantenimiento] = useState<any | null>(null);
-  // const [technicianSignature, setTechnicianSignature] = useState<string | null>(null);
+  const [technicianSignature, setTechnicianSignature] = useState<string | null>(null);
   const [showDetallesModal, setShowDetallesModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
   // Filtros adicionales
   const [filterType, setFilterType] = useState<string>('');
@@ -66,7 +66,7 @@ export default function History() {
     
     if (!technicianId) {
       console.log('[DEBUG] No hay ID de técnico disponible en el mantenimiento');
-      // setTechnicianSignature(null);
+      setTechnicianSignature(null);
       return;
     }
     
@@ -74,10 +74,10 @@ export default function History() {
       console.log(`[DEBUG] Obteniendo firma del técnico con ID ${technicianId}`);
       const signature = await userService.getUserSignature(technicianId);
       console.log(`[DEBUG] Firma del técnico obtenida:`, signature ? `Sí (longitud: ${signature.length})` : 'No');
-      // setTechnicianSignature(signature);
+      setTechnicianSignature(signature);
     } catch (error) {
       console.error('[DEBUG] Error al obtener la firma del técnico:', error);
-      // setTechnicianSignature(null);
+      setTechnicianSignature(null);
     }
   };
 
@@ -91,7 +91,7 @@ export default function History() {
       fetchTechnicianSignature(mantenimiento.technicianId);
     } else {
       console.log('[DEBUG] El mantenimiento no tiene ID de técnico');
-      // setTechnicianSignature(null);
+      setTechnicianSignature(null);
     }
   };
 
