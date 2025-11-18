@@ -18,6 +18,9 @@ import {
   PrinterIcon,
   Squares2X2Icon,
   MapPinIcon,
+  CloudArrowUpIcon,
+  ServerIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 
 // Definir tipos para los elementos del menú
@@ -42,6 +45,7 @@ const Sidebar = () => {
   const [reportsOpen, setReportsOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [maintenanceOpen, setMaintenanceOpen] = useState(false);
+  const [simaxOpen, setSimaxOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -93,6 +97,10 @@ const Sidebar = () => {
         location.pathname?.startsWith('/historial')) {
       setMaintenanceOpen(true);
     }
+    // Abrir el menú de SIMAX
+    if (location.pathname?.startsWith('/simax')) {
+      setSimaxOpen(true);
+    }
   }, [location.pathname]);
 
 
@@ -137,6 +145,18 @@ const Sidebar = () => {
     ]
   };
 
+  const simaxItem: MenuItem = { 
+    name: 'SIMAX Backups',
+    icon: CloudArrowUpIcon,
+    isOpen: simaxOpen,
+    onToggle: () => setSimaxOpen(!simaxOpen),
+    subItems: [
+      { name: 'Dashboard', href: '/simax', icon: ServerIcon },
+      { name: 'Configuración', href: '/simax/configuracion', icon: Cog6ToothIcon },
+      { name: 'Historial de Jobs', href: '/simax/jobs', icon: ClockIcon },
+    ]
+  };
+
   // Eliminado el elemento de menú para Programación de Mantenimientos (trasladado a configuración)
   
   // Elementos del menú de configuración
@@ -161,6 +181,11 @@ const Sidebar = () => {
   
   if (hasPermission('REPORTS_VIEW')) {
     menuItems.push(reportsItem);
+  }
+
+  // Agregar SIMAX - disponible para usuarios con permisos específicos
+  if (hasPermission('SIMAX_VIEW') || hasPermission('SIMAX_MANAGE') || user?.roleName === 'Administrador') {
+    menuItems.push(simaxItem);
   }
 
   // Agregar menú de Configuración si tiene acceso a alguna configuración

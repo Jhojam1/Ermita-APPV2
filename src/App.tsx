@@ -22,6 +22,9 @@ import TechnicianProductivityReport from './components/maintenance/TechnicianPro
 import TechnicianDashboard from './components/maintenance/TechnicianDashboard';
 import RoleManagement from './pages/RoleManagement';
 import PermissionManagement from './pages/PermissionManagement';
+import SimaxDashboard from './pages/SimaxDashboard';
+import SimaxConfiguration from './pages/SimaxConfiguration';
+import SimaxJobs from './pages/SimaxJobs';
 import './index.css';
 
 // Componente para manejar la redirección basada en roles
@@ -129,6 +132,21 @@ function App() {
           <Route path="/dashboard/tecnico" element={
             <Layout>
               <TechnicianDashboard />
+            </Layout>
+          } />
+          <Route path="/simax" element={
+            <Layout>
+              <SimaxDashboard />
+            </Layout>
+          } />
+          <Route path="/simax/configuracion" element={
+            <Layout>
+              <SimaxConfiguration />
+            </Layout>
+          } />
+          <Route path="/simax/jobs" element={
+            <Layout>
+              <SimaxJobs />
             </Layout>
           } />
           <Route path="*" element={<Navigate to="/" replace />} />
