@@ -173,7 +173,7 @@ const SimaxJobs: React.FC = () => {
       dataIndex: 'clientId',
       key: 'clientId',
       width: 200,
-      render: (text: string, record: BackupJob) => {
+      render: (text: string, _record: BackupJob) => {
         // Buscar configuración para obtener hostname e IP
         const config = configurations.find(c => c.clientId === text);
         return (
