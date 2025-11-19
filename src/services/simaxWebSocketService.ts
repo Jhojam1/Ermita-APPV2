@@ -90,11 +90,28 @@ class SimaxWebSocketService {
       case 'SSH_TEST_RESULT':
         this.emit('sshTestResult', message.data);
         break;
+      case 'PING':
+        this.handlePing();
+        break;
       case 'ERROR':
         this.emit('error', message.data);
         break;
       default:
         console.warn('Tipo de mensaje WebSocket no reconocido:', message.type);
+    }
+  }
+
+  private handlePing() {
+    // Responder inmediatamente al PING con un PONG
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      const pongMessage = {
+        type: 'PONG',
+        data: 'pong',
+        timestamp: Date.now()
+      };
+      
+      this.ws.send(JSON.stringify(pongMessage));
+      console.log('🏓 PONG enviado en respuesta a PING');
     }
   }
 
