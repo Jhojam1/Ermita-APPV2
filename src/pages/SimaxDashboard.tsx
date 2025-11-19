@@ -16,6 +16,7 @@ const SimaxDashboard: React.FC = () => {
   const [activeJobs, setActiveJobs] = useState<BackupJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
+  const [backupLoading, setBackupLoading] = useState<Set<string>>(new Set());
   const [wsService] = useState(() => new SimaxWebSocketService('admin-dashboard'));
   const [progressModal, setProgressModal] = useState<{
     visible: boolean;
@@ -62,6 +63,48 @@ const SimaxDashboard: React.FC = () => {
       }));
     });
 
+    wsService.on('backupCompleted', (data) => {
+      message.success(`Backup completado: Job ID ${data.jobId}`);
+      
+      // Cerrar modal de progreso
+      setProgressModal(prev => ({
+        ...prev,
+        visible: false
+      }));
+      
+      // Limpiar estado de loading
+      if (data.clientId) {
+        setBackupLoading(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(data.clientId);
+          return newSet;
+        });
+      }
+      
+      loadActiveJobs();
+    });
+
+    wsService.on('backupFailed', (data) => {
+      message.error(`Backup falló: ${data.error || 'Error desconocido'}`);
+      
+      // Cerrar modal de progreso
+      setProgressModal(prev => ({
+        ...prev,
+        visible: false
+      }));
+      
+      // Limpiar estado de loading
+      if (data.clientId) {
+        setBackupLoading(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(data.clientId);
+          return newSet;
+        });
+      }
+      
+      loadActiveJobs();
+    });
+
     wsService.on('error', (data) => {
       message.error(data.error || 'Error en WebSocket');
     });
@@ -95,12 +138,56 @@ const SimaxDashboard: React.FC = () => {
   };
 
   const startBackup = async (clientId: string) => {
-    const response = await simaxService.startBackup(clientId);
-    if (response.success) {
-      message.success('Backup iniciado exitosamente');
-      loadActiveJobs();
-    } else {
-      message.error(response.error || 'Error iniciando backup');
+    // Agregar cliente al estado de loading
+    setBackupLoading(prev => new Set(prev).add(clientId));
+    
+    // Mostrar loading y modal de progreso inmediatamente
+    setProgressModal({
+      visible: true,
+      progress: 0,
+      message: 'Iniciando backup...',
+      clientId: clientId
+    });
+
+    try {
+      const response = await simaxService.startBackup(clientId);
+      if (response.success) {
+        message.success('Backup iniciado exitosamente');
+        
+        // Actualizar modal con job ID
+        setProgressModal(prev => ({
+          ...prev,
+          jobId: response.data?.jobId,
+          progress: 10,
+          message: 'Backup en progreso...'
+        }));
+        
+        loadActiveJobs();
+      } else {
+        message.error(response.error || 'Error iniciando backup');
+        
+        // Cerrar modal y remover loading en caso de error
+        setProgressModal(prev => ({
+          ...prev,
+          visible: false
+        }));
+        setBackupLoading(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(clientId);
+          return newSet;
+        });
+      }
+    } catch (error) {
+      message.error('Error de conexión al iniciar backup');
+      setProgressModal(prev => ({
+        ...prev,
+        visible: false
+      }));
+      setBackupLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(clientId);
+        return newSet;
+      });
     }
   };
 
@@ -198,10 +285,12 @@ const SimaxDashboard: React.FC = () => {
             type="primary" 
             icon={<PlayCircleOutlined />}
             size="small"
+            loading={backupLoading.has(record.clientId)}
+            disabled={backupLoading.has(record.clientId)}
             onClick={() => startBackup(record.clientId)}
             className="min-w-[75px]"
           >
-            Backup
+            {backupLoading.has(record.clientId) ? 'Iniciando...' : 'Backup'}
           </Button>
           <Button 
             icon={<DatabaseOutlined />}
