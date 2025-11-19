@@ -127,12 +127,19 @@ const SimaxConfiguration: React.FC = () => {
       title: 'Cliente',
       dataIndex: 'clientId',
       key: 'clientId',
+      width: 200,
       render: (text: string, record: BackupConfiguration) => (
-        <div>
-          <div className="font-medium">{text}</div>
-          {record.clientHostname && (
-            <div className="text-xs text-gray-500">{record.clientHostname}</div>
+        <div className="space-y-1">
+          {record.clientHostname && record.clientIpAddress ? (
+            <div className="font-semibold text-blue-600">
+              {record.clientHostname.split('@')[1] || record.clientHostname}@{record.clientIpAddress}
+            </div>
+          ) : record.clientHostname ? (
+            <div className="font-semibold text-blue-600">{record.clientHostname}</div>
+          ) : (
+            <div className="font-semibold text-blue-600">{text}</div>
           )}
+          <div className="text-xs text-gray-400 font-mono">{text.substring(0, 20)}...</div>
         </div>
       ),
     },
@@ -140,16 +147,21 @@ const SimaxConfiguration: React.FC = () => {
       title: 'Directorio Origen',
       dataIndex: 'sourceDirectory',
       key: 'sourceDirectory',
+      width: 180,
       ellipsis: true,
+      render: (text: string) => (
+        <span className="text-sm" title={text}>{text}</span>
+      ),
     },
     {
       title: 'Destino SSH',
       key: 'sshDestination',
+      width: 200,
       render: (record: BackupConfiguration) => (
-        <div>
-          <div className="font-medium">{record.sshHost}:{record.sshPort}</div>
-          <div className="text-xs text-gray-500">Usuario: {record.sshUsername}</div>
-          <div className="text-xs text-gray-500">Ruta: {record.sshRemotePath}</div>
+        <div className="space-y-1">
+          <div className="font-medium text-gray-800">{record.sshHost}:{record.sshPort}</div>
+          <div className="text-xs text-gray-500">👤 {record.sshUsername}</div>
+          <div className="text-xs text-gray-500 truncate" title={record.sshRemotePath}>📁 {record.sshRemotePath}</div>
         </div>
       ),
     },
@@ -178,12 +190,15 @@ const SimaxConfiguration: React.FC = () => {
     {
       title: 'Acciones',
       key: 'actions',
+      width: 200,
+      fixed: 'right' as const,
       render: (record: BackupConfiguration) => (
-        <Space>
+        <Space size="small" wrap>
           <Button 
             icon={<EditOutlined />} 
             size="small"
             onClick={() => editConfiguration(record)}
+            className="min-w-[70px]"
           >
             Editar
           </Button>
@@ -191,6 +206,7 @@ const SimaxConfiguration: React.FC = () => {
             icon={<CheckCircleOutlined />} 
             size="small"
             onClick={() => simaxService.testSshConnection(record.clientId)}
+            className="min-w-[80px]"
           >
             Test SSH
           </Button>
@@ -223,13 +239,21 @@ const SimaxConfiguration: React.FC = () => {
         className="mb-6"
       />
 
-      <Card title="Configuraciones Existentes">
+      <Card title="Configuraciones Existentes" className="mb-6">
         <Table
           columns={columns}
           dataSource={configurations}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 10 }}
+          pagination={{ 
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} configuraciones`
+          }}
+          scroll={{ x: 1000, y: 400 }}
+          size="middle"
+          className="custom-config-table"
         />
       </Card>
 
@@ -384,3 +408,55 @@ const SimaxConfiguration: React.FC = () => {
 };
 
 export default SimaxConfiguration;
+
+// Estilos CSS personalizados
+const configStyles = `
+.custom-config-table .ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.custom-config-table .ant-table-tbody > tr > td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.custom-config-table .ant-table-tbody > tr:hover > td {
+  background-color: #f8f9ff;
+}
+
+.custom-config-table .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
+.custom-config-table .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.custom-config-table .ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+}
+
+.custom-config-table .ant-btn-primary:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+}
+
+.custom-config-table .ant-tag {
+  border-radius: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+}
+`;
+
+// Inyectar estilos
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = configStyles;
+  document.head.appendChild(styleSheet);
+}

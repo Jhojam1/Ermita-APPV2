@@ -172,18 +172,36 @@ const SimaxJobs: React.FC = () => {
       title: 'Cliente',
       dataIndex: 'clientId',
       key: 'clientId',
-      width: 150,
+      width: 200,
+      render: (text: string, record: BackupJob) => {
+        // Buscar configuración para obtener hostname e IP
+        const config = configurations.find(c => c.clientId === text);
+        return (
+          <div className="space-y-1">
+            {config?.clientHostname && config?.clientIpAddress ? (
+              <div className="font-semibold text-blue-600">
+                {config.clientHostname.split('@')[1] || config.clientHostname}@{config.clientIpAddress}
+              </div>
+            ) : config?.clientHostname ? (
+              <div className="font-semibold text-blue-600">{config.clientHostname}</div>
+            ) : (
+              <div className="font-semibold text-blue-600">{text}</div>
+            )}
+            <div className="text-xs text-gray-400 font-mono">{text.substring(0, 20)}...</div>
+          </div>
+        );
+      },
     },
     {
       title: 'Estado',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      width: 130,
       render: (status: string) => (
-        <Space>
+        <div className="flex items-center space-x-2">
           {getStatusIcon(status)}
           {getStatusBadge(status)}
-        </Space>
+        </div>
       ),
     },
     {
@@ -200,41 +218,71 @@ const SimaxJobs: React.FC = () => {
     {
       title: 'Progreso',
       key: 'progress',
-      width: 150,
+      width: 160,
       render: (record: BackupJob) => {
         if (record.status === 'RUNNING' && record.progressPercentage !== undefined) {
           return (
-            <Progress 
-              percent={Math.round(record.progressPercentage)} 
-              size="small" 
-              status="active"
-            />
+            <div className="space-y-1">
+              <Progress 
+                percent={Math.round(record.progressPercentage)} 
+                size="small" 
+                status="active"
+                showInfo={false}
+              />
+              <div className="text-xs text-gray-500 text-center">
+                {Math.round(record.progressPercentage)}%
+              </div>
+            </div>
           );
         } else if (record.status === 'COMPLETED') {
-          return <Progress percent={100} size="small" status="success" />;
+          return (
+            <div className="space-y-1">
+              <Progress percent={100} size="small" status="success" showInfo={false} />
+              <div className="text-xs text-green-600 text-center font-medium">Completado</div>
+            </div>
+          );
         } else if (record.status === 'FAILED') {
-          return <Progress percent={0} size="small" status="exception" />;
+          return (
+            <div className="space-y-1">
+              <Progress percent={0} size="small" status="exception" showInfo={false} />
+              <div className="text-xs text-red-600 text-center font-medium">Fallido</div>
+            </div>
+          );
         }
-        return '-';
+        return <div className="text-center text-gray-400">-</div>;
       },
     },
     {
       title: 'Archivos',
       key: 'files',
-      width: 100,
+      width: 110,
       render: (record: BackupJob) => {
         if (record.filesTotal && record.filesProcessed !== undefined) {
-          return `${record.filesProcessed}/${record.filesTotal}`;
+          return (
+            <div className="text-center">
+              <div className="font-medium text-gray-800">
+                {record.filesProcessed}/{record.filesTotal}
+              </div>
+              <div className="text-xs text-gray-500">
+                📁 {Math.round((record.filesProcessed / record.filesTotal) * 100)}%
+              </div>
+            </div>
+          );
         }
-        return '-';
+        return <div className="text-center text-gray-400">-</div>;
       },
     },
     {
       title: 'Datos Transferidos',
       dataIndex: 'bytesTransferred',
       key: 'bytesTransferred',
-      width: 120,
-      render: (bytes: number) => formatBytes(bytes),
+      width: 140,
+      render: (bytes: number) => (
+        <div className="text-center">
+          <div className="font-medium text-gray-800">{formatBytes(bytes)}</div>
+          <div className="text-xs text-gray-500">💾 Transferido</div>
+        </div>
+      ),
     },
     {
       title: 'Duración',
@@ -260,14 +308,15 @@ const SimaxJobs: React.FC = () => {
     {
       title: 'Acciones',
       key: 'actions',
-      width: 100,
+      width: 120,
       fixed: 'right' as const,
       render: (record: BackupJob) => (
-        <Space>
+        <Space size="small">
           <Button 
             icon={<EyeOutlined />} 
             size="small"
             onClick={() => showJobDetails(record)}
+            className="min-w-[70px]"
           >
             Ver
           </Button>
@@ -336,7 +385,7 @@ const SimaxJobs: React.FC = () => {
       </Card>
 
       {/* Tabla de Jobs */}
-      <Card>
+      <Card title={`Historial de Jobs (${filteredJobs.length} registros)`}>
         <Table
           columns={columns}
           dataSource={filteredJobs}
@@ -346,9 +395,12 @@ const SimaxJobs: React.FC = () => {
             pageSize: 20,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} jobs`
+            showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} jobs`,
+            pageSizeOptions: ['10', '20', '50', '100']
           }}
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1400, y: 500 }}
+          size="middle"
+          className="custom-jobs-table"
         />
       </Card>
 
@@ -422,3 +474,65 @@ const SimaxJobs: React.FC = () => {
 };
 
 export default SimaxJobs;
+
+// Estilos CSS personalizados
+const jobsStyles = `
+.custom-jobs-table .ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.custom-jobs-table .ant-table-tbody > tr > td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.custom-jobs-table .ant-table-tbody > tr:hover > td {
+  background-color: #f8f9ff;
+}
+
+.custom-jobs-table .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
+.custom-jobs-table .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.custom-jobs-table .ant-progress-line {
+  margin: 0;
+}
+
+.custom-jobs-table .ant-progress-text {
+  display: none;
+}
+
+.custom-jobs-table .ant-tag {
+  border-radius: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  margin: 0;
+}
+
+.custom-jobs-table .ant-badge-status-dot {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-jobs-table .ant-badge-status-text {
+  font-size: 12px;
+  font-weight: 500;
+}
+`;
+
+// Inyectar estilos
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = jobsStyles;
+  document.head.appendChild(styleSheet);
+}
