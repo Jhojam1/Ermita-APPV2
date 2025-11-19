@@ -183,8 +183,10 @@ const SimaxDashboard: React.FC = () => {
     {
       title: 'Acciones',
       key: 'actions',
+      width: 180,
+      fixed: 'right',
       render: (record: BackupConfiguration) => (
-        <Space>
+        <Space size="small">
           <Button 
             type="primary" 
             icon={<PlayCircleOutlined />}
@@ -329,6 +331,7 @@ const SimaxDashboard: React.FC = () => {
           rowKey="id"
           loading={loading}
           pagination={{ pageSize: 10 }}
+          scroll={{ x: 1200 }}
         />
       </Card>
 
