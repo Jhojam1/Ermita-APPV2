@@ -184,7 +184,7 @@ const SimaxDashboard: React.FC = () => {
       title: 'Acciones',
       key: 'actions',
       width: 180,
-      fixed: 'right',
+      fixed: 'right' as const,
       render: (record: BackupConfiguration) => (
         <Space size="small">
           <Button 
