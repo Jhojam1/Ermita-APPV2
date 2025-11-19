@@ -137,10 +137,12 @@ const SimaxDashboard: React.FC = () => {
       key: 'clientId',
       render: (text: string, record: BackupConfiguration) => (
         <div>
-          <div className="font-medium">{text}</div>
           {record.clientHostname && (
-            <div className="text-xs text-gray-500">{record.clientHostname}</div>
+            <div className="font-medium">
+              {record.clientHostname.split('@')[1]}@{record.clientIpAddress || 'N/A'}
+            </div>
           )}
+          <div className="text-xs text-gray-500">{text}</div>
         </div>
       ),
     },
@@ -192,6 +194,7 @@ const SimaxDashboard: React.FC = () => {
             icon={<PlayCircleOutlined />}
             size="small"
             onClick={() => startBackup(record.clientId)}
+            style={{ minWidth: '80px' }}
           >
             Backup
           </Button>
@@ -199,6 +202,7 @@ const SimaxDashboard: React.FC = () => {
             icon={<DatabaseOutlined />}
             size="small"
             onClick={() => testSshConnection(record.clientId)}
+            style={{ minWidth: '90px' }}
           >
             Test SSH
           </Button>

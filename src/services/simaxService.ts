@@ -14,6 +14,7 @@ export interface BackupConfiguration {
   sshPassword: string;
   sshRemotePath: string;
   clientHostname?: string;
+  clientIpAddress?: string;
   useManualPath?: boolean;
   isActive?: boolean;
   createdAt?: string;
