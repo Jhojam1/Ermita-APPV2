@@ -135,14 +135,15 @@ const SimaxDashboard: React.FC = () => {
       title: 'Cliente',
       dataIndex: 'clientId',
       key: 'clientId',
+      width: 200,
       render: (text: string, record: BackupConfiguration) => (
-        <div>
+        <div className="space-y-1">
           {record.clientHostname && (
-            <div className="font-medium">
+            <div className="font-semibold text-blue-600">
               {record.clientHostname.split('@')[1]}@{record.clientIpAddress || 'N/A'}
             </div>
           )}
-          <div className="text-xs text-gray-500">{text}</div>
+          <div className="text-xs text-gray-400 font-mono">{text.substring(0, 20)}...</div>
         </div>
       ),
     },
@@ -150,7 +151,11 @@ const SimaxDashboard: React.FC = () => {
       title: 'Directorio Origen',
       dataIndex: 'sourceDirectory',
       key: 'sourceDirectory',
+      width: 180,
       ellipsis: true,
+      render: (text: string) => (
+        <span className="text-sm" title={text}>{text}</span>
+      ),
     },
     {
       title: 'Destino SSH',
@@ -185,16 +190,16 @@ const SimaxDashboard: React.FC = () => {
     {
       title: 'Acciones',
       key: 'actions',
-      width: 180,
+      width: 200,
       fixed: 'right' as const,
       render: (record: BackupConfiguration) => (
-        <Space size="small">
+        <Space size="small" wrap>
           <Button 
             type="primary" 
             icon={<PlayCircleOutlined />}
             size="small"
             onClick={() => startBackup(record.clientId)}
-            style={{ minWidth: '80px' }}
+            className="min-w-[75px]"
           >
             Backup
           </Button>
@@ -202,7 +207,7 @@ const SimaxDashboard: React.FC = () => {
             icon={<DatabaseOutlined />}
             size="small"
             onClick={() => testSshConnection(record.clientId)}
-            style={{ minWidth: '90px' }}
+            className="min-w-[80px]"
           >
             Test SSH
           </Button>
@@ -334,8 +339,15 @@ const SimaxDashboard: React.FC = () => {
           dataSource={configurations}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: 1200 }}
+          pagination={{ 
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} configuraciones`
+          }}
+          scroll={{ x: 1000, y: 400 }}
+          size="middle"
+          className="custom-table"
         />
       </Card>
 
@@ -377,3 +389,49 @@ const SimaxDashboard: React.FC = () => {
 };
 
 export default SimaxDashboard;
+
+// Estilos CSS personalizados
+const styles = `
+.custom-table .ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.custom-table .ant-table-tbody > tr > td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.custom-table .ant-table-tbody > tr:hover > td {
+  background-color: #f8f9ff;
+}
+
+.custom-table .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.2s ease;
+}
+
+.custom-table .ant-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.custom-table .ant-btn-primary {
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  border: none;
+}
+
+.custom-table .ant-btn-primary:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+}
+`;
+
+// Inyectar estilos
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.innerText = styles;
+  document.head.appendChild(styleSheet);
+}
