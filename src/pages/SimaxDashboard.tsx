@@ -283,13 +283,19 @@ const SimaxDashboard: React.FC = () => {
       title: 'Cliente',
       dataIndex: 'clientId',
       key: 'clientId',
-      render: (text: string, record: BackupConfiguration) => (
-        <div>
-          <div className="font-medium text-green-600">{record.clientHostname || text}</div>
-          <div className="text-xs text-gray-500">{text}</div>
-          <div className="text-xs text-green-500"> Conectado</div>
-        </div>
-      ),
+      render: (text: string, record: BackupConfiguration) => {
+        // Formato: HOSTNAME@IP
+        const clientDisplay = record.clientHostname && record.clientIpAddress 
+          ? `${record.clientHostname}@${record.clientIpAddress}`
+          : record.clientHostname || text;
+        
+        return (
+          <div>
+            <div className="font-medium text-green-600">{clientDisplay}</div>
+            <div className="text-xs text-gray-500">{text}</div>
+          </div>
+        );
+      },
     },
     {
       title: 'Directorio Origen',
