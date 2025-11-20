@@ -304,7 +304,8 @@ const SimaxConfiguration: React.FC = () => {
           form.resetFields();
         }}
         footer={null}
-        width={window.innerWidth > 768 ? 800 : window.innerWidth - 40}
+        width={window.innerWidth > 768 ? 800 : Math.max(window.innerWidth - 32, 300)}
+        style={{ maxWidth: '100vw' }}
       >
         <Form
           form={form}
@@ -317,7 +318,7 @@ const SimaxConfiguration: React.FC = () => {
             useManualPath: false,
           }}
         >
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Form.Item
               label="Client ID"
               name="clientId"
@@ -352,7 +353,7 @@ const SimaxConfiguration: React.FC = () => {
 
           <Divider>Configuración SSH</Divider>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Form.Item
               label="Host SSH"
               name="sshHost"
@@ -370,7 +371,7 @@ const SimaxConfiguration: React.FC = () => {
             </Form.Item>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Form.Item
               label="Usuario SSH"
               name="sshUsername"
@@ -398,7 +399,7 @@ const SimaxConfiguration: React.FC = () => {
 
           <Divider>Configuración de Backup</Divider>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Form.Item
               label="Frecuencia (horas)"
               name="frequencyHours"
@@ -426,15 +427,19 @@ const SimaxConfiguration: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex justify-end space-x-4 pt-4">
+          <div className="flex flex-col md:flex-row justify-end gap-2 md:gap-4 pt-4">
             <Button 
               icon={<CheckCircleOutlined />}
               onClick={testSshConnection}
               loading={testingConnection}
+              className="w-full md:w-auto"
             >
               Probar SSH
             </Button>
-            <Button onClick={() => setModalVisible(false)}>
+            <Button 
+              onClick={() => setModalVisible(false)}
+              className="w-full md:w-auto"
+            >
               Cancelar
             </Button>
             <Button 
@@ -442,6 +447,7 @@ const SimaxConfiguration: React.FC = () => {
               htmlType="submit" 
               icon={<SaveOutlined />}
               loading={loading}
+              className="w-full md:w-auto"
             >
               Guardar
             </Button>
