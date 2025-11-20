@@ -341,26 +341,27 @@ const SimaxJobs: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-3 md:p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Historial de Jobs</h1>
-          <p className="text-gray-600">Monitoreo y seguimiento de trabajos de backup</p>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Historial de Jobs</h1>
+          <p className="text-sm md:text-base text-gray-600">Monitoreo y seguimiento de trabajos de backup</p>
         </div>
-        <Button icon={<ReloadOutlined />} onClick={loadData} loading={loading}>
+        <Button icon={<ReloadOutlined />} onClick={loadData} loading={loading} className="w-full md:w-auto">
           Actualizar
         </Button>
       </div>
 
       {/* Filtros */}
       <Card className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Cliente</label>
             <Select
               value={selectedClient}
               onChange={setSelectedClient}
               className="w-full"
+              size="small"
             >
               <Option value="all">Todos los clientes</Option>
               {configurations.map(config => (
@@ -372,11 +373,12 @@ const SimaxJobs: React.FC = () => {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Estado</label>
             <Select
               value={selectedStatus}
               onChange={setSelectedStatus}
               className="w-full"
+              size="small"
             >
               <Option value="all">Todos los estados</Option>
               <Option value="PENDING">Pendiente</Option>
@@ -387,36 +389,39 @@ const SimaxJobs: React.FC = () => {
             </Select>
           </div>
           
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Rango de Fechas</label>
+          <div className="sm:col-span-2 lg:col-span-2">
+            <label className="block text-xs md:text-sm font-medium text-gray-700 mb-1">Rango de Fechas</label>
             <RangePicker
               value={dateRange}
               onChange={(dates) => setDateRange(dates as [dayjs.Dayjs, dayjs.Dayjs] | null)}
               className="w-full"
               format="DD/MM/YYYY"
+              size="small"
             />
           </div>
         </div>
       </Card>
 
       {/* Tabla de Jobs */}
-      <Card title={`Historial de Jobs (${filteredJobs.length} registros)`}>
-        <Table
-          columns={columns}
-          dataSource={filteredJobs}
-          rowKey="id"
-          loading={loading}
-          pagination={{ 
-            pageSize: 20,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} jobs`,
-            pageSizeOptions: ['10', '20', '50', '100']
-          }}
-          scroll={{ x: 1400, y: 500 }}
-          size="middle"
-          className="custom-jobs-table"
-        />
+      <Card title={`Historial de Jobs (${filteredJobs.length} registros)`} className="overflow-x-auto">
+        <div className="overflow-x-auto">
+          <Table
+            columns={columns}
+            dataSource={filteredJobs}
+            rowKey="id"
+            loading={loading}
+            pagination={{ 
+              pageSize: 20,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} jobs`,
+              pageSizeOptions: ['10', '20', '50', '100']
+            }}
+            scroll={{ x: 800 }}
+            size="small"
+            className="custom-jobs-table"
+          />
+        </div>
       </Card>
 
       {/* Modal de Detalles */}
@@ -424,12 +429,12 @@ const SimaxJobs: React.FC = () => {
         title={`Detalles del Job #${selectedJob?.id}`}
         open={detailModalVisible}
         onCancel={() => setDetailModalVisible(false)}
+        width={window.innerWidth > 768 ? 800 : window.innerWidth - 40}
         footer={[
           <Button key="close" onClick={() => setDetailModalVisible(false)}>
             Cerrar
           </Button>
         ]}
-        width={800}
       >
         {selectedJob && (
           <Descriptions bordered column={2}>

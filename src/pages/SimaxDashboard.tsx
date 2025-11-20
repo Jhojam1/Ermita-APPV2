@@ -523,116 +523,125 @@ const SimaxDashboard: React.FC = () => {
   const runningJobs = activeJobs.filter(j => j.status === 'RUNNING').length;
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-3 md:p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">SIMAX - Sistema de Backups</h1>
-          <p className="text-gray-600">Administración y monitoreo de backups automáticos</p>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">SIMAX - Sistema de Backups</h1>
+          <p className="text-sm md:text-base text-gray-600">Administración y monitoreo de backups automáticos</p>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
           <Badge 
             status={wsConnected ? 'success' : 'error'} 
-            text={wsConnected ? 'WebSocket Conectado' : 'WebSocket Desconectado'} 
+            text={wsConnected ? 'Conectado' : 'Desconectado'} 
           />
-          <Button icon={<ReloadOutlined />} onClick={loadData} loading={loading}>
+          <Button icon={<ReloadOutlined />} onClick={loadData} loading={loading} className="w-full md:w-auto">
             Actualizar
           </Button>
         </div>
       </div>
 
       {/* Estadísticas */}
-      <Row gutter={16} className="mb-6">
-        <Col span={6}>
+      <Row gutter={[8, 8]} className="mb-6">
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="Clientes Conectados"
               value={activeClients}
               prefix={<SettingOutlined />}
-              valueStyle={{ color: '#3f8600' }}
+              valueStyle={{ color: '#3f8600', fontSize: '1.5rem' }}
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="Jobs Activos"
               value={totalJobs}
               prefix={<ClockCircleOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              valueStyle={{ color: '#1890ff', fontSize: '1.5rem' }}
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="Ejecutándose"
               value={runningJobs}
               prefix={<CloudUploadOutlined />}
-              valueStyle={{ color: '#722ed1' }}
+              valueStyle={{ color: '#722ed1', fontSize: '1.5rem' }}
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
               title="Total Configuraciones"
               value={totalConfigurations}
               prefix={<DatabaseOutlined />}
+              valueStyle={{ fontSize: '1.5rem' }}
             />
           </Card>
         </Col>
       </Row>
 
       {/* Clientes Activos */}
-      <Card title="Clientes Activos" className="mb-6">
-        <Table
-          columns={activeClientsColumns}
-          dataSource={configurations}
-          rowKey="id"
-          loading={loading}
-          pagination={{ 
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} clientes activos`
-          }}
-          scroll={{ x: 1000, y: 300 }}
-          size="middle"
-          className="custom-table"
-          locale={{
-            emptyText: 'No hay clientes conectados'
-          }}
-        />
+      <Card title="Clientes Activos" className="mb-6 overflow-x-auto">
+        <div className="overflow-x-auto">
+          <Table
+            columns={activeClientsColumns}
+            dataSource={configurations}
+            rowKey="id"
+            loading={loading}
+            pagination={{ 
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} clientes activos`
+            }}
+            scroll={{ x: 800 }}
+            size="small"
+            className="custom-table"
+            locale={{
+              emptyText: 'No hay clientes conectados'
+            }}
+          />
+        </div>
       </Card>
 
       {/* Configuraciones de Backup */}
-      <Card title="Configuraciones de Backup" className="mb-6">
-        <Table
-          columns={configurationColumns}
-          dataSource={allConfigurations}
-          rowKey="id"
-          loading={loading}
-          pagination={{ 
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} configuraciones`
-          }}
-          scroll={{ x: 1000, y: 300 }}
-          size="middle"
-          className="custom-table"
-        />
+      <Card title="Configuraciones de Backup" className="mb-6 overflow-x-auto">
+        <div className="overflow-x-auto">
+          <Table
+            columns={configurationColumns}
+            dataSource={allConfigurations}
+            rowKey="id"
+            loading={loading}
+            pagination={{ 
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} configuraciones`
+            }}
+            scroll={{ x: 800 }}
+            size="small"
+            className="custom-table"
+          />
+        </div>
       </Card>
 
       {/* Jobs Activos */}
-      <Card title="Jobs Activos">
-        <Table
-          columns={jobColumns}
-          dataSource={activeJobs}
-          rowKey="id"
-          loading={loading}
-          pagination={{ pageSize: 10 }}
-        />
+      <Card title="Jobs Activos" className="mb-6 overflow-x-auto">
+        <div className="overflow-x-auto">
+          <Table
+            columns={jobColumns}
+            dataSource={activeJobs}
+            rowKey="id"
+            loading={loading}
+            pagination={{ pageSize: 10 }}
+            scroll={{ x: 800 }}
+            size="small"
+          />
+        </div>
       </Card>
 
       {/* Modal de Progreso */}

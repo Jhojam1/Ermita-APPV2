@@ -263,37 +263,40 @@ const SimaxConfiguration: React.FC = () => {
   ];
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-3 md:p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Configuración SIMAX</h1>
-          <p className="text-gray-600">Gestión de configuraciones de backup</p>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Configuración SIMAX</h1>
+          <p className="text-sm md:text-base text-gray-600">Gestión de configuraciones de backup</p>
         </div>
         <Button 
           type="primary" 
           icon={<PlusOutlined />}
           onClick={newConfiguration}
+          className="w-full md:w-auto"
         >
           Nueva Configuración
         </Button>
       </div>
 
-      <Card title="Configuraciones Existentes" className="mb-6">
-        <Table
-          columns={columns}
-          dataSource={configurations}
-          rowKey="id"
-          loading={loading}
-          pagination={{ 
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} configuraciones`
-          }}
-          scroll={{ x: 1200, y: 500 }}
-          size="middle"
-          className="custom-config-table"
-        />
+      <Card title="Configuraciones Existentes" className="mb-6 overflow-x-auto">
+        <div className="overflow-x-auto">
+          <Table
+            columns={columns}
+            dataSource={configurations}
+            rowKey="id"
+            loading={loading}
+            pagination={{ 
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} configuraciones`
+            }}
+            scroll={{ x: 800 }}
+            size="small"
+            className="custom-config-table"
+          />
+        </div>
       </Card>
 
       {/* Modal de Configuración */}
@@ -306,7 +309,7 @@ const SimaxConfiguration: React.FC = () => {
           form.resetFields();
         }}
         footer={null}
-        width={800}
+        width={window.innerWidth > 768 ? 800 : window.innerWidth - 40}
       >
         <Form
           form={form}
