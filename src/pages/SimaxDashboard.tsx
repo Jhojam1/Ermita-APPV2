@@ -238,9 +238,6 @@ const SimaxDashboard: React.FC = () => {
       render: (text: string, record: BackupConfiguration) => (
         <div>
           <div className="font-medium">{record.clientHostname || text}</div>
-          {record.alias && (
-            <div className="text-sm text-green-600 font-medium">👤 {record.alias}</div>
-          )}
           <div className="text-xs text-gray-500">{text}</div>
         </div>
       ),
@@ -280,6 +277,20 @@ const SimaxDashboard: React.FC = () => {
           false
         );
       },
+    },
+    {
+      title: 'Alias',
+      dataIndex: 'alias',
+      key: 'alias',
+      render: (alias: string) => (
+        alias ? (
+          <div className="text-sm text-blue-600 font-medium">
+            👤 {alias}
+          </div>
+        ) : (
+          <div className="text-xs text-gray-400">Sin alias</div>
+        )
+      ),
     },
     {
       title: 'Directorio Origen',
@@ -333,9 +344,6 @@ const SimaxDashboard: React.FC = () => {
         return (
           <div>
             <div className="font-medium text-green-600">{clientDisplay}</div>
-            {record.alias && (
-              <div className="text-sm text-blue-600 font-medium">👤 {record.alias}</div>
-            )}
             <div className="text-xs text-gray-500">{text}</div>
           </div>
         );
@@ -376,6 +384,20 @@ const SimaxDashboard: React.FC = () => {
           false
         );
       },
+    },
+    {
+      title: 'Alias',
+      dataIndex: 'alias',
+      key: 'alias',
+      render: (alias: string) => (
+        alias ? (
+          <div className="text-sm text-blue-600 font-medium">
+            👤 {alias}
+          </div>
+        ) : (
+          <div className="text-xs text-gray-400">Sin alias</div>
+        )
+      ),
     },
     {
       title: 'Directorio Origen',
@@ -440,6 +462,20 @@ const SimaxDashboard: React.FC = () => {
       title: 'Cliente',
       dataIndex: 'clientId',
       key: 'clientId',
+    },
+    {
+      title: 'Alias',
+      key: 'alias',
+      render: (record: BackupJob) => {
+        const config = allConfigurations.find(c => c.id === record.configurationId);
+        return config?.alias ? (
+          <div className="text-sm text-blue-600 font-medium">
+            👤 {config.alias}
+          </div>
+        ) : (
+          <div className="text-xs text-gray-400">Sin alias</div>
+        );
+      },
     },
     {
       title: 'Estado',

@@ -193,6 +193,21 @@ const SimaxJobs: React.FC = () => {
       },
     },
     {
+      title: 'Alias',
+      key: 'alias',
+      width: 150,
+      render: (_text: string, record: BackupJob) => {
+        const config = configurations.find(c => c.clientId === record.clientId);
+        return config?.alias ? (
+          <div className="text-sm text-blue-600 font-medium">
+            👤 {config.alias}
+          </div>
+        ) : (
+          <div className="text-xs text-gray-400">Sin alias</div>
+        );
+      },
+    },
+    {
       title: 'Estado',
       dataIndex: 'status',
       key: 'status',
@@ -420,6 +435,16 @@ const SimaxJobs: React.FC = () => {
           <Descriptions bordered column={2}>
             <Descriptions.Item label="Job ID">{selectedJob.id}</Descriptions.Item>
             <Descriptions.Item label="Cliente">{selectedJob.clientId}</Descriptions.Item>
+            <Descriptions.Item label="Alias">
+              {(() => {
+                const config = configurations.find(c => c.clientId === selectedJob.clientId);
+                return config?.alias ? (
+                  <div className="text-blue-600 font-medium">👤 {config.alias}</div>
+                ) : (
+                  <span className="text-gray-400">Sin alias</span>
+                );
+              })()}
+            </Descriptions.Item>
             <Descriptions.Item label="Estado">
               <Space>
                 {getStatusIcon(selectedJob.status)}

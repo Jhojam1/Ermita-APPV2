@@ -137,9 +137,6 @@ const SimaxConfiguration: React.FC = () => {
           ) : (
             <div className="font-semibold text-blue-600">{text}</div>
           )}
-          {record.alias && (
-            <div className="text-sm text-green-600 font-medium">👤 {record.alias}</div>
-          )}
           <div className="text-xs text-gray-400 font-mono">{text.substring(0, 20)}...</div>
         </div>
       ),
@@ -178,6 +175,21 @@ const SimaxConfiguration: React.FC = () => {
           false
         );
       },
+    },
+    {
+      title: 'Alias',
+      dataIndex: 'alias',
+      key: 'alias',
+      width: 150,
+      render: (alias: string) => (
+        alias ? (
+          <div className="text-sm text-blue-600 font-medium">
+            👤 {alias}
+          </div>
+        ) : (
+          <div className="text-xs text-gray-400">Sin alias</div>
+        )
+      ),
     },
     {
       title: 'Directorio Origen',
