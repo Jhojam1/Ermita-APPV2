@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Statistic, Table, Button, Badge, Space, message, Modal, Progress } from 'antd';
+import { Card, Row, Col, Statistic, Table, Button, Badge, Space, message, Modal, Progress, Tag } from 'antd';
 import {
   CloudUploadOutlined,
   ClockCircleOutlined,
   SettingOutlined,
   ReloadOutlined,
-  PlayCircleOutlined,
   DatabaseOutlined
 } from '@ant-design/icons';
 import simaxService, { BackupConfiguration, BackupJob } from '../services/simaxService';
