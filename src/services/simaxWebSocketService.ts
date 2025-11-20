@@ -84,6 +84,9 @@ class SimaxWebSocketService {
       case 'BACKUP_PROGRESS':
         this.emit('backupProgress', message.data as BackupProgressData);
         break;
+      case 'BACKUP_COMPLETED':
+        this.emit('backupCompleted', message.data);
+        break;
       case 'JOB_STATUS_DATA':
         this.emit('jobStatusData', message.data);
         break;
