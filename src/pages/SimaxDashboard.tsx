@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Statistic, Table, Button, Badge, Space, message, Modal, Progress, Tag, Input } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import type { FilterDropdownProps } from 'antd/es/table/interface';
 import {
   CloudUploadOutlined,
@@ -125,12 +126,14 @@ const SimaxDashboard: React.FC = () => {
     // Cargar clientes activos (conectados)
     const activeResponse = await simaxService.getAllActiveConfigurations();
     if (activeResponse.success && activeResponse.data) {
+      console.log('Configuraciones activas:', activeResponse.data);
       setConfigurations(activeResponse.data);
     }
 
     // Cargar todas las configuraciones
     const allResponse = await simaxService.getAllConfigurations();
     if (allResponse.success && allResponse.data) {
+      console.log('Todas las configuraciones:', allResponse.data);
       setAllConfigurations(allResponse.data);
     } else {
       message.error(allResponse.error || 'Error cargando configuraciones');
@@ -265,6 +268,9 @@ const SimaxDashboard: React.FC = () => {
           </div>
         </div>
       ),
+      filterIcon: (filtered: boolean) => (
+        <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
+      ),
       onFilter: (value: any, record: BackupConfiguration) => {
         const searchValue = value.toString().toLowerCase();
         return (
@@ -357,6 +363,9 @@ const SimaxDashboard: React.FC = () => {
             </Button>
           </div>
         </div>
+      ),
+      filterIcon: (filtered: boolean) => (
+        <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
       ),
       onFilter: (value: any, record: BackupConfiguration) => {
         const searchValue = value.toString().toLowerCase();

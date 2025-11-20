@@ -19,7 +19,8 @@ import {
   SaveOutlined, 
   PlusOutlined, 
   EditOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  SearchOutlined
 } from '@ant-design/icons';
 import simaxService, { BackupConfiguration } from '../services/simaxService';
 
@@ -165,6 +166,9 @@ const SimaxConfiguration: React.FC = () => {
             </Button>
           </div>
         </div>
+      ),
+      filterIcon: (filtered: boolean) => (
+        <SearchOutlined style={{ color: filtered ? '#1890ff' : undefined }} />
       ),
       onFilter: (value: any, record: BackupConfiguration) => {
         const searchValue = value.toString().toLowerCase();
