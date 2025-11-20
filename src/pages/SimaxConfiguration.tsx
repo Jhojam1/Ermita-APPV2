@@ -9,7 +9,6 @@ import {
   Space, 
   message, 
   Divider,
-  Alert,
   Table,
   Modal,
   Tag
@@ -279,14 +278,6 @@ const SimaxConfiguration: React.FC = () => {
         </Button>
       </div>
 
-      <Alert
-        message="Información sobre SIMAX"
-        description="SIMAX es el sistema de backups automáticos que permite configurar respaldos programados de directorios locales hacia servidores remotos via SSH/SFTP."
-        type="info"
-        showIcon
-        className="mb-6"
-      />
-
       <Card title="Configuraciones Existentes" className="mb-6">
         <Table
           columns={columns}
@@ -299,7 +290,7 @@ const SimaxConfiguration: React.FC = () => {
             showQuickJumper: true,
             showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} configuraciones`
           }}
-          scroll={{ x: 1000, y: 400 }}
+          scroll={{ x: 1200, y: 500 }}
           size="middle"
           className="custom-config-table"
         />
