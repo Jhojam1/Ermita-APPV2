@@ -82,6 +82,7 @@ const SimaxDashboard: React.FC = () => {
       }
       
       loadActiveJobs();
+      loadConfigurations(); // Recargar configuraciones para actualizar "Último Backup"
     });
 
     wsService.on('backupFailed', (data) => {
