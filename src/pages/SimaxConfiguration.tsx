@@ -128,7 +128,7 @@ const SimaxConfiguration: React.FC = () => {
       title: 'Cliente',
       dataIndex: 'clientId',
       key: 'clientId',
-      width: 220,
+      width: 180,
       render: (text: string, record: BackupConfiguration) => (
         <div className="space-y-1">
           {record.clientHostname ? (
@@ -179,7 +179,7 @@ const SimaxConfiguration: React.FC = () => {
       title: 'Alias',
       dataIndex: 'alias',
       key: 'alias',
-      width: 150,
+      width: 120,
       render: (alias: string) => (
         alias ? (
           <div className="text-sm text-blue-600 font-medium">
@@ -194,7 +194,7 @@ const SimaxConfiguration: React.FC = () => {
       title: 'Directorio Origen',
       dataIndex: 'sourceDirectory',
       key: 'sourceDirectory',
-      width: 180,
+      width: 150,
       ellipsis: true,
       render: (text: string) => (
         <span className="text-sm" title={text}>{text}</span>
@@ -203,7 +203,7 @@ const SimaxConfiguration: React.FC = () => {
     {
       title: 'Destino SSH',
       key: 'sshDestination',
-      width: 200,
+      width: 170,
       render: (record: BackupConfiguration) => (
         <div className="space-y-1">
           <div className="font-medium text-gray-800">{record.sshHost}:{record.sshPort}</div>
@@ -216,23 +216,19 @@ const SimaxConfiguration: React.FC = () => {
       title: 'Frecuencia',
       dataIndex: 'frequencyHours',
       key: 'frequencyHours',
-      render: (hours: number) => `Cada ${hours} horas`,
+      width: 100,
+      render: (hours: number) => `${hours}h`,
     },
     {
       title: 'Estado',
       dataIndex: 'isActive',
       key: 'isActive',
+      width: 80,
       render: (isActive: boolean) => (
         <Tag color={isActive ? 'green' : 'red'}>
           {isActive ? 'Activo' : 'Inactivo'}
         </Tag>
       ),
-    },
-    {
-      title: 'Última Actualización',
-      dataIndex: 'updatedAt',
-      key: 'updatedAt',
-      render: (date: string) => date ? new Date(date).toLocaleString() : 'N/A',
     },
     {
       title: 'Acciones',
@@ -292,7 +288,7 @@ const SimaxConfiguration: React.FC = () => {
               showQuickJumper: true,
               showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} configuraciones`
             }}
-            scroll={{ x: 800 }}
+            scroll={{ x: 1000 }}
             size="small"
             className="custom-config-table"
           />
