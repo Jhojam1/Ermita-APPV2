@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Statistic, Table, Button, Badge, Space, message, Modal, Progress, Tag } from 'antd';
+import { Card, Row, Col, Statistic, Table, Button, Badge, Space, message, Modal, Progress, Tag, Input } from 'antd';
+import type { FilterDropdownProps } from 'antd/es/table/interface';
 import {
   CloudUploadOutlined,
   ClockCircleOutlined,
@@ -234,9 +235,45 @@ const SimaxDashboard: React.FC = () => {
       render: (text: string, record: BackupConfiguration) => (
         <div>
           <div className="font-medium">{record.clientHostname || text}</div>
+          {record.alias && (
+            <div className="text-sm text-green-600 font-medium">👤 {record.alias}</div>
+          )}
           <div className="text-xs text-gray-500">{text}</div>
         </div>
       ),
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: FilterDropdownProps) => (
+        <div className="p-2">
+          <Input
+            placeholder="Buscar cliente o alias"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ width: 200, marginBottom: 8, display: 'block' }}
+          />
+          <div className="flex justify-between">
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Buscar
+            </Button>
+            <Button onClick={() => clearFilters?.()} size="small" style={{ width: 90 }}>
+              Reset
+            </Button>
+          </div>
+        </div>
+      ),
+      onFilter: (value: any, record: BackupConfiguration) => {
+        const searchValue = value.toString().toLowerCase();
+        return (
+          (record.clientHostname?.toLowerCase().includes(searchValue)) ||
+          (record.alias?.toLowerCase().includes(searchValue)) ||
+          (record.clientId?.toLowerCase().includes(searchValue)) ||
+          false
+        );
+      },
     },
     {
       title: 'Directorio Origen',
@@ -284,16 +321,50 @@ const SimaxDashboard: React.FC = () => {
       dataIndex: 'clientId',
       key: 'clientId',
       render: (text: string, record: BackupConfiguration) => {
-        // Formato: HOSTNAME@IP
-        const clientDisplay = record.clientHostname && record.clientIpAddress 
-          ? `${record.clientHostname}@${record.clientIpAddress}`
-          : record.clientHostname || text;
+        // Formato: HOSTNAME@IP o solo hostname
+        const clientDisplay = record.clientHostname || text;
         
         return (
           <div>
             <div className="font-medium text-green-600">{clientDisplay}</div>
+            {record.alias && (
+              <div className="text-sm text-blue-600 font-medium">👤 {record.alias}</div>
+            )}
             <div className="text-xs text-gray-500">{text}</div>
           </div>
+        );
+      },
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: FilterDropdownProps) => (
+        <div className="p-2">
+          <Input
+            placeholder="Buscar cliente o alias"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ width: 200, marginBottom: 8, display: 'block' }}
+          />
+          <div className="flex justify-between">
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Buscar
+            </Button>
+            <Button onClick={() => clearFilters?.()} size="small" style={{ width: 90 }}>
+              Reset
+            </Button>
+          </div>
+        </div>
+      ),
+      onFilter: (value: any, record: BackupConfiguration) => {
+        const searchValue = value.toString().toLowerCase();
+        return (
+          (record.clientHostname?.toLowerCase().includes(searchValue)) ||
+          (record.alias?.toLowerCase().includes(searchValue)) ||
+          (record.clientId?.toLowerCase().includes(searchValue)) ||
+          false
         );
       },
     },

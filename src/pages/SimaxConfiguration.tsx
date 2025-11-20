@@ -14,6 +14,7 @@ import {
   Modal,
   Tag
 } from 'antd';
+import type { FilterDropdownProps } from 'antd/es/table/interface';
 import { 
   SaveOutlined, 
   PlusOutlined, 
@@ -127,21 +128,52 @@ const SimaxConfiguration: React.FC = () => {
       title: 'Cliente',
       dataIndex: 'clientId',
       key: 'clientId',
-      width: 200,
+      width: 220,
       render: (text: string, record: BackupConfiguration) => (
         <div className="space-y-1">
-          {record.clientHostname && record.clientIpAddress ? (
-            <div className="font-semibold text-blue-600">
-              {record.clientHostname.split('@')[1] || record.clientHostname}@{record.clientIpAddress}
-            </div>
-          ) : record.clientHostname ? (
+          {record.clientHostname ? (
             <div className="font-semibold text-blue-600">{record.clientHostname}</div>
           ) : (
             <div className="font-semibold text-blue-600">{text}</div>
           )}
+          {record.alias && (
+            <div className="text-sm text-green-600 font-medium">👤 {record.alias}</div>
+          )}
           <div className="text-xs text-gray-400 font-mono">{text.substring(0, 20)}...</div>
         </div>
       ),
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: FilterDropdownProps) => (
+        <div className="p-2">
+          <Input
+            placeholder="Buscar por hostname o alias"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ width: 200, marginBottom: 8, display: 'block' }}
+          />
+          <div className="flex justify-between">
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Buscar
+            </Button>
+            <Button onClick={() => clearFilters?.()} size="small" style={{ width: 90 }}>
+              Reset
+            </Button>
+          </div>
+        </div>
+      ),
+      onFilter: (value: any, record: BackupConfiguration) => {
+        const searchValue = value.toString().toLowerCase();
+        return (
+          (record.clientHostname?.toLowerCase().includes(searchValue)) ||
+          (record.alias?.toLowerCase().includes(searchValue)) ||
+          false
+        );
+      },
     },
     {
       title: 'Directorio Origen',
@@ -293,9 +325,17 @@ const SimaxConfiguration: React.FC = () => {
               label="Hostname del Cliente"
               name="clientHostname"
             >
-              <Input placeholder="ej: DESKTOP-ABC123" />
+              <Input placeholder="ej: DESKTOP-ABC123@192.168.1.100" />
             </Form.Item>
           </div>
+
+          <Form.Item
+            label="Alias (Responsable)"
+            name="alias"
+            tooltip="Nombre del responsable del computador (ej: Jhojam)"
+          >
+            <Input placeholder="ej: Jhojam" />
+          </Form.Item>
 
           <Form.Item
             label="Directorio de Origen"

@@ -15,6 +15,7 @@ export interface BackupConfiguration {
   sshRemotePath: string;
   clientHostname?: string;
   clientIpAddress?: string;
+  alias?: string; // Nombre del responsable del computador
   useManualPath?: boolean;
   isActive?: boolean;
   createdAt?: string;
