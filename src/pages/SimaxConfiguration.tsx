@@ -305,8 +305,8 @@ const SimaxConfiguration: React.FC = () => {
         }}
         footer={null}
         width={window.innerWidth > 768 ? 800 : Math.max(window.innerWidth - 32, 300)}
-        style={{ maxWidth: '100vw', top: 0 }}
-        bodyStyle={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', padding: '24px' }}
+        style={{ maxWidth: '100vw' }}
+        bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', padding: '24px' }}
       >
         <Form
           form={form}
@@ -433,13 +433,13 @@ const SimaxConfiguration: React.FC = () => {
               icon={<CheckCircleOutlined />}
               onClick={testSshConnection}
               loading={testingConnection}
-              className="w-full md:w-auto order-3 md:order-1"
+              className="w-full md:w-auto"
             >
               Probar SSH
             </Button>
             <Button 
               onClick={() => setModalVisible(false)}
-              className="w-full md:w-auto order-2"
+              className="w-full md:w-auto"
             >
               Cancelar
             </Button>
@@ -448,7 +448,8 @@ const SimaxConfiguration: React.FC = () => {
               htmlType="submit" 
               icon={<SaveOutlined />}
               loading={loading}
-              className="w-full md:w-auto order-1 md:order-3"
+              className="w-full md:w-auto"
+              style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
             >
               Guardar
             </Button>
