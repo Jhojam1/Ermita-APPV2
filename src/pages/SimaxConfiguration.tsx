@@ -234,7 +234,6 @@ const SimaxConfiguration: React.FC = () => {
       title: 'Acciones',
       key: 'actions',
       width: 200,
-      fixed: 'right' as const,
       render: (record: BackupConfiguration) => (
         <Space size="small" wrap>
           <Button 
