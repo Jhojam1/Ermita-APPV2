@@ -12,7 +12,8 @@ import simaxService, { BackupConfiguration, BackupJob } from '../services/simaxS
 import SimaxWebSocketService, { BackupProgressData } from '../services/simaxWebSocketService';
 
 const SimaxDashboard: React.FC = () => {
-  const [configurations, setConfigurations] = useState<BackupConfiguration[]>([]);
+  const [configurations, setConfigurations] = useState<BackupConfiguration[]>([]); // Solo clientes conectados
+  const [allConfigurations, setAllConfigurations] = useState<BackupConfiguration[]>([]); // Todas las configuraciones
   const [activeJobs, setActiveJobs] = useState<BackupJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
@@ -121,11 +122,18 @@ const SimaxDashboard: React.FC = () => {
   };
 
   const loadConfigurations = async () => {
-    const response = await simaxService.getAllConfigurations();
-    if (response.success && response.data) {
-      setConfigurations(response.data);
+    // Cargar clientes activos (conectados)
+    const activeResponse = await simaxService.getAllActiveConfigurations();
+    if (activeResponse.success && activeResponse.data) {
+      setConfigurations(activeResponse.data);
+    }
+
+    // Cargar todas las configuraciones
+    const allResponse = await simaxService.getAllConfigurations();
+    if (allResponse.success && allResponse.data) {
+      setAllConfigurations(allResponse.data);
     } else {
-      message.error(response.error || 'Error cargando configuraciones');
+      message.error(allResponse.error || 'Error cargando configuraciones');
     }
   };
 
@@ -218,20 +226,16 @@ const SimaxDashboard: React.FC = () => {
     return <Badge status={config.color as any} text={config.text} />;
   };
 
+  // Columnas para "Configuraciones de Backup" (todas las configuraciones registradas)
   const configurationColumns = [
     {
       title: 'Cliente',
       dataIndex: 'clientId',
       key: 'clientId',
-      width: 200,
       render: (text: string, record: BackupConfiguration) => (
-        <div className="space-y-1">
-          {record.clientHostname && (
-            <div className="font-semibold text-blue-600">
-              {record.clientHostname.split('@')[1]}@{record.clientIpAddress || 'N/A'}
-            </div>
-          )}
-          <div className="text-xs text-gray-400 font-mono">{text.substring(0, 20)}...</div>
+        <div>
+          <div className="font-medium">{record.clientHostname || text}</div>
+          <div className="text-xs text-gray-500">{text}</div>
         </div>
       ),
     },
@@ -239,19 +243,14 @@ const SimaxDashboard: React.FC = () => {
       title: 'Directorio Origen',
       dataIndex: 'sourceDirectory',
       key: 'sourceDirectory',
-      width: 180,
-      ellipsis: true,
-      render: (text: string) => (
-        <span className="text-sm" title={text}>{text}</span>
-      ),
     },
     {
       title: 'Destino SSH',
       key: 'sshDestination',
       render: (record: BackupConfiguration) => (
-        <div>
+        <div className="text-xs">
           <div>{record.sshHost}:{record.sshPort}</div>
-          <div className="text-xs text-gray-500">{record.sshRemotePath}</div>
+          <div className="text-gray-500">{record.sshRemotePath}</div>
         </div>
       ),
     },
@@ -266,8 +265,53 @@ const SimaxDashboard: React.FC = () => {
       dataIndex: 'isActive',
       key: 'isActive',
       render: (isActive: boolean) => (
-        <Badge status={isActive ? 'success' : 'default'} text={isActive ? 'Activo' : 'Inactivo'} />
+        <Tag color={isActive ? 'green' : 'red'}>
+          {isActive ? 'Activo' : 'Inactivo'}
+        </Tag>
       ),
+    },
+    {
+      title: 'Último Backup',
+      dataIndex: 'lastBackupAt',
+      key: 'lastBackupAt',
+      render: (date: string) => date ? new Date(date).toLocaleString() : 'Nunca',
+    },
+  ];
+
+  // Columnas para tabla de "Clientes Activos" (solo conectados, con acciones)
+  const activeClientsColumns = [
+    {
+      title: 'Cliente',
+      dataIndex: 'clientId',
+      key: 'clientId',
+      render: (text: string, record: BackupConfiguration) => (
+        <div>
+          <div className="font-medium text-green-600">{record.clientHostname || text}</div>
+          <div className="text-xs text-gray-500">{text}</div>
+          <div className="text-xs text-green-500"> Conectado</div>
+        </div>
+      ),
+    },
+    {
+      title: 'Directorio Origen',
+      dataIndex: 'sourceDirectory',
+      key: 'sourceDirectory',
+    },
+    {
+      title: 'Destino SSH',
+      key: 'sshDestination',
+      render: (record: BackupConfiguration) => (
+        <div className="text-xs">
+          <div>{record.sshHost}:{record.sshPort}</div>
+          <div className="text-gray-500">{record.sshRemotePath}</div>
+        </div>
+      ),
+    },
+    {
+      title: 'Frecuencia',
+      dataIndex: 'frequencyHours',
+      key: 'frequencyHours',
+      render: (hours: number) => `${hours}h`,
     },
     {
       title: 'Último Backup',
@@ -278,23 +322,18 @@ const SimaxDashboard: React.FC = () => {
     {
       title: 'Acciones',
       key: 'actions',
-      width: 200,
-      fixed: 'right' as const,
       render: (record: BackupConfiguration) => (
-        <Space size="small" wrap>
-          <Button 
-            type="primary" 
-            icon={<PlayCircleOutlined />}
+        <Space>
+          <Button
+            type="primary"
             size="small"
-            loading={backupLoading.has(record.clientId)}
-            disabled={backupLoading.has(record.clientId)}
             onClick={() => startBackup(record.clientId)}
-            className="min-w-[75px]"
+            loading={backupLoading.has(record.clientId)}
+            className="min-w-[80px]"
           >
-            {backupLoading.has(record.clientId) ? 'Iniciando...' : 'Backup'}
+            Backup
           </Button>
-          <Button 
-            icon={<DatabaseOutlined />}
+          <Button
             size="small"
             onClick={() => testSshConnection(record.clientId)}
             className="min-w-[80px]"
@@ -357,7 +396,8 @@ const SimaxDashboard: React.FC = () => {
     },
   ];
 
-  const activeConfigurations = configurations.filter(c => c.isActive).length;
+  const activeClients = configurations.length; // Solo clientes conectados
+  const totalConfigurations = allConfigurations.length; // Todas las configuraciones
   const totalJobs = activeJobs.length;
   const runningJobs = activeJobs.filter(j => j.status === 'RUNNING').length;
 
@@ -384,8 +424,8 @@ const SimaxDashboard: React.FC = () => {
         <Col span={6}>
           <Card>
             <Statistic
-              title="Configuraciones Activas"
-              value={activeConfigurations}
+              title="Clientes Conectados"
+              value={activeClients}
               prefix={<SettingOutlined />}
               valueStyle={{ color: '#3f8600' }}
             />
@@ -415,18 +455,40 @@ const SimaxDashboard: React.FC = () => {
           <Card>
             <Statistic
               title="Total Configuraciones"
-              value={configurations.length}
+              value={totalConfigurations}
               prefix={<DatabaseOutlined />}
             />
           </Card>
         </Col>
       </Row>
 
-      {/* Configuraciones */}
+      {/* Clientes Activos */}
+      <Card title="Clientes Activos" className="mb-6">
+        <Table
+          columns={activeClientsColumns}
+          dataSource={configurations}
+          rowKey="id"
+          loading={loading}
+          pagination={{ 
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} clientes activos`
+          }}
+          scroll={{ x: 1000, y: 300 }}
+          size="middle"
+          className="custom-table"
+          locale={{
+            emptyText: 'No hay clientes conectados'
+          }}
+        />
+      </Card>
+
+      {/* Configuraciones de Backup */}
       <Card title="Configuraciones de Backup" className="mb-6">
         <Table
           columns={configurationColumns}
-          dataSource={configurations}
+          dataSource={allConfigurations}
           rowKey="id"
           loading={loading}
           pagination={{ 
@@ -435,7 +497,7 @@ const SimaxDashboard: React.FC = () => {
             showQuickJumper: true,
             showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} configuraciones`
           }}
-          scroll={{ x: 1000, y: 400 }}
+          scroll={{ x: 1000, y: 300 }}
           size="middle"
           className="custom-table"
         />

@@ -98,14 +98,26 @@ class SimaxService {
     }
   }
 
-  async getAllConfigurations(): Promise<ApiResponse<BackupConfiguration[]>> {
+  async getAllActiveConfigurations(): Promise<ApiResponse<BackupConfiguration[]>> {
     try {
       const response = await this.axiosInstance.get('/configurations');
       return { success: true, data: response.data };
     } catch (error: any) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Error obteniendo configuraciones' 
+        error: error.response?.data?.message || 'Error obteniendo configuraciones activas' 
+      };
+    }
+  }
+
+  async getAllConfigurations(): Promise<ApiResponse<BackupConfiguration[]>> {
+    try {
+      const response = await this.axiosInstance.get('/configurations/all');
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Error obteniendo todas las configuraciones' 
       };
     }
   }
