@@ -47,6 +47,8 @@ export default function Inventory() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [selectedEquipo, setSelectedEquipo] = useState<any | null>(null);
   const [selectedTab, setSelectedTab] = useState<number>(0);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -72,6 +74,10 @@ export default function Inventory() {
   useEffect(() => {
     fetchInventoryItems();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filters, sortConfig]);
   
   // Cargar datos para los filtros
   useEffect(() => {
@@ -188,10 +194,21 @@ export default function Inventory() {
   // Manejar cambios en los filtros
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setCurrentPage(1);
+    setFilters(prev => {
+      if (name === 'empresa') {
+        return {
+          ...prev,
+          empresa: value,
+          sede: ''
+        };
+      }
+
+      return {
+        ...prev,
+        [name]: value
+      };
+    });
     
     // Si se selecciona una empresa, filtrar las sedes disponibles
     if (name === 'empresa' && value) {
@@ -260,6 +277,32 @@ export default function Inventory() {
       }
       return 0;
     });
+
+  const totalPages = Math.max(1, Math.ceil(filteredAndSortedData.length / pageSize));
+  const effectiveCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (effectiveCurrentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = filteredAndSortedData.slice(startIndex, endIndex);
+
+  useEffect(() => {
+    setCurrentPage(prev => Math.min(prev, totalPages));
+  }, [totalPages]);
+
+  const getVisiblePages = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const pages = new Set<number>();
+    pages.add(1);
+    pages.add(totalPages);
+
+    for (let p = effectiveCurrentPage - 1; p <= effectiveCurrentPage + 1; p++) {
+      if (p > 1 && p < totalPages) pages.add(p);
+    }
+
+    return Array.from(pages).sort((a, b) => a - b);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50/50">
@@ -402,7 +445,7 @@ export default function Inventory() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white">
-                    {filteredAndSortedData.map((equipo) => (
+                    {paginatedData.map((equipo) => (
                       <tr 
                         key={equipo.id} 
                         className="hover:bg-gray-50/50 cursor-pointer"
@@ -492,29 +535,74 @@ export default function Inventory() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                 <p className="text-sm text-gray-700 whitespace-nowrap">
-                  Mostrando <span className="font-medium">{filteredAndSortedData.length}</span> de <span className="font-medium">{inventarioData.length}</span> equipos
+                  Mostrando <span className="font-medium">{paginatedData.length}</span> de <span className="font-medium">{filteredAndSortedData.length}</span> equipos
                 </p>
-                <select className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg
-                              focus:ring-2 focus:ring-blue-500">
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(parseInt(e.target.value, 10));
+                    setCurrentPage(1);
+                  }}
+                  className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg
+                              focus:ring-2 focus:ring-blue-500"
+                >
                   <option value="10">10 por página</option>
                   <option value="20">20 por página</option>
                   <option value="50">50 por página</option>
                 </select>
               </div>
               <nav className="flex gap-1 w-full sm:w-auto justify-center">
-                <button className="px-3 py-1.5 text-sm font-medium text-gray-500 bg-gray-50 rounded-lg hover:bg-gray-100">
+                <button
+                  disabled={effectiveCurrentPage === 1}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
+                    effectiveCurrentPage === 1
+                      ? 'text-gray-300 bg-gray-50 cursor-not-allowed'
+                      : 'text-gray-500 bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
                   Anterior
                 </button>
-                <button className="px-3 py-1.5 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600">
-                  1
-                </button>
-                <button className="px-3 py-1.5 text-sm font-medium text-gray-500 bg-gray-50 rounded-lg hover:bg-gray-100">
-                  2
-                </button>
-                <button className="px-3 py-1.5 text-sm font-medium text-gray-500 bg-gray-50 rounded-lg hover:bg-gray-100">
-                  3
-                </button>
-                <button className="px-3 py-1.5 text-sm font-medium text-gray-500 bg-gray-50 rounded-lg hover:bg-gray-100">
+                {getVisiblePages().flatMap((page, idx, arr) => {
+                  const prev = idx > 0 ? arr[idx - 1] : undefined;
+                  const parts: React.ReactNode[] = [];
+
+                  if (prev !== undefined && page - prev > 1) {
+                    parts.push(
+                      <span
+                        key={`ellipsis-${prev}-${page}`}
+                        className="px-3 py-1.5 text-sm font-medium text-gray-400"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
+                  parts.push(
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
+                        page === effectiveCurrentPage
+                          ? 'text-white bg-blue-500 hover:bg-blue-600'
+                          : 'text-gray-500 bg-gray-50 hover:bg-gray-100'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+
+                  return parts;
+                })}
+                <button
+                  disabled={effectiveCurrentPage === totalPages}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg ${
+                    effectiveCurrentPage === totalPages
+                      ? 'text-gray-300 bg-gray-50 cursor-not-allowed'
+                      : 'text-gray-500 bg-gray-50 hover:bg-gray-100'
+                  }`}
+                >
                   Siguiente
                 </button>
               </nav>
