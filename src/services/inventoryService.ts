@@ -66,6 +66,7 @@ export interface InventoryItem {
   quantity: number;
   status: string;
   equipmentStatus?: EquipmentStatus;
+  lastMaintenanceDate?: string;
   purchaseDate?: string;
   anyDeskId?: string;
   email?: string;

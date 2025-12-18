@@ -42,6 +42,7 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
     typeInventoryItem: { name: '' },
     status: 'Activo',
     equipmentStatus: undefined,
+    lastMaintenanceDate: '',
     purchaseDate: '',
     anyDeskId: '',
     email: '',
@@ -237,6 +238,12 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
       if (formData.purchaseDate) {
         purchaseDateFormatted = `${formData.purchaseDate}T00:00:00`;
       }
+
+      // Convertir lastMaintenanceDate a formato LocalDateTime si existe
+      let lastMaintenanceDateFormatted = undefined;
+      if (formData.lastMaintenanceDate) {
+        lastMaintenanceDateFormatted = `${formData.lastMaintenanceDate}T00:00:00`;
+      }
       
       // Preparar el objeto para enviar al API
       const newItem: InventoryItem = {
@@ -262,6 +269,7 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
         quantity: 1, // Siempre será 1
         status: formData.status || 'Activo',
         equipmentStatus: formData.equipmentStatus,
+        lastMaintenanceDate: lastMaintenanceDateFormatted,
         purchaseDate: purchaseDateFormatted,
         anyDeskId: formData.anyDeskId,
         email: formData.email,
@@ -667,6 +675,20 @@ export default function AddInventoryItemModal({ onClose, onSave }: AddInventoryI
                     id="purchaseDate"
                     name="purchaseDate"
                     value={formData.purchaseDate || ''}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="lastMaintenanceDate" className="block text-sm font-medium text-gray-700 mb-1">
+                    Última Fecha de Mantenimiento
+                  </label>
+                  <input
+                    type="date"
+                    id="lastMaintenanceDate"
+                    name="lastMaintenanceDate"
+                    value={formData.lastMaintenanceDate || ''}
                     onChange={handleChange}
                     className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
                   />

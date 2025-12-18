@@ -16,6 +16,7 @@ export default function EditInventoryItemModal({ item, originalItem, onClose, on
     service: originalItem.service || '',
     ramMemory: originalItem.ramMemory || '',
     hardDrive: originalItem.hardDrive || '',
+    lastMaintenanceDate: originalItem.lastMaintenanceDate ? originalItem.lastMaintenanceDate.split('T')[0] : '',
     status: originalItem.status || 'Activo'
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +38,11 @@ export default function EditInventoryItemModal({ item, originalItem, onClose, on
     try {
       // Obtener el usuario actual para guardar quién actualizó el equipo
       const currentUser = getCurrentUser();
+
+      let lastMaintenanceDateFormatted = undefined;
+      if (formData.lastMaintenanceDate) {
+        lastMaintenanceDateFormatted = `${formData.lastMaintenanceDate}T00:00:00`;
+      }
       
       // Crear objeto con solo los campos que se pueden editar
       const updateData: Partial<InventoryItem> = {
@@ -44,6 +50,7 @@ export default function EditInventoryItemModal({ item, originalItem, onClose, on
         service: formData.service,
         ramMemory: formData.ramMemory,
         hardDrive: formData.hardDrive,
+        lastMaintenanceDate: lastMaintenanceDateFormatted,
         status: formData.status,
         updatedByUserId: currentUser?.id
       };
@@ -177,6 +184,20 @@ export default function EditInventoryItemModal({ item, originalItem, onClose, on
                   id="hardDrive"
                   name="hardDrive"
                   value={formData.hardDrive}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="lastMaintenanceDate" className="block text-sm font-medium text-gray-700 mb-1">
+                  Última Fecha de Mantenimiento
+                </label>
+                <input
+                  type="date"
+                  id="lastMaintenanceDate"
+                  name="lastMaintenanceDate"
+                  value={formData.lastMaintenanceDate}
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-blue-500"
                 />
