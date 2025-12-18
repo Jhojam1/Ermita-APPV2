@@ -19,9 +19,9 @@ const mapInventoryItemToUI = (item: InventoryItem) => {
   return {
     id: item.id,
     // IDs para traslados y edición
-    cityId: item.cityId,
-    companyId: item.companyId,
-    sedeId: item.sedeId,
+    cityId: Number(item.cityId),
+    companyId: Number(item.companyId),
+    sedeId: Number(item.sedeId),
     // Nombres para visualización
     ciudad: item.cityName || 'Ciudad no especificada',
     empresa: item.companyName || 'Desconocida',
@@ -216,7 +216,7 @@ export default function Inventory() {
       // Obtener todas las sedes y filtrar por la empresa seleccionada
       const filteredSedes = Array.from(new Set(
         inventarioData
-          .filter(item => item.companyId === companyId)
+          .filter(item => Number(item.companyId) === companyId)
           .map(item => JSON.stringify({ id: item.sedeId, name: item.sede, companyId }))
       )).map(item => JSON.parse(item));
       
@@ -258,8 +258,8 @@ export default function Inventory() {
         equipo.tipo.toLowerCase().includes(searchTerm.toLowerCase());
       
       // Filtrar por filtros seleccionados
-      const empresaMatch = !filters.empresa || equipo.companyId === parseInt(filters.empresa);
-      const sedeMatch = !filters.sede || equipo.sedeId === parseInt(filters.sede);
+      const empresaMatch = !filters.empresa || Number(equipo.companyId) === parseInt(filters.empresa);
+      const sedeMatch = !filters.sede || Number(equipo.sedeId) === parseInt(filters.sede);
       const tipoMatch = !filters.tipo || equipo.tipo.toLowerCase() === filters.tipo.toLowerCase();
       const estadoMatch = !filters.estado || equipo.estado.toLowerCase() === filters.estado.toLowerCase();
       
@@ -546,6 +546,7 @@ export default function Inventory() {
                   className="w-full sm:w-auto pl-3 pr-8 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg
                               focus:ring-2 focus:ring-blue-500"
                 >
+                  <option value="5">5 por página</option>
                   <option value="10">10 por página</option>
                   <option value="20">20 por página</option>
                   <option value="50">50 por página</option>
