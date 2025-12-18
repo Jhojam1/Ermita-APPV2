@@ -48,7 +48,7 @@ export default function Inventory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
   const [selectedEquipo, setSelectedEquipo] = useState<any | null>(null);
   const [selectedTab, setSelectedTab] = useState<number>(0);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -67,8 +67,8 @@ export default function Inventory() {
   });
   
   // Listas para los filtros
-  const [empresas, setEmpresas] = useState<{id: number, name: string}[]>([]);
-  const [sedes, setSedes] = useState<{id: number, name: string, companyId: number}[]>([]);
+  const [empresas, setEmpresas] = useState<{id: string, name: string}[]>([]);
+  const [sedes, setSedes] = useState<{id: string, name: string}[]>([]);
   const [tipos, setTipos] = useState<{id: number, name: string}[]>([]);
 
   useEffect(() => {
@@ -93,20 +93,16 @@ export default function Inventory() {
         
         inventarioData.forEach(item => {
           // Añadir empresa si no existe
-          if (item.empresa && !uniqueCompanies.has(item.companyId)) {
-            uniqueCompanies.set(item.companyId, {
-              id: item.companyId,
-              name: item.empresa
-            });
+          if (item.empresa && !uniqueCompanies.has(item.empresa)) {
+            uniqueCompanies.set(item.empresa, { id: item.empresa, name: item.empresa });
           }
           
           // Añadir sede si no existe
-          if (item.sede && !uniqueHeadquarters.has(item.sedeId)) {
-            uniqueHeadquarters.set(item.sedeId, {
-              id: item.sedeId,
-              name: item.sede,
-              companyId: item.companyId
-            });
+          if (item.empresa && item.sede) {
+            const sedeKey = `${item.empresa}|||${item.sedeId}`;
+            if (!uniqueHeadquarters.has(sedeKey)) {
+              uniqueHeadquarters.set(sedeKey, { id: sedeKey, name: item.sede });
+            }
           }
         });
         
@@ -212,19 +208,20 @@ export default function Inventory() {
     
     // Si se selecciona una empresa, filtrar las sedes disponibles
     if (name === 'empresa' && value) {
-      const companyId = parseInt(value);
       // Obtener todas las sedes y filtrar por la empresa seleccionada
       const filteredSedes = Array.from(new Set(
         inventarioData
-          .filter(item => Number(item.companyId) === companyId)
-          .map(item => JSON.stringify({ id: item.sedeId, name: item.sede, companyId }))
+          .filter(item => item.empresa === value)
+          .map(item => JSON.stringify({ id: `${item.empresa}|||${item.sedeId}`, name: item.sede }))
       )).map(item => JSON.parse(item));
       
       setSedes(filteredSedes);
     } else if (name === 'empresa' && !value) {
       // Si se deselecciona la empresa, mostrar todas las sedes
       const allSedes = Array.from(new Set(
-        inventarioData.map(item => JSON.stringify({ id: item.sedeId, name: item.sede, companyId: item.companyId }))
+        inventarioData
+          .filter(item => item.empresa && item.sede)
+          .map(item => JSON.stringify({ id: `${item.empresa}|||${item.sedeId}`, name: item.sede }))
       )).map(item => JSON.parse(item));
       
       setSedes(allSedes);
@@ -258,8 +255,8 @@ export default function Inventory() {
         equipo.tipo.toLowerCase().includes(searchTerm.toLowerCase());
       
       // Filtrar por filtros seleccionados
-      const empresaMatch = !filters.empresa || Number(equipo.companyId) === parseInt(filters.empresa);
-      const sedeMatch = !filters.sede || Number(equipo.sedeId) === parseInt(filters.sede);
+      const empresaMatch = !filters.empresa || equipo.empresa === filters.empresa;
+      const sedeMatch = !filters.sede || `${equipo.empresa}|||${equipo.sedeId}` === filters.sede;
       const tipoMatch = !filters.tipo || equipo.tipo.toLowerCase() === filters.tipo.toLowerCase();
       const estadoMatch = !filters.estado || equipo.estado.toLowerCase() === filters.estado.toLowerCase();
       
