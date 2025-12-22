@@ -4,7 +4,6 @@ import {
   CheckCircleIcon, 
   ExclamationTriangleIcon,
   PlayIcon,
-  PauseIcon,
   DocumentTextIcon,
   CalendarIcon,
   ChartBarIcon,
@@ -14,15 +13,15 @@ import technicianAssignmentService, {
   MaintenanceAssignment, 
   TechnicianProductivityStats 
 } from '../../services/technicianAssignmentService';
-import maintenanceService from '../../services/maintenanceService';
+import inventoryService, { InventoryItem } from '../../services/inventoryService';
 
 export default function TechnicianDashboard() {
   const [assignedMaintenances, setAssignedMaintenances] = useState<MaintenanceAssignment[]>([]);
   const [productivityStats, setProductivityStats] = useState<TechnicianProductivityStats | null>(null);
   const [loading, setLoading] = useState(false);
-  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [inventoryItemsById, setInventoryItemsById] = useState<Record<number, InventoryItem>>({});
 
   // Obtener datos del usuario actual
   const userStr = localStorage.getItem('user');
@@ -36,6 +35,41 @@ export default function TechnicianDashboard() {
       loadData();
     }
   }, [technicianId]);
+
+  useEffect(() => {
+    const fetchMissingInventoryItems = async () => {
+      if (!assignedMaintenances.length) return;
+
+      const uniqueIds = Array.from(new Set(assignedMaintenances.map(m => m.inventoryItemId).filter((id): id is number => !!id)));
+      const missingIds = uniqueIds.filter(id => !inventoryItemsById[id]);
+      if (!missingIds.length) return;
+
+      try {
+        const results = await Promise.all(
+          missingIds.map(async (id) => {
+            try {
+              const item = await inventoryService.getItemById(id);
+              return { id, item };
+            } catch {
+              return null;
+            }
+          })
+        );
+
+        setInventoryItemsById(prev => {
+          const next = { ...prev };
+          for (const r of results) {
+            if (r?.item) next[r.id] = r.item;
+          }
+          return next;
+        });
+      } catch (error) {
+        console.error('Error enriqueciendo información del equipo:', error);
+      }
+    };
+
+    fetchMissingInventoryItems();
+  }, [assignedMaintenances, inventoryItemsById]);
 
   const loadData = async () => {
     if (!technicianId) return;
@@ -53,19 +87,6 @@ export default function TechnicianDashboard() {
       console.error('Error cargando datos del técnico:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleStatusUpdate = async (maintenanceId: number, newStatus: 'PROGRAMADO' | 'EN_PROCESO' | 'COMPLETADO' | 'CANCELADO') => {
-    setUpdatingStatus(maintenanceId);
-    try {
-      await maintenanceService.updateMaintenance(maintenanceId, { status: newStatus });
-      await loadData(); // Recargar datos para reflejar cambios
-    } catch (error) {
-      console.error('Error actualizando estado:', error);
-      alert('Error al actualizar el estado. Por favor, inténtalo de nuevo.');
-    } finally {
-      setUpdatingStatus(null);
     }
   };
 
@@ -105,25 +126,24 @@ export default function TechnicianDashboard() {
     }
   };
 
-  const getAvailableStatusTransitions = (currentStatus: string) => {
-    switch (currentStatus) {
-      case 'PROGRAMADO':
-        return [
-          { value: 'EN_PROCESO', label: 'Iniciar Trabajo', color: 'bg-blue-600' }
-        ];
-      case 'EN_PROCESO':
-        return [
-          { value: 'COMPLETADO', label: 'Completar', color: 'bg-green-600' },
-          { value: 'PROGRAMADO', label: 'Pausar', color: 'bg-yellow-600' }
-        ];
-      case 'VENCIDO':
-        return [
-          { value: 'EN_PROCESO', label: 'Reanudar', color: 'bg-blue-600' },
-          { value: 'COMPLETADO', label: 'Completar', color: 'bg-green-600' }
-        ];
-      default:
-        return [];
+  const getMaintenanceLocation = (maintenance: MaintenanceAssignment) => {
+    const item = inventoryItemsById[maintenance.inventoryItemId];
+    if (item) {
+      const parts = [item.companyName, item.sedeName, item.cityName].filter(Boolean);
+      if (parts.length) return parts.join(' - ');
     }
+
+    if (maintenance.serviceArea && maintenance.responsible) {
+      return `${maintenance.serviceArea} - ${maintenance.responsible}`;
+    }
+    return maintenance.serviceArea || maintenance.responsible || 'Sin ubicación';
+  };
+
+  const getMaintenanceTitle = (maintenance: MaintenanceAssignment) => {
+    const item = inventoryItemsById[maintenance.inventoryItemId];
+    const serial = maintenance.inventoryItemSerial || item?.serial || maintenance.inventoryItemName || item?.equipmentName || `Equipo #${maintenance.inventoryItemId}`;
+    const location = getMaintenanceLocation(maintenance);
+    return `#${maintenance.id} - ${serial} - ${location}`;
   };
 
   const isOverdue = (scheduledDate: string) => {
@@ -132,8 +152,13 @@ export default function TechnicianDashboard() {
   };
 
   const filteredMaintenances = assignedMaintenances.filter(maintenance => {
-    const matchesSearch = maintenance.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         maintenance.inventoryItemSerial?.toLowerCase().includes(searchTerm.toLowerCase());
+    const search = searchTerm.toLowerCase();
+    const item = inventoryItemsById[maintenance.inventoryItemId];
+    const serial = (maintenance.inventoryItemSerial || item?.serial || '').toLowerCase();
+    const location = getMaintenanceLocation(maintenance).toLowerCase();
+    const description = (maintenance.description || '').toLowerCase();
+
+    const matchesSearch = !search || description.includes(search) || serial.includes(search) || location.includes(search);
     
     const matchesFilter = filterStatus === 'all' || maintenance.status === filterStatus;
     
@@ -225,9 +250,9 @@ export default function TechnicianDashboard() {
             {getUpcomingMaintenances().slice(0, 3).map((maintenance) => (
               <div key={maintenance.id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
                 <div>
-                  <div className="font-medium text-gray-900">#{maintenance.id} - {maintenance.description}</div>
+                  <div className="font-medium text-gray-900">{getMaintenanceTitle(maintenance)}</div>
                   <div className="text-sm text-gray-600">
-                    {maintenance.inventoryItemSerial} • {new Date(maintenance.scheduledDate).toLocaleDateString()}
+                    {new Date(maintenance.scheduledDate).toLocaleDateString()}
                   </div>
                 </div>
                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(maintenance.type)}`}>
@@ -300,7 +325,6 @@ export default function TechnicianDashboard() {
           ) : (
             filteredMaintenances.map((maintenance) => {
               const StatusIcon = getStatusIcon(maintenance.status);
-              const availableTransitions = getAvailableStatusTransitions(maintenance.status);
               const overdue = isOverdue(maintenance.scheduledDate);
               
               return (
@@ -310,11 +334,7 @@ export default function TechnicianDashboard() {
                       <div className="flex items-center gap-3 mb-2">
                         <StatusIcon className="h-5 w-5 text-gray-400" />
                         <div className="font-medium text-gray-900">
-                          #{maintenance.id} - {maintenance.description 
-                            ? (maintenance.description.length > 50 
-                                ? maintenance.description.substring(0, 50) + '...' 
-                                : maintenance.description)
-                            : 'Sin descripción'}
+                          {getMaintenanceTitle(maintenance)}
                         </div>
                         {overdue && (
                           <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
@@ -360,29 +380,6 @@ export default function TechnicianDashboard() {
                           </div>
                         </div>
                       )}
-                    </div>
-
-                    {/* Acciones de Estado */}
-                    <div className="ml-6 flex flex-col gap-2">
-                      {availableTransitions.map((transition) => (
-                        <button
-                          key={transition.value}
-                          onClick={() => handleStatusUpdate(maintenance.id, transition.value as 'PROGRAMADO' | 'EN_PROCESO' | 'COMPLETADO' | 'CANCELADO')}
-                          disabled={updatingStatus === maintenance.id}
-                          className={`${transition.color} text-white px-3 py-1 rounded text-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1`}
-                        >
-                          {updatingStatus === maintenance.id ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          ) : (
-                            <>
-                              {transition.value === 'EN_PROCESO' && <PlayIcon className="h-4 w-4" />}
-                              {transition.value === 'COMPLETADO' && <CheckCircleIcon className="h-4 w-4" />}
-                              {transition.value === 'PROGRAMADO' && <PauseIcon className="h-4 w-4" />}
-                              {transition.label}
-                            </>
-                          )}
-                        </button>
-                      ))}
                     </div>
                   </div>
                 </div>
