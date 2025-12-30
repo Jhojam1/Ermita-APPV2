@@ -10,6 +10,7 @@ export interface BackupProgressData {
   jobId: number;
   progress: number;
   message: string;
+  clientId?: string;
 }
 
 class SimaxWebSocketService {

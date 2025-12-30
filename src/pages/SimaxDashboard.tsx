@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Row, Col, Statistic, Table, Button, Badge, Space, message, Modal, Progress, Tag, Input } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import type { FilterDropdownProps } from 'antd/es/table/interface';
@@ -32,6 +32,9 @@ const SimaxDashboard: React.FC = () => {
     message: ''
   });
 
+  const [progressModalDismissed, setProgressModalDismissed] = useState(false);
+  const refreshActiveJobsTimeoutRef = useRef<number | null>(null);
+
   useEffect(() => {
     loadData();
     connectWebSocket();
@@ -52,17 +55,58 @@ const SimaxDashboard: React.FC = () => {
 
     wsService.on('backupStarted', (data) => {
       message.success(`Backup iniciado: Job ID ${data.jobId}`);
+      setProgressModalDismissed(false);
       loadActiveJobs();
     });
 
     wsService.on('backupProgress', (data: BackupProgressData) => {
       setProgressModal(prev => ({
         ...prev,
-        visible: true,
+        visible: progressModalDismissed ? prev.visible : true,
         jobId: data.jobId,
         progress: data.progress,
-        message: data.message
+        message: data.message,
+        clientId: data.clientId ?? prev.clientId
       }));
+
+      setActiveJobs(prev => {
+        const idx = prev.findIndex(j => j.id === data.jobId);
+        if (idx >= 0) {
+          const updated = [...prev];
+          updated[idx] = {
+            ...updated[idx],
+            status: 'RUNNING',
+            filesTotal: 100,
+            filesProcessed: data.progress,
+            progressPercentage: data.progress,
+            logDetails: data.message
+          };
+          return updated;
+        }
+
+        return [
+          {
+            id: data.jobId,
+            configurationId: 0,
+            clientId: data.clientId || '',
+            status: 'RUNNING',
+            jobType: 'MANUAL',
+            startedAt: new Date().toISOString(),
+            filesProcessed: data.progress,
+            filesTotal: 100,
+            progressPercentage: data.progress,
+            logDetails: data.message
+          },
+          ...prev
+        ];
+      });
+
+      if (refreshActiveJobsTimeoutRef.current == null) {
+        refreshActiveJobsTimeoutRef.current = window.setTimeout(() => {
+          refreshActiveJobsTimeoutRef.current = null;
+          loadActiveJobs();
+        }, 2000);
+      }
     });
 
     wsService.on('backupCompleted', (data) => {
@@ -160,6 +204,7 @@ const SimaxDashboard: React.FC = () => {
       message: 'Iniciando backup...',
       clientId: clientId
     });
+    setProgressModalDismissed(false);
 
     try {
       const response = await simaxService.startBackup(clientId);
@@ -494,7 +539,25 @@ const SimaxDashboard: React.FC = () => {
       key: 'progress',
       render: (record: BackupJob) => {
         if (record.status === 'RUNNING' && record.progressPercentage !== undefined) {
-          return <Progress percent={Math.round(record.progressPercentage)} size="small" />;
+          const percent = Math.round(record.progressPercentage);
+          return (
+            <div
+              className="cursor-pointer"
+              onClick={() => {
+                setProgressModalDismissed(false);
+                setProgressModal({
+                  visible: true,
+                  jobId: record.id,
+                  progress: percent,
+                  message: record.logDetails || '',
+                  clientId: record.clientId
+                });
+              }}
+            >
+              <Progress percent={percent} size="small" showInfo={false} />
+              <div className="text-xs text-gray-500 text-center">{percent}%</div>
+            </div>
+          );
         }
         return record.status === 'COMPLETED' ? '100%' : '-';
       },
@@ -648,7 +711,10 @@ const SimaxDashboard: React.FC = () => {
       <Modal
         title="Progreso del Backup"
         open={progressModal.visible}
-        onCancel={() => setProgressModal(prev => ({ ...prev, visible: false }))}
+        onCancel={() => {
+          setProgressModalDismissed(true);
+          setProgressModal(prev => ({ ...prev, visible: false }));
+        }}
         footer={null}
         width={500}
       >
@@ -658,7 +724,9 @@ const SimaxDashboard: React.FC = () => {
             <Progress 
               percent={progressModal.progress} 
               status={progressModal.progress === 100 ? 'success' : 'active'}
+              showInfo={false}
             />
+            <div className="text-sm text-gray-700 text-center font-medium">{progressModal.progress}%</div>
           </div>
           <div>
             <p className="text-sm font-medium">Estado:</p>
