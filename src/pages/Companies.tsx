@@ -9,7 +9,7 @@ import {
   ChevronRightIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import companyService, { Company, HeadquarterCompany, City } from '../services/companyService';
+import companyService, { Company, Headquarter, City } from '../services/companyService';
 
 // Interfaz para los datos que se muestran en la UI
 interface CompanyUI {
@@ -107,18 +107,43 @@ export default function Companies() {
     }
   };
 
-  // Función para mapear las sedes del backend a la UI
-  const mapHeadquarterToUI = (headquarter: HeadquarterCompany): HeadquarterUI => {
-    return {
-      id: headquarter.headquarterId.toString(),
-      nombre: headquarter.headquarterName,
-      estado: headquarter.active ? 'Activo' : 'Inactivo',
-      companyId: headquarter.companyId.toString(),
-    };
+  const fetchCompanies = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await companyService.getAllCompanies();
+      
+      // Para cada empresa, obtenemos sus sedes
+      const companiesWithHeadquarters = await Promise.all(
+        data.map(async (company) => {
+          try {
+            const headquarters = await companyService.getHeadquartersByCompanyId(company.id);
+            return {
+              ...company,
+              headquarters
+            };
+          } catch (error) {
+            console.error(`Error al obtener sedes para la empresa ${company.id}:`, error);
+            return {
+              ...company,
+              headquarters: []
+            };
+          }
+        })
+      );
+      
+      const mappedData = companiesWithHeadquarters.map(mapToUI);
+      setEmpresasData(mappedData);
+    } catch (err) {
+      console.error('Error al cargar empresas:', err);
+      setError('Error al cargar los datos de empresas. Por favor, intente nuevamente.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Función para mapear los datos del backend a la UI
-  const mapToUI = (company: Company): CompanyUI => {
+  const mapToUI = (company: Company & { headquarters?: Headquarter[] }): CompanyUI => {
     return {
       id: company.id.toString(),
       nombre: company.name,
@@ -127,29 +152,22 @@ export default function Companies() {
       telefono: company.phone,
       email: company.email,
       estado: company.active ? 'Activo' : 'Inactivo',
-      cityId: company.cityId || 0,
+      cityId: company.cityId,
       cityName: company.cityName,
       cityDepartment: company.cityDepartment,
       sedes: company.headquarters ? company.headquarters.map(mapHeadquarterToUI) : [],
     };
   };
 
-  const fetchCompanies = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await companyService.getAllCompanies();
-      const mappedData = data.map(mapToUI);
-      setEmpresasData(mappedData);
-    } catch (err) {
-      console.error('Error al cargar empresas:', err);
-      setError('Error al cargar las empresas');
-    } finally {
-      setIsLoading(false);
-    }
+  // Función para mapear las sedes del backend a la UI
+  const mapHeadquarterToUI = (headquarter: Headquarter): HeadquarterUI => {
+    return {
+      id: headquarter.id.toString(),
+      nombre: headquarter.name,
+      estado: headquarter.active ? 'Activo' : 'Inactivo',
+      companyId: headquarter.companyId.toString(),
+    };
   };
-
-  const loadCompanies = fetchCompanies;
 
   const handleSort = (key: string) => {
     let direction = 'asc';
@@ -258,14 +276,30 @@ export default function Companies() {
       
       if (isEditing && selectedCompanyId) {
         // Actualizar empresa existente
-        await companyService.updateCompany(Number(selectedCompanyId), companyFormData);
+        await companyService.updateCompany(parseInt(selectedCompanyId), {
+          name: companyFormData.name,
+          nit: companyFormData.nit,
+          address: companyFormData.address,
+          phone: companyFormData.phone,
+          email: companyFormData.email,
+          active: companyFormData.active,
+          cityId: companyFormData.cityId
+        });
       } else {
         // Crear nueva empresa
-        await companyService.createCompany(companyFormData);
+        await companyService.createCompany({
+          name: companyFormData.name,
+          nit: companyFormData.nit,
+          address: companyFormData.address,
+          phone: companyFormData.phone,
+          email: companyFormData.email,
+          active: companyFormData.active,
+          cityId: companyFormData.cityId
+        });
       }
       
       // Recargar los datos
-      await loadCompanies();
+      await fetchCompanies();
       
       // Cerrar el modal
       setShowCompanyModal(false);
@@ -292,14 +326,22 @@ export default function Companies() {
       
       if (isEditing && selectedHeadquarterId) {
         // Actualizar sede existente
-        await companyService.updateHeadquarter(Number(selectedHeadquarterId), headquarterFormData);
+        await companyService.updateHeadquarter(parseInt(selectedHeadquarterId), {
+          name: headquarterFormData.name,
+          active: headquarterFormData.active,
+          companyId: headquarterFormData.companyId
+        });
       } else {
         // Crear nueva sede
-        await companyService.createHeadquarter(headquarterFormData);
+        await companyService.createHeadquarter({
+          name: headquarterFormData.name,
+          active: headquarterFormData.active,
+          companyId: headquarterFormData.companyId
+        });
       }
       
       // Recargar los datos
-      await loadCompanies();
+      await fetchCompanies();
       
       // Cerrar el modal
       setShowHeadquarterModal(false);
