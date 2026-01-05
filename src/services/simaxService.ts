@@ -17,6 +17,9 @@ export interface BackupConfiguration {
   clientIpAddress?: string;
   alias?: string; // Nombre del responsable del computador
   useManualPath?: boolean;
+  useScheduledTime?: boolean; // Usar hora específica diaria
+  scheduledTime?: string; // Hora específica en formato HH:mm
+  isPaused?: boolean; // Pausar backups automáticos
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -161,14 +164,38 @@ class SimaxService {
   }
 
   // Prueba de conexión SSH
-  async testSshConnection(clientId: string): Promise<ApiResponse<{ success: boolean; message: string }>> {
+  async testSshConnection(clientId: string): Promise<ApiResponse<any>> {
     try {
       const response = await this.axiosInstance.post(`/test-ssh/${clientId}`);
       return { success: true, data: response.data };
     } catch (error: any) {
       return { 
         success: false, 
-        error: error.response?.data?.error || 'Error probando conexión SSH' 
+        error: error.response?.data?.error || error.message || 'Error probando conexión SSH' 
+      };
+    }
+  }
+
+  async pauseBackups(clientId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.axiosInstance.post(`/pause/${clientId}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        error: error.response?.data?.error || error.message || 'Error pausando backups' 
+      };
+    }
+  }
+
+  async resumeBackups(clientId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await this.axiosInstance.post(`/resume/${clientId}`);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        error: error.response?.data?.error || error.message || 'Error reanudando backups' 
       };
     }
   }

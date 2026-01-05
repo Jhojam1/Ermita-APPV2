@@ -11,7 +11,8 @@ import {
   Divider,
   Table,
   Modal,
-  Tag
+  Tag,
+  TimePicker
 } from 'antd';
 import type { FilterDropdownProps } from 'antd/es/table/interface';
 import { 
@@ -19,9 +20,14 @@ import {
   PlusOutlined, 
   EditOutlined,
   CheckCircleOutlined,
-  SearchOutlined
+  SearchOutlined,
+  FolderOpenOutlined,
+  ClockCircleOutlined,
+  PauseCircleOutlined,
+  PlayCircleOutlined
 } from '@ant-design/icons';
 import simaxService, { BackupConfiguration } from '../services/simaxService';
+import FolderBrowser from '../components/FolderBrowser';
 
 const SimaxConfiguration: React.FC = () => {
   const [form] = Form.useForm();
@@ -30,6 +36,8 @@ const SimaxConfiguration: React.FC = () => {
   const [testingConnection, setTestingConnection] = useState(false);
   const [editingConfig, setEditingConfig] = useState<BackupConfiguration | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [folderBrowserVisible, setFolderBrowserVisible] = useState(false);
+  const [pausingBackups, setPausingBackups] = useState(false);
 
   useEffect(() => {
     loadConfigurations();
@@ -70,6 +78,29 @@ const SimaxConfiguration: React.FC = () => {
     }
     
     setLoading(false);
+  };
+
+  const handlePauseResume = async (clientId: string, isPaused?: boolean) => {
+    setPausingBackups(true);
+    try {
+      const response = isPaused 
+        ? await simaxService.resumeBackups(clientId)
+        : await simaxService.pauseBackups(clientId);
+      
+      if (response.success) {
+        message.success(isPaused ? 'Backups reanudados exitosamente' : 'Backups pausados exitosamente');
+        loadConfigurations();
+        if (editingConfig) {
+          setEditingConfig({ ...editingConfig, isPaused: !isPaused });
+        }
+      } else {
+        message.error(response.error || 'Error al cambiar estado de backups');
+      }
+    } catch (error) {
+      message.error('Error al cambiar estado de backups');
+    } finally {
+      setPausingBackups(false);
+    }
   };
 
   const testSshConnection = async () => {
@@ -317,6 +348,9 @@ const SimaxConfiguration: React.FC = () => {
             frequencyHours: 24,
             isActive: true,
             useManualPath: false,
+            useScheduledTime: false,
+            scheduledTime: '02:00',
+            isPaused: false,
           }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -349,7 +383,19 @@ const SimaxConfiguration: React.FC = () => {
             name="sourceDirectory"
             rules={[{ required: true, message: 'Directorio de origen es requerido' }]}
           >
-            <Input placeholder="ej: C:/Users/Usuario/Documents" />
+            <Input.Group compact>
+              <Input 
+                placeholder="ej: C:/Users/Usuario/Documents" 
+                style={{ width: 'calc(100% - 120px)' }}
+              />
+              <Button 
+                icon={<FolderOpenOutlined />}
+                onClick={() => setFolderBrowserVisible(true)}
+                style={{ width: '120px' }}
+              >
+                Explorar
+              </Button>
+            </Input.Group>
           </Form.Item>
 
           <Divider>Configuración SSH</Divider>
@@ -405,6 +451,7 @@ const SimaxConfiguration: React.FC = () => {
               label="Frecuencia (horas)"
               name="frequencyHours"
               rules={[{ required: true, message: 'Frecuencia es requerida' }]}
+              tooltip="Se usa solo si 'Hora Específica' está desactivada"
             >
               <InputNumber min={1} max={8760} className="w-full" />
             </Form.Item>
@@ -428,34 +475,87 @@ const SimaxConfiguration: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-end gap-2 md:gap-4 pt-6 mt-6 border-t border-gray-200">
-            <Button 
-              icon={<CheckCircleOutlined />}
-              onClick={testSshConnection}
-              loading={testingConnection}
-              className="w-full md:w-auto"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <Form.Item
+              label="Usar Hora Específica Diaria"
+              name="useScheduledTime"
+              valuePropName="checked"
+              tooltip="Ejecutar backup a una hora específica cada día en lugar de usar frecuencia"
             >
-              Probar SSH
-            </Button>
-            <Button 
-              onClick={() => setModalVisible(false)}
-              className="w-full md:w-auto"
+              <Switch />
+            </Form.Item>
+
+            <Form.Item
+              label="Hora de Ejecución"
+              name="scheduledTime"
+              tooltip="Hora del día para ejecutar el backup (formato 24h)"
             >
-              Cancelar
-            </Button>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
-              icon={<SaveOutlined />}
-              loading={loading}
-              className="w-full md:w-auto"
-              style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
-            >
-              Guardar
-            </Button>
+              <Input 
+                placeholder="HH:mm (ej: 02:00, 14:30)" 
+                prefix={<ClockCircleOutlined />}
+                maxLength={5}
+              />
+            </Form.Item>
+          </div>
+
+          <div className="flex flex-col md:flex-row justify-between gap-2 md:gap-4 pt-6 mt-6 border-t border-gray-200">
+            <div className="flex gap-2">
+              {editingConfig && (
+                <Button 
+                  icon={editingConfig.isPaused ? <PlayCircleOutlined /> : <PauseCircleOutlined />}
+                  onClick={() => handlePauseResume(editingConfig.clientId, editingConfig.isPaused)}
+                  loading={pausingBackups}
+                  className="w-full md:w-auto"
+                  style={{ 
+                    backgroundColor: editingConfig.isPaused ? '#52c41a' : '#faad14',
+                    borderColor: editingConfig.isPaused ? '#52c41a' : '#faad14',
+                    color: 'white'
+                  }}
+                >
+                  {editingConfig.isPaused ? 'Reanudar Backups' : 'Pausar Backups'}
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-col md:flex-row gap-2">
+              <Button 
+                icon={<CheckCircleOutlined />}
+                onClick={testSshConnection}
+                loading={testingConnection}
+                className="w-full md:w-auto"
+              >
+                Probar SSH
+              </Button>
+              <Button 
+                onClick={() => setModalVisible(false)}
+                className="w-full md:w-auto"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                icon={<SaveOutlined />}
+                loading={loading}
+                className="w-full md:w-auto"
+                style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
+              >
+                Guardar
+              </Button>
+            </div>
           </div>
         </Form>
       </Modal>
+
+      <FolderBrowser
+        visible={folderBrowserVisible}
+        onClose={() => setFolderBrowserVisible(false)}
+        onSelect={(path) => {
+          form.setFieldsValue({ sourceDirectory: path });
+          setFolderBrowserVisible(false);
+          message.success('Ruta seleccionada correctamente');
+        }}
+        initialPath={form.getFieldValue('sourceDirectory')}
+      />
     </div>
   );
 };

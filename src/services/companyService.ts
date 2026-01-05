@@ -13,6 +13,29 @@ export interface City {
   active: boolean;
 }
 
+// Nueva interfaz para la relación empresa-ciudad
+export interface CompanyCity {
+  id: number;
+  companyId: number;
+  companyName: string;
+  cityId: number;
+  cityName: string;
+  department: string;
+  isPrimary: boolean;
+  active: boolean;
+}
+
+// Nueva interfaz para la relación sede-empresa
+export interface HeadquarterCompany {
+  id: number;
+  headquarterId: number;
+  headquarterName: string;
+  headquarterAddress?: string;
+  companyId: number;
+  companyName: string;
+  active: boolean;
+}
+
 export interface Company {
   id: number;
   name: string;
@@ -21,10 +44,8 @@ export interface Company {
   phone?: string;
   email?: string;
   active: boolean;
-  cityId: number;
-  cityName?: string;
-  cityDepartment?: string;
-  headquarters?: Headquarter[];
+  cities?: CompanyCity[]; // Múltiples ciudades
+  headquarters?: HeadquarterCompany[]; // Múltiples sedes
 }
 
 export interface Headquarter {
@@ -33,10 +54,10 @@ export interface Headquarter {
   address?: string;
   phone?: string;
   active: boolean;
-  companyId: number;
-  companyName?: string;
-  cityId?: number;
+  cityId: number; // Ciudad donde está ubicada la sede
   cityName?: string;
+  cityDepartment?: string;
+  companies?: HeadquarterCompany[]; // Múltiples empresas
 }
 
 // Servicio para manejar las operaciones relacionadas con empresas y sedes
@@ -279,6 +300,181 @@ const companyService = {
       return response.data;
     } catch (error) {
       console.error(`Error al obtener empresas de la ciudad ${cityId}:`, error);
+      throw error;
+    }
+  },
+
+  // ===== MÉTODOS PARA RELACIONES MUCHOS A MUCHOS =====
+
+  // Agregar ciudad a empresa
+  addCityToCompany: async (companyId: number, cityId: number, isPrimary: boolean = false): Promise<CompanyCity> => {
+    try {
+      const response = await axios.post(
+        `${COMPANY_API_URL}/companies/${companyId}/cities`,
+        { cityId, isPrimary },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error al agregar ciudad a empresa:', error);
+      throw error;
+    }
+  },
+
+  // Obtener ciudades de una empresa
+  getCitiesByCompany: async (companyId: number): Promise<CompanyCity[]> => {
+    try {
+      const response = await axios.get(`${COMPANY_API_URL}/companies/${companyId}/cities`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener ciudades de empresa:', error);
+      throw error;
+    }
+  },
+
+  // Marcar ciudad como principal
+  setPrimaryCity: async (companyId: number, cityId: number): Promise<CompanyCity> => {
+    try {
+      const response = await axios.put(
+        `${COMPANY_API_URL}/companies/${companyId}/cities/${cityId}/primary`,
+        {},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error al marcar ciudad como principal:', error);
+      throw error;
+    }
+  },
+
+  // Remover ciudad de empresa
+  removeCityFromCompany: async (companyId: number, cityId: number): Promise<void> => {
+    try {
+      await axios.delete(`${COMPANY_API_URL}/companies/${companyId}/cities/${cityId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+    } catch (error) {
+      console.error('Error al remover ciudad de empresa:', error);
+      throw error;
+    }
+  },
+
+  // Agregar empresa a sede
+  addCompanyToHeadquarter: async (
+    headquarterId: number,
+    companyId: number
+  ): Promise<HeadquarterCompany> => {
+    try {
+      const response = await axios.post(
+        `${COMPANY_API_URL}/headquarters/${headquarterId}/companies`,
+        { companyId },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error al agregar empresa a sede:', error);
+      throw error;
+    }
+  },
+
+  // Obtener empresas de una sede
+  getCompaniesByHeadquarter: async (headquarterId: number): Promise<HeadquarterCompany[]> => {
+    try {
+      const response = await axios.get(`${COMPANY_API_URL}/headquarters/${headquarterId}/companies`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener empresas de sede:', error);
+      throw error;
+    }
+  },
+
+  // Obtener sedes de una empresa (nueva relación M:N)
+  getHeadquartersByCompanyNew: async (companyId: number): Promise<HeadquarterCompany[]> => {
+    try {
+      const response = await axios.get(`${COMPANY_API_URL}/headquarters/by-company/${companyId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener sedes de empresa:', error);
+      throw error;
+    }
+  },
+
+  // Remover empresa de sede
+  removeCompanyFromHeadquarter: async (headquarterId: number, companyId: number): Promise<void> => {
+    try {
+      await axios.delete(`${COMPANY_API_URL}/headquarters/${headquarterId}/companies/${companyId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+    } catch (error) {
+      console.error('Error al remover empresa de sede:', error);
+      throw error;
+    }
+  },
+
+  // Obtener estadísticas de sede
+  getHeadquarterStats: async (headquarterId: number): Promise<{ companyCount: number }> => {
+    try {
+      const response = await axios.get(`${COMPANY_API_URL}/headquarters/${headquarterId}/stats`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener estadísticas de sede:', error);
+      throw error;
+    }
+  },
+
+  // Obtener estadísticas de empresa
+  getCompanyStats: async (companyId: number): Promise<{ headquarterCount: number }> => {
+    try {
+      const response = await axios.get(`${COMPANY_API_URL}/headquarters/company-stats/${companyId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener estadísticas de empresa:', error);
       throw error;
     }
   }
