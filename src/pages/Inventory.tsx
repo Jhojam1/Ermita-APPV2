@@ -160,11 +160,23 @@ export default function Inventory() {
 
   const handleEditItem = (equipo: any) => {
     // Encontrar el item original correspondiente
-    const originalItem = originalItems.find(item => item.id === equipo.id);
+    console.log('Buscando item con ID:', equipo.id, 'Tipo:', typeof equipo.id);
+    console.log('Items originales disponibles:', originalItems.map(item => ({ id: item.id, tipo: typeof item.id })));
+    
+    // Buscar con conversión de tipos para asegurar coincidencia
+    const originalItem = originalItems.find(item => {
+      const itemId = Number(item.id);
+      const equipoId = Number(equipo.id);
+      return itemId === equipoId;
+    });
+    
     if (originalItem) {
+      console.log('Item original encontrado:', originalItem);
       setEditingEquipo({ uiItem: equipo, originalItem });
     } else {
       console.error('No se encontró el item original para editar');
+      console.error('ID buscado:', equipo.id);
+      console.error('IDs disponibles:', originalItems.map(item => item.id));
     }
   };
 
