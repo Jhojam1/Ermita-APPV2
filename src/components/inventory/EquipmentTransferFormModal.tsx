@@ -27,12 +27,16 @@ interface City {
 interface Company {
   id: number;
   name: string;
-  headquarters: Headquarter[];
+  headquarters: HeadquarterCompany[];
 }
 
-interface Headquarter {
+interface HeadquarterCompany {
   id: number;
-  name: string;
+  headquarterId: number;
+  headquarterName: string;
+  companyId: number;
+  companyName: string;
+  active: boolean;
 }
 
 const EquipmentTransferFormModal: React.FC<Props> = ({
@@ -50,7 +54,7 @@ const EquipmentTransferFormModal: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [cities, setCities] = useState<City[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [headquarters, setHeadquarters] = useState<Headquarter[]>([]);
+  const [headquarters, setHeadquarters] = useState<HeadquarterCompany[]>([]);
   const [formData, setFormData] = useState({
     destinationCityId: '',
     destinationCompanyId: '',
@@ -115,7 +119,7 @@ const EquipmentTransferFormModal: React.FC<Props> = ({
   // Función para cargar las sedes de una empresa
   const fetchHeadquartersForCompany = async (companyId: number) => {
     try {
-      const response = await companyService.getHeadquartersByCompanyId(companyId);
+      const response = await companyService.getHeadquartersByCompanyNew(companyId);
       setHeadquarters(response || []);
     } catch (error) {
       console.error(`Error al cargar las sedes para la empresa ${companyId}:`, error);
@@ -144,7 +148,7 @@ const EquipmentTransferFormModal: React.FC<Props> = ({
     // Obtener los nombres de ciudad, empresa y sede de destino
     const destinationCity = cities.find(c => c.id.toString() === formData.destinationCityId);
     const destinationCompany = companies.find(c => c.id.toString() === formData.destinationCompanyId);
-    const destinationHeadquarter = headquarters.find(h => h.id.toString() === formData.destinationHeadquarterId);
+    const destinationHeadquarter = headquarters.find(h => h.headquarterId.toString() === formData.destinationHeadquarterId);
 
     try {
       const transferData = {
@@ -168,7 +172,7 @@ const EquipmentTransferFormModal: React.FC<Props> = ({
         destinationCompanyId: parseInt(formData.destinationCompanyId),
         destinationCompanyName: destinationCompany?.name || "Empresa destino",
         destinationHeadquarterId: parseInt(formData.destinationHeadquarterId),
-        destinationHeadquarterName: destinationHeadquarter?.name || "Sede destino"
+        destinationHeadquarterName: destinationHeadquarter?.headquarterName || "Sede destino"
       };
 
       await inventoryTransferService.createTransfer(transferData);
@@ -280,7 +284,7 @@ const EquipmentTransferFormModal: React.FC<Props> = ({
                 >
                   <option value="">Seleccione sede de destino</option>
                   {headquarters.map(headquarters => (
-                    <option key={headquarters.id} value={headquarters.id}>{headquarters.name}</option>
+                    <option key={headquarters.id} value={headquarters.headquarterId}>{headquarters.headquarterName}</option>
                   ))}
                 </select>
               </div>

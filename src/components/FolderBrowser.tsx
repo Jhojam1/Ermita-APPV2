@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Tree, Button, Input, message, Spin, Alert } from 'antd';
-import { FolderOutlined, FolderOpenOutlined, HddOutlined, ArrowUpOutlined, ReloadOutlined } from '@ant-design/icons';
+import { FolderOutlined, HddOutlined, ArrowUpOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { DataNode } from 'antd/es/tree';
 import fileSystemService, { FileSystemItem } from '../services/fileSystemService';
 

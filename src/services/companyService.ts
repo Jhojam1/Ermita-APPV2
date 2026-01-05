@@ -44,8 +44,13 @@ export interface Company {
   phone?: string;
   email?: string;
   active: boolean;
+  // Compatibilidad con código existente (ciudad principal)
+  cityId?: number;
+  cityName?: string;
+  cityDepartment?: string;
+  // Nuevas relaciones muchos a muchos
   cities?: CompanyCity[]; // Múltiples ciudades
-  headquarters?: HeadquarterCompany[]; // Múltiples sedes
+  headquarters?: HeadquarterCompany[]; // Múltiples sedes como HeadquarterCompany
 }
 
 export interface Headquarter {
@@ -54,9 +59,14 @@ export interface Headquarter {
   address?: string;
   phone?: string;
   active: boolean;
-  cityId: number; // Ciudad donde está ubicada la sede
+  // Compatibilidad con código existente
+  companyId?: number;
+  companyName?: string;
+  // Ciudad donde está ubicada la sede
+  cityId?: number;
   cityName?: string;
   cityDepartment?: string;
+  // Nuevas relaciones muchos a muchos
   companies?: HeadquarterCompany[]; // Múltiples empresas
 }
 

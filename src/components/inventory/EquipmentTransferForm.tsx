@@ -30,12 +30,16 @@ interface City {
 interface Company {
   id: number;
   name: string;
-  headquarters: Headquarter[];
+  headquarters: HeadquarterCompany[];
 }
 
-interface Headquarter {
+interface HeadquarterCompany {
   id: number;
-  name: string;
+  headquarterId: number;
+  headquarterName: string;
+  companyId: number;
+  companyName: string;
+  active: boolean;
 }
 
 // Usar la interfaz del servicio con filtros necesarios
@@ -47,7 +51,7 @@ const EquipmentTransferForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [cities, setCities] = useState<City[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [headquarters, setHeadquarters] = useState<Headquarter[]>([]);
+  const [headquarters, setHeadquarters] = useState<HeadquarterCompany[]>([]);
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
 
@@ -128,7 +132,7 @@ const EquipmentTransferForm: React.FC = () => {
     // Obtener los nombres de ciudad, empresa y sede de destino
     const destinationCity = cities.find(c => c.id === values.destinationCityId);
     const destinationCompany = companies.find(c => c.id === values.destinationCompanyId);
-    const destinationHeadquarter = headquarters.find(h => h.id === values.destinationHeadquarterId);
+    const destinationHeadquarter = headquarters.find(h => h.headquarterId === values.destinationHeadquarterId);
 
     if (!selectedItem.id) {
       message.error('Error: ID del equipo no válido.');
@@ -150,7 +154,7 @@ const EquipmentTransferForm: React.FC = () => {
       destinationCompanyId: form.getFieldValue('destinationCompanyId'),
       destinationCompanyName: destinationCompany?.name || '',
       destinationHeadquarterId: form.getFieldValue('destinationHeadquarterId'),
-      destinationHeadquarterName: destinationHeadquarter?.name || '',
+      destinationHeadquarterName: destinationHeadquarter?.headquarterName || '',
       reason: form.getFieldValue('reason'),
       description: form.getFieldValue('description'),
     };
@@ -245,7 +249,7 @@ const EquipmentTransferForm: React.FC = () => {
         >
           <Select placeholder="Seleccione sede de destino">
             {headquarters.map(headquarter => (
-              <Option key={headquarter.id} value={headquarter.id}>{headquarter.name}</Option>
+              <Option key={headquarter.id} value={headquarter.headquarterId}>{headquarter.headquarterName}</Option>
             ))}
           </Select>
         </Form.Item>
