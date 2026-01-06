@@ -2,6 +2,28 @@ import axios from 'axios';
 
 const API_URL = 'http://192.168.2.20:8080';
 
+// Crear una instancia de axios con la URL base
+const fileSystemApi = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor para añadir el token a las peticiones
+fileSystemApi.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export interface FileSystemItem {
   name: string;
   path: string;
@@ -24,7 +46,7 @@ const fileSystemService = {
    */
   async listRoots(): Promise<FileSystemItem[]> {
     try {
-      const response = await axios.get(`${API_URL}/api/v1/filesystem/roots`);
+      const response = await fileSystemApi.get('/api/v1/filesystem/roots');
       return response.data;
     } catch (error) {
       console.error('Error listing roots:', error);
@@ -37,7 +59,7 @@ const fileSystemService = {
    */
   async listDirectory(path: string): Promise<FileSystemItem[]> {
     try {
-      const response = await axios.get(`${API_URL}/api/v1/filesystem/list`, {
+      const response = await fileSystemApi.get('/api/v1/filesystem/list', {
         params: { path }
       });
       return response.data;
@@ -52,7 +74,7 @@ const fileSystemService = {
    */
   async validatePath(path: string): Promise<PathValidationResponse> {
     try {
-      const response = await axios.get(`${API_URL}/api/v1/filesystem/validate`, {
+      const response = await fileSystemApi.get('/api/v1/filesystem/validate', {
         params: { path }
       });
       return response.data;
@@ -67,7 +89,7 @@ const fileSystemService = {
    */
   async getDirectoryInfo(path: string): Promise<FileSystemItem | null> {
     try {
-      const response = await axios.get(`${API_URL}/api/v1/filesystem/info`, {
+      const response = await fileSystemApi.get('/api/v1/filesystem/info', {
         params: { path }
       });
       return response.data;
@@ -82,7 +104,7 @@ const fileSystemService = {
    */
   async getParentDirectory(path: string): Promise<FileSystemItem | null> {
     try {
-      const response = await axios.get(`${API_URL}/api/v1/filesystem/parent`, {
+      const response = await fileSystemApi.get('/api/v1/filesystem/parent', {
         params: { path }
       });
       return response.data;
