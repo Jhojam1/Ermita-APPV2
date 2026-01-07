@@ -252,10 +252,13 @@ export default function TechnicianAssignmentManager() {
                   />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Mantenimiento
+                  ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Equipo
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Responsable
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Área de Servicio
@@ -288,16 +291,9 @@ export default function TechnicianAssignmentManager() {
                       className="rounded"
                     />
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       #{maintenance.id}
-                    </div>
-                    <div className="text-sm text-gray-500 max-w-xs truncate">
-                      {maintenance.description 
-                        ? (maintenance.description.length > 60 
-                            ? maintenance.description.substring(0, 60) + '...' 
-                            : maintenance.description)
-                        : 'Sin descripción'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -306,6 +302,11 @@ export default function TechnicianAssignmentManager() {
                     </div>
                     <div className="text-sm text-gray-500">
                       {maintenance.inventoryItemName || 'Sin nombre'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-700">
+                      {maintenance.responsible || 'No asignado'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
