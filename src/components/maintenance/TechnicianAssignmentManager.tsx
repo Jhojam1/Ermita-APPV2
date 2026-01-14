@@ -21,7 +21,9 @@ export default function TechnicianAssignmentManager() {
   const [selectedMaintenances, setSelectedMaintenances] = useState<number[]>([]);
   const [selectedTechnician, setSelectedTechnician] = useState<TechnicianUser | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('PROGRAMADO');
+  const [filterSede, setFilterSede] = useState<string>('all');
+  const [sedes, setSedes] = useState<{id: number, name: string, companyName: string}[]>([]);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
   const [technicianSearchTerm, setTechnicianSearchTerm] = useState('');
@@ -39,18 +41,32 @@ export default function TechnicianAssignmentManager() {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Cargar datos en paralelo
+      // Cargar todos los mantenimientos sin filtro de empresa/sede
+      const allMaintenancesData = await maintenanceService.getAllMaintenancesForAssignment();
+      
+      // Extraer sedes únicas de los mantenimientos
+      const uniqueSedes = new Map<string, {id: number, name: string, companyName: string}>();
+      allMaintenancesData.forEach((m: any) => {
+        const key = `${m.companyId}-${m.headquarterId}`;
+        if (!uniqueSedes.has(key)) {
+          uniqueSedes.set(key, {
+            id: m.headquarterId,
+            name: m.sede || `Sede ${m.headquarterId}`,
+            companyName: m.empresa || `Empresa ${m.companyId}`
+          });
+        }
+      });
+      
       const [
-        allMaintenancesData,
         unassignedData,
         techniciansData
       ] = await Promise.all([
-        maintenanceService.getAllMaintenances(),
         technicianAssignmentService.getUnassignedMaintenances(companyId, headquarterId),
         technicianAssignmentService.getTechnicians()
       ]);
 
       setMaintenances(allMaintenancesData);
+      setSedes(Array.from(uniqueSedes.values()));
       setUnassignedMaintenances(unassignedData);
       setTechnicians(techniciansData);
     } catch (error) {
@@ -138,17 +154,22 @@ export default function TechnicianAssignmentManager() {
       : 'bg-orange-100 text-orange-800';
   };
 
-  // Filtrar mantenimientos según búsqueda y estado
+  // Filtrar mantenimientos según búsqueda, estado y sede
   const filteredMaintenances = maintenances.filter(maintenance => {
-    const matchesSearch = maintenance.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         maintenance.id.toString().includes(searchTerm);
+    const matchesSearch = (maintenance.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         maintenance.id.toString().includes(searchTerm) ||
+                         (maintenance.inventoryItemSerial?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (maintenance.responsible?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     
     const matchesStatus = filterStatus === 'all' || 
                          (filterStatus === 'assigned' && maintenance.technicianId) ||
                          (filterStatus === 'unassigned' && !maintenance.technicianId) ||
                          maintenance.status === filterStatus;
     
-    return matchesSearch && matchesStatus;
+    const matchesSede = filterSede === 'all' || 
+                       maintenance.headquarterId.toString() === filterSede;
+    
+    return matchesSearch && matchesStatus && matchesSede;
   });
 
   // Filtrar técnicos según búsqueda por nombre o cédula
@@ -204,11 +225,24 @@ export default function TechnicianAssignmentManager() {
           
           <div className="flex flex-col sm:flex-row gap-3">
             <select
+              value={filterSede}
+              onChange={(e) => setFilterSede(e.target.value)}
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm min-w-0 sm:min-w-[160px]"
+            >
+              <option value="all">Todas las Sedes</option>
+              {sedes.map(sede => (
+                <option key={sede.id} value={sede.id.toString()}>
+                  {sede.companyName} - {sede.name}
+                </option>
+              ))}
+            </select>
+            
+            <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm min-w-0 sm:min-w-[140px]"
             >
-              <option value="all">Todos</option>
+              <option value="all">Todos los Estados</option>
               <option value="assigned">Asignados</option>
               <option value="unassigned">Sin Asignar</option>
               <option value="PROGRAMADO">Programados</option>

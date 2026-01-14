@@ -258,19 +258,19 @@ export default function Inventory() {
     .filter(equipo => {
       // Filtrar por término de búsqueda
       const searchMatch = 
-        equipo.serial.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        equipo.codigoInterno.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        equipo.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        equipo.modelo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        equipo.empresa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        equipo.sede.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        equipo.tipo.toLowerCase().includes(searchTerm.toLowerCase());
+        (equipo.serial?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (equipo.codigoInterno?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (equipo.marca?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (equipo.modelo?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (equipo.empresa?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (equipo.sede?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (equipo.tipo?.toLowerCase() || '').includes(searchTerm.toLowerCase());
       
       // Filtrar por filtros seleccionados
       const empresaMatch = !filters.empresa || equipo.empresa === filters.empresa;
       const sedeMatch = !filters.sede || `${equipo.empresa}|||${equipo.sedeId}` === filters.sede;
-      const tipoMatch = !filters.tipo || equipo.tipo.toLowerCase() === filters.tipo.toLowerCase();
-      const estadoMatch = !filters.estado || equipo.estado.toLowerCase() === filters.estado.toLowerCase();
+      const tipoMatch = !filters.tipo || (equipo.tipo?.toLowerCase() || '') === filters.tipo.toLowerCase();
+      const estadoMatch = !filters.estado || (equipo.estado?.toLowerCase() || '') === filters.estado.toLowerCase();
       
       return searchMatch && empresaMatch && sedeMatch && tipoMatch && estadoMatch;
     })

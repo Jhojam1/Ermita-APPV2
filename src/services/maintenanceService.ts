@@ -82,13 +82,24 @@ const maintenanceService = {
   formatDate,
   parseDate,
   
-  // Obtener todos los mantenimientos
+  // Obtener todos los mantenimientos (filtrados por empresa/sede del usuario)
   getAllMaintenances: async (): Promise<MaintenanceItem[]> => {
     try {
       const response = await maintenanceApi.get('');
       return response.data;
     } catch (error) {
       console.error('Error al obtener mantenimientos:', error);
+      throw error;
+    }
+  },
+  
+  // Obtener todos los mantenimientos sin filtro (para asignación de técnicos)
+  getAllMaintenancesForAssignment: async (): Promise<MaintenanceItem[]> => {
+    try {
+      const response = await maintenanceApi.get('/all-for-assignment');
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener mantenimientos para asignación:', error);
       throw error;
     }
   },
