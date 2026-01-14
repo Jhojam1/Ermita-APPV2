@@ -91,10 +91,8 @@ const userService = {
       const user = await userService.getUserById(id);
       if (user && user.signature) {
         console.log(`[DEBUG] Firma encontrada para el usuario ${user.fullName}`);
-        // Verificar si la firma ya tiene el prefijo de data URL
-        if (!user.signature.startsWith('data:')) {
-          return `data:image/png;base64,${user.signature}`;
-        }
+        // Retornar la firma tal como viene del backend
+        // El prefijo data:image/png;base64 se agregará donde sea necesario
         return user.signature;
       }
       console.log(`[DEBUG] No se encontró firma para el usuario con ID ${id}`);

@@ -122,7 +122,10 @@ export default function History() {
           console.log(`[DEBUG] Obteniendo firma del técnico con ID ${mantenimiento.technicianId} para el reporte`);
           const technicianSignature = await userService.getUserSignature(mantenimiento.technicianId);
           if (technicianSignature) {
-            firmaTecnicoUrl = technicianSignature;
+            // Agregar prefijo si no lo tiene
+            firmaTecnicoUrl = technicianSignature.startsWith('data:') 
+              ? technicianSignature 
+              : `data:image/png;base64,${technicianSignature}`;
             console.log('[DEBUG] Firma del técnico obtenida para el reporte, longitud:', technicianSignature.length);
           } else {
             console.log('[DEBUG] No se pudo obtener la firma del técnico para el reporte');
@@ -139,22 +142,12 @@ export default function History() {
       }
       
       // Asegurar que la firma del responsable tenga el formato correcto
-      if (firmaUrl && typeof firmaUrl === 'string' && firmaUrl.trim() !== '') {
-        // Si la firma no comienza con 'data:', agregar el prefijo de data URL
-        if (!firmaUrl.startsWith('data:')) {
-          firmaUrl = `data:image/png;base64,${firmaUrl}`;
-        }
-        console.log('[DEBUG] Firma del responsable preparada para el PDF');
+      if (firmaUrl && !firmaUrl.startsWith('data:')) {
+        firmaUrl = `data:image/png;base64,${firmaUrl}`;
       }
       
-      // Asegurar que la firma del técnico tenga el formato correcto
-      if (firmaTecnicoUrl && typeof firmaTecnicoUrl === 'string' && firmaTecnicoUrl.trim() !== '') {
-        // Si la firma no comienza con 'data:', agregar el prefijo de data URL
-        if (!firmaTecnicoUrl.startsWith('data:')) {
-          firmaTecnicoUrl = `data:image/png;base64,${firmaTecnicoUrl}`;
-        }
-        console.log('[DEBUG] Firma del técnico preparada para el PDF');
-      }
+      console.log('[DEBUG] Firma del responsable:', firmaUrl ? 'Disponible' : 'No disponible');
+      console.log('[DEBUG] Firma del técnico:', firmaTecnicoUrl ? 'Disponible' : 'No disponible');
 
       // Variables de fecha removidas (no se usan actualmente)
       
