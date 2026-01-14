@@ -103,6 +103,52 @@ export default function History() {
         console.error('Mantenimiento no encontrado');
         return;
       }
+
+      const normalizeSignatureDataUrl = (value: unknown): string | null => {
+        if (typeof value !== 'string') return null;
+
+        let s = value.trim();
+        if (!s) return null;
+
+        // Quitar comillas envolventes si existen
+        if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+          s = s.slice(1, -1).trim();
+        }
+
+        // Si viene algo como: data:image/png;base64,"data:image/png;base64,AAAA"
+        s = s.replace(/^data:image\/(png|jpeg|jpg);base64,\s*["']?data:image\/(png|jpeg|jpg);base64,/i, (m) => {
+          // Dejar solo un prefijo (se completa abajo)
+          return '';
+        });
+
+        // Si contiene más de un data:image..., tomar el último (más interno)
+        const lastDataIdx = s.toLowerCase().lastIndexOf('data:image/');
+        if (lastDataIdx > 0) {
+          s = s.slice(lastDataIdx);
+        }
+
+        // Si ya es data URL, retornarlo (limpiando comillas internas comunes)
+        if (s.toLowerCase().startsWith('data:image/')) {
+          s = s.replace(/\s+/g, '');
+          s = s.replace(/"/g, '');
+          return s;
+        }
+
+        // Caso base64 puro (sin prefijo)
+        s = s.replace(/\s+/g, '');
+        s = s.replace(/"/g, '');
+        return `data:image/png;base64,${s}`;
+      };
+
+      const getImageFormatForJsPdf = (dataUrl: string): 'PNG' | 'JPEG' => {
+        const lower = dataUrl.toLowerCase();
+        if (lower.startsWith('data:image/jpeg') || lower.startsWith('data:image/jpg')) return 'JPEG';
+        // Heurística si viene sin mime explícito o está mal: JPEG suele empezar por /9j/
+        const commaIdx = dataUrl.indexOf(',');
+        const b64 = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+        if (b64.startsWith('/9j/')) return 'JPEG';
+        return 'PNG';
+      };
       
       console.log('[DEBUG] Generando reporte para mantenimiento:', {
         id: mantenimiento.id,
@@ -111,10 +157,10 @@ export default function History() {
       });
       
       // Preparar firma del responsable
-      let firmaUrl = mantenimiento.firma;
+      let firmaUrl = normalizeSignatureDataUrl(mantenimiento.firma);
       
       // Verificar si hay firma del técnico
-      let firmaTecnicoUrl = null;
+      let firmaTecnicoUrl: string | null = null;
       
       // Obtener la firma del técnico desde el servicio de usuarios si hay un ID de técnico
       if (mantenimiento.technicianId) {
@@ -122,10 +168,7 @@ export default function History() {
           console.log(`[DEBUG] Obteniendo firma del técnico con ID ${mantenimiento.technicianId} para el reporte`);
           const technicianSignature = await userService.getUserSignature(mantenimiento.technicianId);
           if (technicianSignature) {
-            // Agregar prefijo si no lo tiene
-            firmaTecnicoUrl = technicianSignature.startsWith('data:') 
-              ? technicianSignature 
-              : `data:image/png;base64,${technicianSignature}`;
+            firmaTecnicoUrl = normalizeSignatureDataUrl(technicianSignature);
             console.log('[DEBUG] Firma del técnico obtenida para el reporte, longitud:', technicianSignature.length);
           } else {
             console.log('[DEBUG] No se pudo obtener la firma del técnico para el reporte');
@@ -135,20 +178,15 @@ export default function History() {
         }
       } else if (mantenimiento.firmaTecnico) {
         // Usar la firma del técnico del mantenimiento si existe
-        firmaTecnicoUrl = mantenimiento.firmaTecnico;
+        firmaTecnicoUrl = normalizeSignatureDataUrl(mantenimiento.firmaTecnico);
         console.log('[DEBUG] Usando firma del técnico del objeto mantenimiento');
       } else {
         console.log('[DEBUG] No hay firma de técnico disponible');
       }
       
-      // Asegurar que la firma del responsable tenga el formato correcto
-      if (firmaUrl && !firmaUrl.startsWith('data:')) {
-        firmaUrl = `data:image/png;base64,${firmaUrl}`;
-      }
-      
       console.log('[DEBUG] Firma del responsable:', firmaUrl ? 'Disponible' : 'No disponible');
       console.log('[DEBUG] Firma del técnico:', firmaTecnicoUrl ? 'Disponible' : 'No disponible');
-
+      
       // Variables de fecha removidas (no se usan actualmente)
       
       // Cargar el logo antes de crear el PDF
@@ -160,22 +198,23 @@ export default function History() {
         logoImg.crossOrigin = 'anonymous';
         
         logoLoaded = await new Promise<boolean>((resolve) => {
+          const timeoutId = setTimeout(() => {
+            console.warn('Timeout al cargar logo');
+            resolve(false);
+          }, 5000);
+
           logoImg!.onload = () => {
+            clearTimeout(timeoutId);
             console.log('Logo cargado exitosamente');
             resolve(true);
           };
           logoImg!.onerror = (error) => {
+            clearTimeout(timeoutId);
             console.error('Error al cargar logo:', error);
             resolve(false);
           };
           // Intentar diferentes rutas
           logoImg!.src = `${window.location.origin}/Simax/Logo_Ermita.png`;
-          
-          // Timeout de 5 segundos
-          setTimeout(() => {
-            console.warn('Timeout al cargar logo');
-            resolve(false);
-          }, 5000);
         });
       } catch (error) {
         console.error('Excepción al cargar logo:', error);
@@ -461,7 +500,8 @@ export default function History() {
 
       if (firmaTecnicoUrl) {
         try {
-          pdf.addImage(firmaTecnicoUrl, 'PNG', 30, yPosition, 40, 15);
+          const fmt = getImageFormatForJsPdf(firmaTecnicoUrl);
+          pdf.addImage(firmaTecnicoUrl, fmt, 30, yPosition, 40, 15);
         } catch (e) {
           console.log('Error al agregar firma del técnico:', e);
         }
@@ -469,7 +509,8 @@ export default function History() {
 
       if (firmaUrl) {
         try {
-          pdf.addImage(firmaUrl, 'PNG', 130, yPosition, 40, 15);
+          const fmt = getImageFormatForJsPdf(firmaUrl);
+          pdf.addImage(firmaUrl, fmt, 130, yPosition, 40, 15);
         } catch (e) {
           console.log('Error al agregar firma del responsable:', e);
         }
