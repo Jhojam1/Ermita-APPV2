@@ -16,14 +16,54 @@ export default function History() {
   const [technicianSignature, setTechnicianSignature] = useState<string | null>(null);
   const [showDetallesModal, setShowDetallesModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  
+
   // Filtros adicionales
   const [filterType, setFilterType] = useState<string>('');
   const [filterDateRange, setFilterDateRange] = useState<{start: string, end: string}>({start: '', end: ''});
+
+  const normalizeSignatureDataUrl = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+
+    let s = value.trim();
+    if (!s) return null;
+
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+      s = s.slice(1, -1).trim();
+    }
+
+    s = s.replace(
+      /^data:image\/(png|jpeg|jpg);base64,\s*["']?data:image\/(png|jpeg|jpg);base64,/i,
+      ''
+    );
+
+    const lastDataIdx = s.toLowerCase().lastIndexOf('data:image/');
+    if (lastDataIdx > 0) {
+      s = s.slice(lastDataIdx);
+    }
+
+    if (s.toLowerCase().startsWith('data:image/')) {
+      s = s.replace(/\s+/g, '');
+      s = s.replace(/"/g, '');
+      return s;
+    }
+
+    s = s.replace(/\s+/g, '');
+    s = s.replace(/"/g, '');
+    return `data:image/png;base64,${s}`;
+  };
+
+  const getImageFormatForJsPdf = (dataUrl: string): 'PNG' | 'JPEG' => {
+    const lower = dataUrl.toLowerCase();
+    if (lower.startsWith('data:image/jpeg') || lower.startsWith('data:image/jpg')) return 'JPEG';
+    const commaIdx = dataUrl.indexOf(',');
+    const b64 = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+    if (b64.startsWith('/9j/')) return 'JPEG';
+    return 'PNG';
+  };
 
   useEffect(() => {
     fetchCompletedMaintenances();
@@ -35,7 +75,7 @@ export default function History() {
       setError(null);
       const data = await maintenanceService.getMaintenancesByStatus('COMPLETADO');
       console.log('Datos recibidos de mantenimientos completados:', data);
-      
+
       // Verificar si hay firmas de técnicos en los datos
       const firmasTecnicos = data.filter(item => item.technicianSignature);
       console.log('Mantenimientos con firma de técnico:', firmasTecnicos.length);
@@ -44,7 +84,7 @@ export default function History() {
       } else {
         console.log('No se encontraron firmas de técnicos en los datos');
       }
-      
+
       const mappedData = data.map(item => maintenanceService.mapToUI(item));
       setMantenimientosData(mappedData);
     } catch (err) {
@@ -57,24 +97,17 @@ export default function History() {
 
   // Función para obtener la firma del técnico desde el servicio de usuarios
   const fetchTechnicianSignature = async (technicianId: number | undefined) => {
-    console.log('[DEBUG] Datos del mantenimiento seleccionado:', {
-      id: selectedMantenimiento?.id,
-      tecnico: selectedMantenimiento?.tecnico,
-      technicianId: selectedMantenimiento?.technicianId,
-      nombreTecnico: selectedMantenimiento?.nombreTecnico
-    });
-    
     if (!technicianId) {
       console.log('[DEBUG] No hay ID de técnico disponible en el mantenimiento');
       setTechnicianSignature(null);
       return;
     }
-    
+
     try {
       console.log(`[DEBUG] Obteniendo firma del técnico con ID ${technicianId}`);
       const signature = await userService.getUserSignature(technicianId);
       console.log(`[DEBUG] Firma del técnico obtenida:`, signature ? `Sí (longitud: ${signature.length})` : 'No');
-      setTechnicianSignature(signature);
+      setTechnicianSignature(normalizeSignatureDataUrl(signature));
     } catch (error) {
       console.error('[DEBUG] Error al obtener la firma del técnico:', error);
       setTechnicianSignature(null);
@@ -85,7 +118,7 @@ export default function History() {
   const handleVerDetalles = (mantenimiento: any) => {
     setSelectedMantenimiento(mantenimiento);
     setShowDetallesModal(true);
-    
+
     // Si el mantenimiento tiene un ID de técnico, obtener su firma
     if (mantenimiento.technicianId) {
       fetchTechnicianSignature(mantenimiento.technicianId);
@@ -104,64 +137,18 @@ export default function History() {
         return;
       }
 
-      const normalizeSignatureDataUrl = (value: unknown): string | null => {
-        if (typeof value !== 'string') return null;
-
-        let s = value.trim();
-        if (!s) return null;
-
-        // Quitar comillas envolventes si existen
-        if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-          s = s.slice(1, -1).trim();
-        }
-
-        // Si viene algo como: data:image/png;base64,"data:image/png;base64,AAAA"
-        s = s.replace(
-          /^data:image\/(png|jpeg|jpg);base64,\s*["']?data:image\/(png|jpeg|jpg);base64,/i,
-          ''
-        );
-
-        // Si contiene más de un data:image..., tomar el último (más interno)
-        const lastDataIdx = s.toLowerCase().lastIndexOf('data:image/');
-        if (lastDataIdx > 0) {
-          s = s.slice(lastDataIdx);
-        }
-
-        // Si ya es data URL, retornarlo (limpiando comillas internas comunes)
-        if (s.toLowerCase().startsWith('data:image/')) {
-          s = s.replace(/\s+/g, '');
-          s = s.replace(/"/g, '');
-          return s;
-        }
-
-        // Caso base64 puro (sin prefijo)
-        s = s.replace(/\s+/g, '');
-        s = s.replace(/"/g, '');
-        return `data:image/png;base64,${s}`;
-      };
-
-      const getImageFormatForJsPdf = (dataUrl: string): 'PNG' | 'JPEG' => {
-        const lower = dataUrl.toLowerCase();
-        if (lower.startsWith('data:image/jpeg') || lower.startsWith('data:image/jpg')) return 'JPEG';
-        // Heurística si viene sin mime explícito o está mal: JPEG suele empezar por /9j/
-        const commaIdx = dataUrl.indexOf(',');
-        const b64 = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
-        if (b64.startsWith('/9j/')) return 'JPEG';
-        return 'PNG';
-      };
-      
       console.log('[DEBUG] Generando reporte para mantenimiento:', {
         id: mantenimiento.id,
         tecnico: mantenimiento.tecnico,
         technicianId: mantenimiento.technicianId
       });
-      
+
       // Preparar firma del responsable
       let firmaUrl = normalizeSignatureDataUrl(mantenimiento.firma);
-      
+
       // Verificar si hay firma del técnico
       let firmaTecnicoUrl: string | null = null;
-      
+
       // Obtener la firma del técnico desde el servicio de usuarios si hay un ID de técnico
       if (mantenimiento.technicianId) {
         try {
@@ -183,11 +170,12 @@ export default function History() {
       } else {
         console.log('[DEBUG] No hay firma de técnico disponible');
       }
-      
+
       console.log('[DEBUG] Firma del responsable:', firmaUrl ? 'Disponible' : 'No disponible');
       console.log('[DEBUG] Firma del técnico:', firmaTecnicoUrl ? 'Disponible' : 'No disponible');
-      
+
       // Variables de fecha removidas (no se usan actualmente)
+
       
       // Cargar el logo antes de crear el PDF
       let logoImg: HTMLImageElement | null = null;
@@ -922,10 +910,10 @@ export default function History() {
                   <div>
                     <h4 className="text-xs font-medium text-gray-600 mb-1">Técnico</h4>
                     <div className="border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50 h-32">
-                      {technicianSignature ? (
+                      {normalizeSignatureDataUrl(technicianSignature) ? (
                         <>
                           <img 
-                            src={technicianSignature} 
+                            src={normalizeSignatureDataUrl(technicianSignature) as string} 
                             alt="Firma del técnico" 
                             className="max-h-28 max-w-full object-contain"
                             onError={(e) => {
@@ -959,11 +947,9 @@ export default function History() {
                   <div>
                     <h4 className="text-xs font-medium text-gray-600 mb-1">Responsable</h4>
                     <div className="border border-gray-200 rounded-lg p-2 flex items-center justify-center bg-gray-50 h-32">
-                      {selectedMantenimiento.firma ? (
+                      {normalizeSignatureDataUrl(selectedMantenimiento.firma) ? (
                         <img 
-                          src={selectedMantenimiento.firma.startsWith('data:') ? 
-                            selectedMantenimiento.firma : 
-                            `data:image/png;base64,${selectedMantenimiento.firma}`} 
+                          src={normalizeSignatureDataUrl(selectedMantenimiento.firma) as string} 
                           alt="Firma del responsable" 
                           className="max-h-28 max-w-full object-contain"
                           onError={(e) => {
