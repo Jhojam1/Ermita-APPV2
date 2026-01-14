@@ -264,7 +264,8 @@ export default function Inventory() {
         (equipo.modelo?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (equipo.empresa?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (equipo.sede?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (equipo.tipo?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+        (equipo.tipo?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (equipo.responsable?.toLowerCase() || '').includes(searchTerm.toLowerCase());
       
       // Filtrar por filtros seleccionados
       const empresaMatch = !filters.empresa || equipo.empresa === filters.empresa;

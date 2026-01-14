@@ -23,7 +23,7 @@ export default function TechnicianAssignmentManager() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('PROGRAMADO');
   const [filterSede, setFilterSede] = useState<string>('all');
-  const [sedes, setSedes] = useState<{id: number, name: string, companyName: string}[]>([]);
+  const [sedes, setSedes] = useState<{key: string, name: string, companyName: string}[]>([]);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
   const [technicianSearchTerm, setTechnicianSearchTerm] = useState('');
@@ -45,12 +45,12 @@ export default function TechnicianAssignmentManager() {
       const allMaintenancesData = await maintenanceService.getAllMaintenancesForAssignment();
       
       // Extraer sedes únicas de los mantenimientos
-      const uniqueSedes = new Map<string, {id: number, name: string, companyName: string}>();
+      const uniqueSedes = new Map<string, {key: string, name: string, companyName: string}>();
       allMaintenancesData.forEach((m: any) => {
         const key = `${m.companyId}-${m.headquarterId}`;
         if (!uniqueSedes.has(key)) {
           uniqueSedes.set(key, {
-            id: m.headquarterId,
+            key: key,
             name: m.sede || `Sede ${m.headquarterId}`,
             companyName: m.empresa || `Empresa ${m.companyId}`
           });
@@ -167,7 +167,7 @@ export default function TechnicianAssignmentManager() {
                          maintenance.status === filterStatus;
     
     const matchesSede = filterSede === 'all' || 
-                       maintenance.headquarterId.toString() === filterSede;
+                       `${maintenance.companyId}-${maintenance.headquarterId}` === filterSede;
     
     return matchesSearch && matchesStatus && matchesSede;
   });
@@ -227,11 +227,11 @@ export default function TechnicianAssignmentManager() {
             <select
               value={filterSede}
               onChange={(e) => setFilterSede(e.target.value)}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm min-w-0 sm:min-w-[160px]"
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm min-w-0 sm:min-w-[200px]"
             >
               <option value="all">Todas las Sedes</option>
               {sedes.map(sede => (
-                <option key={sede.id} value={sede.id.toString()}>
+                <option key={sede.key} value={sede.key}>
                   {sede.companyName} - {sede.name}
                 </option>
               ))}
@@ -292,6 +292,12 @@ export default function TechnicianAssignmentManager() {
                   Equipo
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Empresa
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Sede
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Responsable
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -336,6 +342,16 @@ export default function TechnicianAssignmentManager() {
                     </div>
                     <div className="text-sm text-gray-500">
                       {maintenance.inventoryItemName || 'Sin nombre'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-700">
+                      {maintenance.empresa || 'N/A'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-700">
+                      {maintenance.sede || 'N/A'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
