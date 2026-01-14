@@ -110,12 +110,10 @@ export default function History() {
         technicianId: mantenimiento.technicianId
       });
       
-      // Verificar si hay firma del responsable y precargarla para asegurar que esté disponible para el PDF
-      let firmaValida = false;
-      let firmaImg: HTMLImageElement | null = null;
+      // Preparar firma del responsable
       let firmaUrl = mantenimiento.firma;
       
-      // Verificar si hay firma del técnico y precargarla
+      // Verificar si hay firma del técnico
       let firmaTecnicoUrl = null;
       
       // Obtener la firma del técnico desde el servicio de usuarios si hay un ID de técnico
@@ -140,36 +138,13 @@ export default function History() {
         console.log('[DEBUG] No hay firma de técnico disponible');
       }
       
-      // Si la firma del responsable existe pero no tiene el formato correcto, intentar corregirla
+      // Asegurar que la firma del responsable tenga el formato correcto
       if (firmaUrl && typeof firmaUrl === 'string' && firmaUrl.trim() !== '') {
         // Si la firma no comienza con 'data:', agregar el prefijo de data URL
         if (!firmaUrl.startsWith('data:')) {
           firmaUrl = `data:image/png;base64,${firmaUrl}`;
         }
-        
-        try {
-          // Precargar la imagen para verificar que sea válida
-          firmaImg = new Image();
-          firmaImg.src = firmaUrl;
-          
-          // Esperar a que la imagen se cargue o falle
-          await new Promise((resolve) => {
-            firmaImg!.onload = () => {
-              firmaValida = true;
-              resolve(true);
-            };
-            firmaImg!.onerror = () => {
-              firmaValida = false;
-              resolve(false);
-            };
-            // Establecer un tiempo límite para la carga de la imagen
-            setTimeout(() => {
-              resolve(false);
-            }, 3000);
-          });
-        } catch (error) {
-          firmaValida = false;
-        }
+        console.log('[DEBUG] Firma del responsable preparada para el PDF');
       }
       
       // Asegurar que la firma del técnico tenga el formato correcto
@@ -499,7 +474,7 @@ export default function History() {
         }
       }
 
-      if (firmaValida && firmaUrl) {
+      if (firmaUrl) {
         try {
           pdf.addImage(firmaUrl, 'PNG', 130, yPosition, 40, 15);
         } catch (e) {
