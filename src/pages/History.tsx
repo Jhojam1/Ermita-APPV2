@@ -116,10 +116,10 @@ export default function History() {
         }
 
         // Si viene algo como: data:image/png;base64,"data:image/png;base64,AAAA"
-        s = s.replace(/^data:image\/(png|jpeg|jpg);base64,\s*["']?data:image\/(png|jpeg|jpg);base64,/i, (m) => {
-          // Dejar solo un prefijo (se completa abajo)
-          return '';
-        });
+        s = s.replace(
+          /^data:image\/(png|jpeg|jpg);base64,\s*["']?data:image\/(png|jpeg|jpg);base64,/i,
+          ''
+        );
 
         // Si contiene más de un data:image..., tomar el último (más interno)
         const lastDataIdx = s.toLowerCase().lastIndexOf('data:image/');
