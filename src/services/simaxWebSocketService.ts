@@ -28,7 +28,7 @@ class SimaxWebSocketService {
   connect(): Promise<boolean> {
     return new Promise((resolve) => {
       try {
-        const wsUrl = `ws://192.168.2.20:8080/ws?clientId=${this.clientId}`;
+        const wsUrl = `ws://192.168.2.20:9000/ws?clientId=${this.clientId}`;
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {

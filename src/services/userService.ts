@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configuración base de axios
-const API_URL = 'http://192.168.2.20:8080/api/v1/users';
+const API_URL = 'http://192.168.2.20:9000/api/v1/users';
 
 // Crear una instancia de axios con la URL base
 const userApi = axios.create({

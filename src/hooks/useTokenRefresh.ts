@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 
-const API_URL = 'http://192.168.2.64:8080/api/v1/auth';
+const API_URL = 'http://192.168.2.64:9000/api/v1/auth';
 
 // Configuración de tiempos (en milisegundos)
 const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutos de inactividad
