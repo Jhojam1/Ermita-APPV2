@@ -26,6 +26,8 @@ export default function Maintenance() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   
   // Referencias para los canvas de firma
   const sigCanvas = useRef<SignatureCanvas>(null);
@@ -284,6 +286,18 @@ export default function Maintenance() {
     return matchesSearch && matchesStatus && matchesType;
   });
 
+  // Paginación: calcular páginas y slice visible
+  const totalItems = filteredMantenimientos.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const paginatedMantenimientos = filteredMantenimientos.slice(startIndex, startIndex + pageSize);
+
+  // Resetear a la página 1 cuando cambian filtros, búsqueda o tamaño de página
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterType, pageSize]);
+
   return (
     <div className="max-w-[1400px] mx-auto">
       {/* Header y Búsqueda */}
@@ -396,7 +410,7 @@ export default function Maintenance() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredMantenimientos.map((mantenimiento) => (
+                {paginatedMantenimientos.map((mantenimiento) => (
                   <tr key={mantenimiento.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {mantenimiento.id}
@@ -459,6 +473,62 @@ export default function Maintenance() {
                 ))}
               </tbody>
             </table>
+            {/* Controles de paginación */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3 px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <div className="flex items-center gap-3 text-sm text-gray-600">
+                <span>
+                  Mostrando <span className="font-medium">{totalItems === 0 ? 0 : startIndex + 1}</span>
+                  {' '}-{' '}
+                  <span className="font-medium">{Math.min(startIndex + pageSize, totalItems)}</span>
+                  {' '}de{' '}
+                  <span className="font-medium">{totalItems}</span>
+                </span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  className="px-2 py-1 bg-white border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value={10}>10 / pág</option>
+                  <option value={25}>25 / pág</option>
+                  <option value={50}>50 / pág</option>
+                  <option value={100}>100 / pág</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={safePage === 1}
+                  className="px-3 py-1 text-sm rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  «
+                </button>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage === 1}
+                  className="px-3 py-1 text-sm rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Anterior
+                </button>
+                <span className="px-3 py-1 text-sm text-gray-700">
+                  Página <span className="font-medium">{safePage}</span> de{' '}
+                  <span className="font-medium">{totalPages}</span>
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage === totalPages}
+                  className="px-3 py-1 text-sm rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Siguiente
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={safePage === totalPages}
+                  className="px-3 py-1 text-sm rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  »
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -29,6 +29,7 @@ export interface MaintenanceItem {
   id?: number;
   inventoryItemId: number;
   inventoryItemName?: string;
+  equipmentName?: string;
   companyId?: number;
   headquarterId?: number;
   serviceArea?: string;
@@ -240,7 +241,7 @@ const maintenanceService = {
     
     return {
       id: maintenanceItem.id?.toString() || '',
-      equipo: maintenanceItem.inventoryItemName || 'Sin nombre',
+      equipo: maintenanceItem.equipmentName || maintenanceItem.inventoryItemName || 'Sin nombre',
       estado: mapStatus(maintenanceItem.status),
       fechaProgramada: formatDate(maintenanceItem.scheduledDate),
       fechaCompletado: maintenanceItem.completionDate ? formatDate(maintenanceItem.completionDate) : undefined,
