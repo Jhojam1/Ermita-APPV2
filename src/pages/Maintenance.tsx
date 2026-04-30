@@ -268,10 +268,17 @@ export default function Maintenance() {
 
   // Filtrar mantenimientos según búsqueda y filtros
   const filteredMantenimientos = mantenimientosData.filter(item => {
-    // Filtro por término de búsqueda
+    // Filtro por término de búsqueda - busca en todos los campos
     const matchesSearch = searchTerm === '' || 
+      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.equipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.serial?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      item.estado.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.fechaProgramada.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.area.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.responsable.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.tecnico.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Filtro por estado - Mapear los valores del filtro a los valores que se muestran en la UI

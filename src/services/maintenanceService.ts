@@ -29,6 +29,7 @@ export interface MaintenanceItem {
   id?: number;
   inventoryItemId: number;
   inventoryItemName?: string;
+  inventoryItemSerial?: string;
   equipmentName?: string;
   companyId?: number;
   headquarterId?: number;
@@ -56,6 +57,7 @@ export interface MaintenanceItem {
 export interface MaintenanceItemUI {
   id: string;
   equipo: string;
+  serial?: string;
   estado: string;
   fechaProgramada: string;
   fechaCompletado?: string;
@@ -253,6 +255,7 @@ const maintenanceService = {
     return {
       id: maintenanceItem.id?.toString() || '',
       equipo: maintenanceItem.equipmentName || maintenanceItem.inventoryItemName || 'Sin nombre',
+      serial: maintenanceItem.inventoryItemSerial,
       estado: mapStatus(maintenanceItem.status),
       fechaProgramada: formatDate(maintenanceItem.scheduledDate),
       fechaCompletado: maintenanceItem.completionDate ? formatDate(maintenanceItem.completionDate) : undefined,
