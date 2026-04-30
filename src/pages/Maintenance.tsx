@@ -275,8 +275,8 @@ export default function Maintenance() {
       (item.serial?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
       item.estado.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.fechaProgramada.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.area.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.responsable.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.area?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (item.responsable?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
       item.tecnico.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
